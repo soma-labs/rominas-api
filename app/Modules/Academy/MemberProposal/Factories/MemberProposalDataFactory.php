@@ -16,6 +16,9 @@ class MemberProposalDataFactory
         return new MemberProposalData(
             name: $validated['name'],
             email: $validated['email'],
+            position: $validated['position'] ?? null,
+            company: $validated['company'] ?? null,
+            phone: $validated['phone'] ?? null,
             reason: $validated['reason'] ?? null,
         );
     }

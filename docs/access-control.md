@@ -80,10 +80,12 @@ only — the points curve is deferred to `Scoring`.
 Members propose future academy members; admins review. A standing pool (not edition-scoped),
 open anytime. `app/Modules/Academy/MemberProposal/`:
 
-- **Member-facing** (guard `member`, implicit ownership): `POST /api/academy/proposals` (name, email,
-  optional reason), `GET /api/academy/proposals` (own only), `DELETE /api/academy/proposals/{proposal}`
-  (withdraw own pending). Creating rejects an email that is already a member or already has a pending
-  proposal.
+- **Member-facing** (guard `member`, implicit ownership): `POST /api/academy/proposals` (required `name`
+  + `email`; optional `position`, `company`, `phone`, `reason`), `GET /api/academy/proposals` (own only),
+  `DELETE /api/academy/proposals/{proposal}` (withdraw own pending). Creating rejects an email that is
+  already a member or already has a pending proposal, and is capped at a **per-member lifetime limit**
+  (`config('academy.max_proposals_per_member')`, default 5 — every proposal the member has ever made
+  counts) → `422` on the `proposals` key once reached.
 - **Admin-facing** (`auth:sanctum` + the `memberProposals` permission via `MemberProposalPolicy`):
   `GET /api/admin/member-proposals` (filter `?status=`), `GET /{memberProposal}`,
   `POST /{memberProposal}/approve`, `POST /{memberProposal}/reject` (both accept an optional `note`).

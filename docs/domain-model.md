@@ -272,16 +272,19 @@ proposal, made by a member, to add a future academy member. Not edition-scoped (
 | Field | Notes |
 | --- | --- |
 | `proposed_by_member_id` | FK → Member (`cascadeOnDelete`) — the proposer |
-| `name`, `email` | the proposed person |
+| `name`, `email` | the proposed person (required) |
+| `position`, `company`, `phone` | nullable — the proposed person's contact/identity details (*functie* / *firma* / *nr. telefon*) |
 | `reason` | nullable — the proposer's justification |
 | `status` | `MemberProposalStatus` enum — `pending` \| `approved` \| `rejected` |
 | `member_id` | nullable FK → Member — the invited Member created on approval |
 | `reviewed_by_user_id` | nullable FK → User — the admin who reviewed |
 | `reviewed_at`, `review_note` | nullable — review metadata |
 
-Members submit/list/withdraw their own proposals (guard `member`, anytime); admins review under the
-`memberProposals` permission — **approving creates an invited Member** (reusing `CreateMemberAction`),
-feeding the invitation flow. See [access-control.md](access-control.md#2d-member-proposals).
+Members submit/list/withdraw their own proposals (guard `member`, anytime), subject to a **per-member
+lifetime cap** (`config('academy.max_proposals_per_member')`, default 5 — counts every proposal the
+member has ever made, any status); admins review under the `memberProposals` permission — **approving
+creates an invited Member** (reusing `CreateMemberAction`, from `name` + `email` only), feeding the
+invitation flow. See [access-control.md](access-control.md#2d-member-proposals).
 
 **MagicLinkToken** — `app/Modules/Auth/MagicLink/Model/MagicLinkToken.php` (guard-agnostic; see the
 Behavioural modules note).

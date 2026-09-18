@@ -21,18 +21,36 @@ function actAsMember(): Member
     return $member;
 }
 
-it('lets a member propose a future member', function (): void {
+it('lets a member propose a future member with contact details', function (): void {
     actAsMember();
 
     postJson('/api/academy/proposals', [
         'name' => 'Ioana Munteanu',
         'email' => 'ioana@example.test',
+        'position' => 'Producer',
+        'company' => 'Studio Nord',
+        'phone' => '+40 720 000 000',
         'reason' => 'Respected producer.',
     ])->assertStatus(201)
         ->assertJsonPath('data.status', 'pending')
-        ->assertJsonPath('data.email', 'ioana@example.test');
+        ->assertJsonPath('data.email', 'ioana@example.test')
+        ->assertJsonPath('data.position', 'Producer')
+        ->assertJsonPath('data.company', 'Studio Nord')
+        ->assertJsonPath('data.phone', '+40 720 000 000');
 
     expect(MemberProposal::query()->where('email', 'ioana@example.test')->exists())->toBeTrue();
+});
+
+it('enforces the per-member lifetime cap on proposals', function (): void {
+    config(['academy.max_proposals_per_member' => 2]);
+    $member = actAsMember();
+    MemberProposal::factory()->count(2)->create(['proposed_by_member_id' => $member->id]);
+
+    postJson('/api/academy/proposals', ['name' => 'Over Limit', 'email' => 'over@example.test'])
+        ->assertStatus(422)
+        ->assertJsonValidationErrorFor('proposals');
+
+    expect(MemberProposal::query()->where('email', 'over@example.test')->exists())->toBeFalse();
 });
 
 it('lists only the proposing member\'s own proposals', function (): void {

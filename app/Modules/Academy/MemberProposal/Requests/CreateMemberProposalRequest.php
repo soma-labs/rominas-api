@@ -22,6 +22,9 @@ class CreateMemberProposalRequest extends FormRequest
         return [
             'name' => 'required|string',
             'email' => 'required|email',
+            'position' => 'sometimes|nullable|string',
+            'company' => 'sometimes|nullable|string',
+            'phone' => 'sometimes|nullable|string',
             'reason' => 'sometimes|nullable|string',
         ];
     }

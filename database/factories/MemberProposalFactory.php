@@ -25,6 +25,9 @@ class MemberProposalFactory extends Factory
             'proposed_by_member_id' => Member::factory()->active(),
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
+            'position' => fake()->optional()->jobTitle(),
+            'company' => fake()->optional()->company(),
+            'phone' => fake()->optional()->phoneNumber(),
             'reason' => fake()->optional()->sentence(),
             'status' => MemberProposalStatus::Pending,
         ];

@@ -27,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureDeliveryServices();
         $this->configureScoring();
         $this->configureFraudMonitoring();
+        $this->configureAcademy();
     }
 
     /**
@@ -93,6 +94,17 @@ class AppServiceProvider extends ServiceProvider
 
                 return $detectors;
             });
+    }
+
+    /**
+     * Supply the member-proposal creation action with its per-member lifetime cap
+     * (config/academy.php `max_proposals_per_member`).
+     */
+    private function configureAcademy(): void
+    {
+        $this->app->when(\Rominas\Academy\MemberProposal\Actions\CreateMemberProposalAction::class)
+            ->needs('$maxProposalsPerMember')
+            ->give(static fn(): int => (int) config('academy.max_proposals_per_member'));
     }
 
     /**
