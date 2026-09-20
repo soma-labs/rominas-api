@@ -298,8 +298,10 @@ side effect of the `nominations_closed` transition): per-category or bulk (all c
 It may run — and re-run, replacing prior entries — only while the edition is `nominations_closed`; once
 voting opens the shortlist is locked.
 
-Points use the confirmed academy curve, `points = 6 − rank` (rank 1 → 5 pts … rank 5 → 1), owned by
-`Rominas\Scoring\RankPoints::forRank()` (also used by the `Scoring` module, reused by Voting).
+Points use the academy curve (client PHAZE 1), `points = 2 · (6 − rank)` (rank 1 → 10 pts, 2 → 8, 3 → 6,
+4 → 4, 5 → 2), owned by `Rominas\Scoring\RankPoints::forRank()` (also used by the `Scoring` module). The
+curve is a uniform 2× of the original 5/4/3/2/1, so it leaves the shortlist order untouched. Public ballots
+use the separate, shorter `Rominas\Scoring\PublicRankPoints` curve.
 Nominees are ordered points desc, ties broken by nominee id; genuine ties at the cutoff (and any other
 manual edit) are settled by admins via the **review/adjust flow**: `GET …/candidates` returns the full
 ranked candidate pool and `PUT …/shortlist` replaces a category's shortlist with the admin's final
@@ -374,9 +376,11 @@ Scoring iff `invalidation_batch_id` is null.
 
 Unique `(ballot_id, category_id, rank)` and `(ballot_id, category_id, nominee_type, nominee_id)`.
 `nominee()` is a `morphTo` via the app-wide morph map. Casting a ballot is a one-shot atomic submit
-(`SubmitBallotAction`): each included category must rank **all** of its shortlisted nominees exactly once
-(a full 1→N ordering, N = the category's shortlist size), and ≥1 category is required. The endpoints and
-the accountless flow are in [access-control.md](access-control.md#2f-public-voting).
+(`SubmitBallotAction`): each included category must rank **exactly 3** of its 5 shortlisted nominees in
+order of preference (client PHAZE 4; fewer only if the shortlist itself holds fewer than 3), and ≥1
+category is required. Public points use the `Rominas\Scoring\PublicRankPoints` curve (rank 1 → 10, 2 → 8,
+3 → 6). The ballot presents nominees **alphabetically** so the secret academy shortlist order never leaks.
+The endpoints and the accountless flow are in [access-control.md](access-control.md#2f-public-voting).
 
 ---
 
@@ -569,18 +573,28 @@ pointer entry rather than re-storing their detail.
   (`QueryBuilderSearchableTrait`, `QueryBuilderSortableTrait`).
 - **`Scoring`** (`app/Modules/Scoring/`) — the results engine; **computes on demand, persists nothing**
   (the future `Results` module owns the custodian-gated view/export and the publish-time snapshot). Per
-  category it re-tallies each shortlisted nominee's academy points (submitted `NominationRanking`s) and
-  public points (submitted, **non-cancelled** `BallotRanking`s — `->valid()`, excluding any ballot
-  cancelled by `FraudMonitoring`) via the `RankPoints` curve, **normalizes each class to a
-  share of that class's own category total** (so the two scales — dozens of academy members vs. thousands
-  of voters — become comparable), then weights by the **edition's own** `academy_vote_weight` /
-  `public_vote_weight` (default 60 / 40): `finalScore = 0.6·academyShare + 0.4·publicShare` (0..1).
-  Ranking uses an **exact integer key** (`wₐ·aᵢ·P + wₚ·pᵢ·A`) — never floats — with ties broken academy →
-  public → nominee id; a category with no public votes renormalizes to academy 100%. Weights live on the
-  edition; display precision in `config/scoring.php`.
-  `ScoreCalculator` (pure, DB-free) holds the maths; `ComputeCategoryScoresAction` /
-  `ComputeEditionScoresAction` wire the DB and cache per edition + status (inputs are frozen from
-  `voting_closed` onward). Guarded to `voting_closed` / `committee_review` / `results_published`.
+  category it re-tallies each shortlisted nominee's academy points (submitted `NominationRanking`s, via the
+  `RankPoints` curve) and public points (submitted, **non-cancelled** `BallotRanking`s — `->valid()`,
+  excluding any ballot cancelled by `FraudMonitoring` — via the `PublicRankPoints` curve), then hands them
+  to the configured **`ScoringAlgorithm`** (a `ScoringAlgorithm` interface, selected by
+  `config('scoring.algorithm')`, re-read per resolve):
+  - **`attributed`** (default — client PHAZE 3–7): maps each class's ranking to a fixed rank→score ladder
+    (academy by shortlist position → 200/150/100/75/50; public by public-points rank → 150/100/75/50/25,
+    academy-first tiebreak) and **adds** the two attributed scores. Highest total wins, ties broken by the
+    higher academy attributed score. The per-edition weights are baked into the ladders and ignored.
+  - **`share`** (`ScoreCalculator`): **normalizes each class to its share** of that class's category total
+    (so the two scales — dozens of academy members vs. thousands of voters — become comparable), then
+    weights by the **edition's own** `academy_vote_weight` / `public_vote_weight` (default 60 / 40):
+    `finalScore = 0.6·academyShare + 0.4·publicShare` (0..1). Ranking uses an **exact integer key**
+    (`wₐ·aᵢ·P + wₚ·pᵢ·A`) — never floats — ties broken academy → public → nominee id; a category with no
+    public votes renormalizes to academy 100%.
+
+  Both are pure and DB-free and return the same `NomineeScore` DTO (whose `academyShare` / `publicShare` /
+  `finalScore` fields carry 0..1 shares under `share`, or the discrete attributed scores + total under
+  `attributed`). `ComputeCategoryScoresAction` / `ComputeEditionScoresAction` wire the DB and cache per
+  edition + status (inputs are frozen from `voting_closed` onward). Weights live on the edition; the
+  algorithm choice and ladders live in `config/scoring.php`. Guarded to `voting_closed` / `committee_review`
+  / `results_published`.
 - **`Reporting`** (`app/Modules/Reporting/`) — general management statistics, **kept separate from
   final `Results`**; **read-only aggregation, persists nothing** (no table, no model). Its foundation is
   the `ReportInterface` (`Reports/`): every report exposes `key()` / `title()` / `columns()` and a
@@ -595,8 +609,8 @@ pointer entry rather than re-storing their detail.
   - **`NominationsPerEntityReport`** (`nominations-per-entity`) — count of submitted academy nomination
     picks per (category, entity). (The client's "nominations" and "academy votes" are one metric.)
   - **`PublicVotesPerEntityReport`** (`public-votes-per-entity`) — **rank-weighted** public points per
-    (category, entity) via the `RankPoints` curve (summed in PHP over per-rank counts, single-sourced),
-    submitted + `->valid()` only. A plain count is degenerate (every ballot ranks every nominee).
+    (category, entity) via the `PublicRankPoints` curve (summed in PHP over per-rank counts, single-sourced),
+    submitted + `->valid()` only. A plain count is less telling (the public ranks its 3 picks).
   - **`CancelledVotesPerDayReport`** (`cancelled-votes-per-day`) — invalidated ballots per UTC day.
   The **final ranking** ("clasament final") is served by the existing `Results` module, not duplicated
   here. Endpoints in [access-control.md](access-control.md); `reporting` permission (admin).

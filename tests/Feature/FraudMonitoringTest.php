@@ -215,9 +215,9 @@ it('excludes invalidated ballots from the public scoring tally', function (): vo
 
     $compute = app(ComputeCategoryScoresAction::class);
 
-    // Before: A scores rank-1 (5) + rank-3 (3) = 8 public points.
+    // Before: A scores rank-1 (10) + rank-3 (6) = 16 public points.
     $before = $compute->execute($edition, $category);
-    expect(fraudPublicPointsFor($before->nominees, $a->id))->toBe(8);
+    expect(fraudPublicPointsFor($before->nominees, $a->id))->toBe(16);
 
     app(InvalidateBallotsAction::class)->execute(
         $edition,
@@ -225,9 +225,9 @@ it('excludes invalidated ballots from the public scoring tally', function (): vo
         $actor,
     );
 
-    // After: only the first ballot counts, so A drops to 5 public points.
+    // After: only the first ballot counts, so A drops to 10 public points.
     $after = $compute->execute($edition, $category);
-    expect(fraudPublicPointsFor($after->nominees, $a->id))->toBe(5);
+    expect(fraudPublicPointsFor($after->nominees, $a->id))->toBe(10);
 });
 
 it('lists submitted ballots with a shared-ip fraud signal', function (): void {

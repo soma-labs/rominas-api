@@ -7,10 +7,17 @@ namespace Rominas\Scoring\DataTransferObjects;
 use Rominas\Catalog\Enums\NomineeType;
 
 /**
- * One nominee's computed standing within a category: the raw summed points on each side, each side's
- * normalized share (0..1) of its class total, the weighted `finalScore` (0..1), and the resulting
- * `position` (1 = winner). Shares and score are rounded for display only — the ordering was decided
- * on an exact integer key in {@see \Rominas\Scoring\Support\ScoreCalculator}.
+ * One nominee's computed standing within a category: the raw summed points on each side, two normalized
+ * class values, a combined `finalScore`, and the resulting `position` (1 = winner).
+ *
+ * The three normalized fields are algorithm-dependent (see `config('scoring.algorithm')`):
+ * - `share` ({@see \Rominas\Scoring\Support\ScoreCalculator}) — `academyShare` / `publicShare` are the
+ *   0..1 class shares and `finalScore` is the 0..1 weighted blend.
+ * - `attributed` ({@see \Rominas\Scoring\Support\AttributedScoreCalculator}) — `academyShare` /
+ *   `publicShare` carry the discrete academy / public attributed scores and `finalScore` their total
+ *   (whole points, NOT 0..1).
+ *
+ * `academyPoints` / `publicPoints` are always the raw summed points. Values are rounded for display only.
  */
 final class NomineeScore
 {

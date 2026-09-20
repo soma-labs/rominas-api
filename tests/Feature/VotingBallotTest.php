@@ -71,34 +71,51 @@ function issuedBallot(Edition $edition, string $token): Ballot
 
 it('loads the shortlist ballot for a valid token', function (): void {
     $edition = openVotingEdition();
-    $artists = Artist::factory()->count(3)->create();
+    $artists = Artist::factory()->count(5)->create();
     $category = categoryWithShortlist($edition, $artists->pluck('id')->all());
     issuedBallot($edition, 'valid-token');
 
+    // The voter sees all five shortlisted nominees (they pick three of them).
     getJson('/api/voting/ballot?token=valid-token')
         ->assertStatus(200)
         ->assertJsonPath('data.status', 'issued')
         ->assertJsonPath('data.categories.0.id', $category->id)
-        ->assertJsonCount(3, 'data.categories.0.nominees');
+        ->assertJsonCount(5, 'data.categories.0.nominees');
 });
 
-it('casts a full ranking and consumes the link', function (): void {
+it('presents the shortlist nominees in alphabetical order', function (): void {
     $edition = openVotingEdition();
-    $artists = Artist::factory()->count(3)->create();
+    $charlie = Artist::factory()->create(['name' => 'Charlie']);
+    $alice = Artist::factory()->create(['name' => 'Alice']);
+    $bob = Artist::factory()->create(['name' => 'Bob']);
+    // Seed the shortlist in a non-alphabetical position order to prove the resource re-sorts.
+    categoryWithShortlist($edition, [$charlie->id, $bob->id, $alice->id]);
+    issuedBallot($edition, 'valid-token');
+
+    getJson('/api/voting/ballot?token=valid-token')
+        ->assertStatus(200)
+        ->assertJsonPath('data.categories.0.nominees.0.nominee.name', 'Alice')
+        ->assertJsonPath('data.categories.0.nominees.1.nominee.name', 'Bob')
+        ->assertJsonPath('data.categories.0.nominees.2.nominee.name', 'Charlie');
+});
+
+it('casts a three-of-five ballot and consumes the link', function (): void {
+    $edition = openVotingEdition();
+    $artists = Artist::factory()->count(5)->create();
     $category = categoryWithShortlist($edition, $artists->pluck('id')->all());
     $ballot = issuedBallot($edition, 'valid-token');
 
     postJson('/api/voting/ballot', [
         'token' => 'valid-token',
         'categories' => [
-            ['category_id' => $category->id, 'nominees' => [$artists[2]->id, $artists[0]->id, $artists[1]->id]],
+            ['category_id' => $category->id, 'nominees' => [$artists[3]->id, $artists[0]->id, $artists[2]->id]],
         ],
     ])->assertStatus(200)->assertJsonPath('success', true);
 
     expect(BallotRanking::query()->where('ballot_id', $ballot->id)->count())->toBe(3);
     // Rank order follows submission order (index 0 = rank 1).
     expect(BallotRanking::query()->where('ballot_id', $ballot->id)->where('rank', 1)->value('nominee_id'))
-        ->toBe($artists[2]->id);
+        ->toBe($artists[3]->id);
 
     $ballot->refresh();
     expect($ballot->status)->toBe(BallotStatus::Submitted);
@@ -106,9 +123,9 @@ it('casts a full ranking and consumes the link', function (): void {
     expect($ballot->ip_hash)->not->toBeNull();
 });
 
-it('rejects a partial ranking that omits a shortlisted nominee', function (): void {
+it('rejects picking fewer than three nominees', function (): void {
     $edition = openVotingEdition();
-    $artists = Artist::factory()->count(3)->create();
+    $artists = Artist::factory()->count(5)->create();
     $category = categoryWithShortlist($edition, $artists->pluck('id')->all());
     issuedBallot($edition, 'valid-token');
 
@@ -122,9 +139,25 @@ it('rejects a partial ranking that omits a shortlisted nominee', function (): vo
     expect(BallotRanking::query()->count())->toBe(0);
 });
 
+it('rejects picking more than three nominees', function (): void {
+    $edition = openVotingEdition();
+    $artists = Artist::factory()->count(5)->create();
+    $category = categoryWithShortlist($edition, $artists->pluck('id')->all());
+    issuedBallot($edition, 'valid-token');
+
+    postJson('/api/voting/ballot', [
+        'token' => 'valid-token',
+        'categories' => [
+            ['category_id' => $category->id, 'nominees' => [$artists[0]->id, $artists[1]->id, $artists[2]->id, $artists[3]->id]],
+        ],
+    ])->assertStatus(422)->assertJsonValidationErrorFor('categories.0.nominees');
+
+    expect(BallotRanking::query()->count())->toBe(0);
+});
+
 it('rejects a nominee that is not on the shortlist', function (): void {
     $edition = openVotingEdition();
-    $artists = Artist::factory()->count(3)->create();
+    $artists = Artist::factory()->count(5)->create();
     $category = categoryWithShortlist($edition, $artists->pluck('id')->all());
     $outsider = Artist::factory()->create();
     issuedBallot($edition, 'valid-token');
@@ -139,7 +172,7 @@ it('rejects a nominee that is not on the shortlist', function (): void {
 
 it('rejects a category that is not in the edition', function (): void {
     $edition = openVotingEdition();
-    $artists = Artist::factory()->count(3)->create();
+    $artists = Artist::factory()->count(5)->create();
     categoryWithShortlist($edition, $artists->pluck('id')->all());
     issuedBallot($edition, 'valid-token');
     // A category on a different (archived) edition — archived keeps the voting edition the sole active one.
@@ -165,14 +198,14 @@ it('requires at least one category', function (): void {
 
 it('is single-use: a submitted ballot cannot be loaded or resubmitted', function (): void {
     $edition = openVotingEdition();
-    $artists = Artist::factory()->count(3)->create();
+    $artists = Artist::factory()->count(5)->create();
     $category = categoryWithShortlist($edition, $artists->pluck('id')->all());
     issuedBallot($edition, 'valid-token');
 
     $payload = [
         'token' => 'valid-token',
         'categories' => [
-            ['category_id' => $category->id, 'nominees' => $artists->pluck('id')->all()],
+            ['category_id' => $category->id, 'nominees' => [$artists[0]->id, $artists[1]->id, $artists[2]->id]],
         ],
     ];
 

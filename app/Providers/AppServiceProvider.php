@@ -64,14 +64,35 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Supply the Scoring engine with its display precision (config/scoring.php). The class weights are
-     * per-edition (`editions.academy_vote_weight` / `public_vote_weight`) and passed at call time.
+     * Wire the Scoring engine. The active algorithm (config/scoring.php `algorithm`) is bound to the
+     * {@see \Rominas\Scoring\Support\ScoringAlgorithm} interface, and each implementation is fed its
+     * config (display precision; the attributed algorithm's ladders). The class weights are per-edition
+     * (`editions.academy_vote_weight` / `public_vote_weight`) and passed at call time. Config is read per
+     * make, so tests can override it via `config([...])`.
      */
     private function configureScoring(): void
     {
-        $this->app->when(\Rominas\Scoring\Support\ScoreCalculator::class)
+        $this->app->bind(
+            \Rominas\Scoring\Support\ScoringAlgorithm::class,
+            static fn($app): \Rominas\Scoring\Support\ScoringAlgorithm => config('scoring.algorithm') === 'share'
+                ? $app->make(\Rominas\Scoring\Support\ScoreCalculator::class)
+                : $app->make(\Rominas\Scoring\Support\AttributedScoreCalculator::class),
+        );
+
+        $this->app->when([
+            \Rominas\Scoring\Support\ScoreCalculator::class,
+            \Rominas\Scoring\Support\AttributedScoreCalculator::class,
+        ])
             ->needs('$precision')
             ->give(static fn(): int => (int) config('scoring.precision'));
+
+        $this->app->when(\Rominas\Scoring\Support\AttributedScoreCalculator::class)
+            ->needs('$academyLadder')
+            ->give(static fn(): array => config('scoring.attributed.academy'));
+
+        $this->app->when(\Rominas\Scoring\Support\AttributedScoreCalculator::class)
+            ->needs('$publicLadder')
+            ->give(static fn(): array => config('scoring.attributed.public'));
     }
 
     /**

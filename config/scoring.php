@@ -18,12 +18,46 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Scoring algorithm
+    |--------------------------------------------------------------------------
+    |
+    | Selects how a category's nominees are normalized and ranked:
+    |
+    |   'attributed' — the client's formula (PHAZE 3–7): each class's ranking is
+    |                  mapped to a fixed rank→score ladder (weights baked in) and
+    |                  the two attributed scores are added. The per-edition class
+    |                  weights are ignored. This is the default.
+    |   'share'      — our per-category share × per-edition weight blend.
+    |
+    */
+
+    'algorithm' => env('SCORING_ALGORITHM', 'attributed'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Attributed-score ladders
+    |--------------------------------------------------------------------------
+    |
+    | Used by the 'attributed' algorithm. Index 0 is rank 1. `academy` is keyed
+    | by shortlist position (PHAZE 3); `public` by the public-points ranking
+    | (PHAZE 6). Their relative magnitudes bake in the class weighting.
+    |
+    */
+
+    'attributed' => [
+        'academy' => [200, 150, 100, 75, 50],
+        'public' => [150, 100, 75, 50, 25],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Display precision
     |--------------------------------------------------------------------------
     |
     | Decimal places kept when rounding the normalized shares and final score
-    | for storage/presentation. Ranking never uses these rounded values — it is
-    | decided on an exact integer key — so this is purely cosmetic.
+    | for storage/presentation. Under the 'share' algorithm ranking never uses
+    | these rounded values — it is decided on an exact integer key — so this is
+    | purely cosmetic.
     |
     */
 

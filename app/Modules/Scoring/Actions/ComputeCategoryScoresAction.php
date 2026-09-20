@@ -13,16 +13,18 @@ use Rominas\Categories\Model\Category;
 use Rominas\Editions\Enums\EditionStatus;
 use Rominas\Editions\Model\Edition;
 use Rominas\Scoring\DataTransferObjects\CategoryScore;
+use Rominas\Scoring\PublicRankPoints;
 use Rominas\Scoring\RankPoints;
-use Rominas\Scoring\Support\ScoreCalculator;
+use Rominas\Scoring\Support\ScoringAlgorithm;
 use Rominas\Voting\Model\BallotRanking;
 use Rominas\Voting\QueryBuilders\BallotQueryBuilder;
 
 /**
  * Computes one category's final result. The contested nominee set is the category's shortlist; each
- * nominee's academy and public points are re-tallied from the raw submitted rankings (the source of
- * truth, robust to any manual shortlist adjustment) with the {@see RankPoints} curve, then handed to
- * {@see ScoreCalculator} for the 60/40 weighting and ranking.
+ * nominee's academy points are re-tallied from the raw submitted rankings (the source of truth, robust to
+ * any manual shortlist adjustment) with the {@see RankPoints} curve, and public points from submitted
+ * ballots with the {@see PublicRankPoints} curve, then handed to the configured {@see ScoringAlgorithm}
+ * for normalization and ranking.
  *
  * Guard: only once public voting has closed (`voting_closed` onward) — before that the public side is
  * not final. Nothing is persisted; the result is computed on demand.
@@ -36,7 +38,7 @@ class ComputeCategoryScoresAction
     ];
 
     public function __construct(
-        private readonly ScoreCalculator $calculator,
+        private readonly ScoringAlgorithm $algorithm,
     ) {}
 
     public function execute(Edition $edition, Category $category): CategoryScore
@@ -51,7 +53,7 @@ class ComputeCategoryScoresAction
 
         return new CategoryScore(
             categoryId: $category->id,
-            nominees: $this->calculator->rank(
+            nominees: $this->algorithm->rank(
                 $this->tally($edition, $category),
                 $edition->academy_vote_weight,
                 $edition->public_vote_weight,
@@ -74,9 +76,10 @@ class ComputeCategoryScoresAction
     /**
      * Build the per-nominee tally for the category's shortlisted nominees, summing academy points from
      * submitted nominations and public points from submitted ballots. Nominees with no points on a side
-     * default to 0 there.
+     * default to 0 there. `academy_position` is the nominee's shortlist position (used by the attributed
+     * algorithm; ignored by the share algorithm).
      *
-     * @return list<array{nominee_type: NomineeType, nominee_id: int, academy_points: int, public_points: int}>
+     * @return list<array{nominee_type: NomineeType, nominee_id: int, academy_points: int, public_points: int, academy_position: int}>
      */
     private function tally(Edition $edition, Category $category): array
     {
@@ -102,6 +105,7 @@ class ComputeCategoryScoresAction
                 'nominee_id' => (int) $entry->nominee_id,
                 'academy_points' => $academy[$key] ?? 0,
                 'public_points' => $public[$key] ?? 0,
+                'academy_position' => (int) $entry->position,
             ];
         }
 
@@ -124,7 +128,7 @@ class ComputeCategoryScoresAction
             ])
             ->all();
 
-        return $this->sumByNominee($picks);
+        return $this->sumByNominee($picks, RankPoints::forRank(...));
     }
 
     /**
@@ -143,20 +147,21 @@ class ComputeCategoryScoresAction
             ])
             ->all();
 
-        return $this->sumByNominee($picks);
+        return $this->sumByNominee($picks, PublicRankPoints::forRank(...));
     }
 
     /**
      * @param  list<array{type: NomineeType, id: int, rank: int}>  $picks
+     * @param  callable(int): int  $curve  maps a rank to its points
      * @return array<string, int>
      */
-    private function sumByNominee(array $picks): array
+    private function sumByNominee(array $picks, callable $curve): array
     {
         $totals = [];
 
         foreach ($picks as $pick) {
             $key = $pick['type']->value . ':' . $pick['id'];
-            $totals[$key] = ($totals[$key] ?? 0) + RankPoints::forRank($pick['rank']);
+            $totals[$key] = ($totals[$key] ?? 0) + $curve($pick['rank']);
         }
 
         return $totals;

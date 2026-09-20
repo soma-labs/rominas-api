@@ -123,10 +123,12 @@ under `/api/voting` (mirroring the public `academy/auth.php` group):
   the response never reveals eligibility or prior voting. **One link, ever, per email per edition**
   (a repeat request issues nothing). A closed voting window surfaces as a 422.
 - `GET /api/voting/ballot?token=…` — load the ballot the token authorizes: the edition's shortlist to
-  rank, grouped by category.
+  rank, grouped by category, nominees presented **alphabetically** (the academy shortlist order stays
+  secret).
 - `POST /api/voting/ballot` — cast the ballot once (`{token, categories:[{category_id, nominees:[ids in
-  rank order]}]}`). Each included category must rank **all** its shortlisted nominees exactly once; ≥1
-  category required. On success the ranks are stored and the link is consumed (single-use, terminal).
+  rank order]}]}`). Each included category must rank **exactly 3** of its 5 shortlisted nominees in order
+  of preference (client PHAZE 4; fewer only if the shortlist holds fewer than 3); ≥1 category required. On
+  success the ranks are stored and the link is consumed (single-use, terminal).
 
 **Gating** mirrors the academy open-window pattern: `ResolveOpenVotingEditionAction` requires the active
 edition to be `voting_open` with now inside `[voting_start_at, voting_end_at]`. Token resolution

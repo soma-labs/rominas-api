@@ -88,13 +88,17 @@ function scorableEditionAndCategory(EditionStatus $status = EditionStatus::Votin
     return [$edition, $category];
 }
 
+// These cases exercise the 'share' algorithm; the attributed ladders (the default) get their own case
+// below and their unit coverage in AttributedScoreCalculatorTest.
+beforeEach(fn() => config(['scoring.algorithm' => 'share']));
+
 it('blends academy and public into a weighted final result', function (): void {
     [$edition, $category] = scorableEditionAndCategory();
     [$a, $b, $c] = Artist::factory()->count(3)->create()->all();
 
     seedShortlistEntries($edition, $category, [$a->id, $b->id, $c->id]);
-    seedAcademyRanking($edition, $category, [$a->id, $b->id, $c->id]);   // academy: A=5 B=4 C=3
-    seedPublicRanking($edition, $category, [$b->id, $a->id, $c->id]);    // public:  B=5 A=4 C=3
+    seedAcademyRanking($edition, $category, [$a->id, $b->id, $c->id]);   // academy: A=10 B=8 C=6
+    seedPublicRanking($edition, $category, [$b->id, $a->id, $c->id]);    // public:  B=10 A=8 C=6
 
     $result = app(ComputeEditionScoresAction::class)->execute($edition);
 
@@ -102,11 +106,12 @@ it('blends academy and public into a weighted final result', function (): void {
 
     $nominees = $result->categories[0]->nominees;
 
-    // A wins on the 60% academy weight even though B led the public vote.
+    // A wins on the 60% academy weight even though B led the public vote. Both curves doubled uniformly,
+    // so the shares — and thus finalScore — are unchanged from the original 5/4/3 curves.
     expect($nominees[0]->nomineeId)->toBe($a->id)
         ->and($nominees[0]->position)->toBe(1)
-        ->and($nominees[0]->academyPoints)->toBe(5)
-        ->and($nominees[0]->publicPoints)->toBe(4)
+        ->and($nominees[0]->academyPoints)->toBe(10)
+        ->and($nominees[0]->publicPoints)->toBe(8)
         ->and($nominees[0]->finalScore)->toBe(round(5520 / 14400, 6))
         ->and($nominees[1]->nomineeId)->toBe($b->id)
         ->and($nominees[2]->nomineeId)->toBe($c->id);
@@ -135,16 +140,16 @@ it('counts only submitted nominations and ballots', function (): void {
     [$a, $b] = Artist::factory()->count(2)->create()->all();
 
     seedShortlistEntries($edition, $category, [$a->id, $b->id]);
-    seedAcademyRanking($edition, $category, [$a->id, $b->id]);              // submitted: A=5 B=4
+    seedAcademyRanking($edition, $category, [$a->id, $b->id]);              // submitted: A=10 B=8
     seedAcademyRanking($edition, $category, [$b->id, $a->id], submitted: false); // draft — ignored
-    seedPublicRanking($edition, $category, [$a->id, $b->id]);               // submitted: A=5 B=4
+    seedPublicRanking($edition, $category, [$a->id, $b->id]);               // submitted: A=10 B=8
     seedPublicRanking($edition, $category, [$b->id, $a->id], submitted: false);  // unsubmitted — ignored
 
     $nominees = app(ComputeEditionScoresAction::class)->execute($edition)->categories[0]->nominees;
 
     expect($nominees[0]->nomineeId)->toBe($a->id)
-        ->and($nominees[0]->academyPoints)->toBe(5)
-        ->and($nominees[0]->publicPoints)->toBe(5);
+        ->and($nominees[0]->academyPoints)->toBe(10)
+        ->and($nominees[0]->publicPoints)->toBe(10);
 });
 
 it('renormalizes to academy alone when a category has no public votes', function (): void {
@@ -176,4 +181,28 @@ it('refuses to score before public voting has closed', function (): void {
 
     expect(fn() => app(ComputeEditionScoresAction::class)->execute($edition))
         ->toThrow(ValidationException::class);
+});
+
+it('scores via the client attributed ladders (the default algorithm)', function (): void {
+    config(['scoring.algorithm' => 'attributed']);
+    [$edition, $category] = scorableEditionAndCategory();
+    [$a, $b, $c] = Artist::factory()->count(3)->create()->all();
+
+    // Academy attributed by shortlist position: A=200 (pos 1), B=150, C=100.
+    seedShortlistEntries($edition, $category, [$a->id, $b->id, $c->id]);
+    // Public: B=10 A=8 C=6 → public attributed B=150, A=100, C=75.
+    seedPublicRanking($edition, $category, [$b->id, $a->id, $c->id]);
+
+    $nominees = app(ComputeEditionScoresAction::class)->execute($edition)->categories[0]->nominees;
+
+    // A (200+100) ties B (150+150) at 300, but wins on the higher academy attributed score (PHAZE 7).
+    expect($nominees[0]->nomineeId)->toBe($a->id)
+        ->and($nominees[0]->position)->toBe(1)
+        ->and($nominees[0]->academyShare)->toBe(200.0)
+        ->and($nominees[0]->publicShare)->toBe(100.0)
+        ->and($nominees[0]->finalScore)->toBe(300.0)
+        ->and($nominees[1]->nomineeId)->toBe($b->id)
+        ->and($nominees[1]->finalScore)->toBe(300.0)
+        ->and($nominees[2]->nomineeId)->toBe($c->id)
+        ->and($nominees[2]->finalScore)->toBe(175.0);
 });

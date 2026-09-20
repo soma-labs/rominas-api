@@ -310,14 +310,14 @@ it('sums rank-weighted public points per entity, excluding cancelled ballots', f
     $category = reportingCategory($edition, 'Best Song');
     $artist = Artist::factory()->create(['name' => 'Chart Topper']);
 
-    reportingPublicVoteFor($edition, $category, $artist, rank: 1);                    // 5 pts
-    reportingPublicVoteFor($edition, $category, $artist, rank: 2);                    // 4 pts
+    reportingPublicVoteFor($edition, $category, $artist, rank: 1);                    // 10 pts
+    reportingPublicVoteFor($edition, $category, $artist, rank: 2);                    // 8 pts
     reportingPublicVoteFor($edition, $category, $artist, rank: 1, invalidated: true); // excluded
 
     getJson('/api/admin/reports/public-votes-per-entity')
         ->assertStatus(200)
         ->assertJsonPath('data.rows.0.entity', 'Chart Topper')
-        ->assertJsonPath('data.rows.0.points', 9)
+        ->assertJsonPath('data.rows.0.points', 18)
         ->assertJsonCount(1, 'data.rows');
 });
 

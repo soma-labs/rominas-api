@@ -9,6 +9,7 @@ use Illuminate\Validation\ValidationException;
 use Rominas\Academy\Shortlist\Model\ShortlistEntry;
 use Rominas\Categories\Model\Category;
 use Rominas\Editions\Model\Edition;
+use Rominas\Scoring\PublicRankPoints;
 use Rominas\Voting\DataTransferObjects\BallotSubmissionData;
 use Rominas\Voting\DataTransferObjects\CategoryVoteData;
 use Rominas\Voting\Enums\BallotStatus;
@@ -18,9 +19,10 @@ use Rominas\Voting\Support\VoterHasher;
 
 /**
  * Casts a public voter's one-shot ballot. Resolves the link token (must be an unused ballot for the open
- * voting edition), then validates every included category: it must belong to the edition and rank ALL of
- * that category's shortlisted nominees, each exactly once (a full 1→N ordering, where N is the category's
- * actual shortlist size — which may be fewer than 5). At least one category must be voted.
+ * voting edition), then validates every included category: it must belong to the edition and rank exactly
+ * {@see PublicRankPoints::RANKS} (3) distinct nominees drawn from that category's shortlist, in order of
+ * preference (PHAZE 4) — or all of them if the shortlist has fewer than 3. At least one category must be
+ * voted.
  *
  * On success the ranks are persisted and the ballot is marked `submitted` (terminal, single-use) with the
  * submitter's hashed IP, all in one transaction. Points are not computed here — Scoring derives them later.
@@ -117,14 +119,17 @@ class SubmitBallotAction
 
         $submitted = $vote->nomineeIds;
 
-        // Must be a full ranking of exactly the shortlist: same size, distinct, and the same id set.
-        $sameSize = count($submitted) === $shortlist->count();
-        $distinct = count(array_unique($submitted)) === count($submitted);
-        $sameSet = $this->sortedInts($submitted) === $this->sortedInts(array_keys($entriesByNomineeId));
+        // Must be exactly N distinct picks from the shortlist, in order (PHAZE 4): N = 3, or the whole
+        // shortlist if it holds fewer than 3.
+        $required = min(PublicRankPoints::RANKS, $shortlist->count());
 
-        if (! $sameSize || ! $distinct || ! $sameSet) {
+        $rightCount = count($submitted) === $required;
+        $distinct = count(array_unique($submitted)) === count($submitted);
+        $onShortlist = array_diff($submitted, array_keys($entriesByNomineeId)) === [];
+
+        if (! $rightCount || ! $distinct || ! $onShortlist) {
             throw ValidationException::withMessages([
-                'categories' => "La categoria „{$category->name}” trebuie să clasezi toți nominalizații din lista scurtă, fiecare o singură dată.",
+                'categories' => "La categoria „{$category->name}” trebuie să clasezi exact {$required} nominalizați din lista scurtă, în ordinea preferinței, fiecare o singură dată.",
             ]);
         }
 
@@ -133,16 +138,5 @@ class SubmitBallotAction
             'entriesByNomineeId' => $entriesByNomineeId,
             'nomineeIds' => $submitted,
         ];
-    }
-
-    /**
-     * @param  list<int>  $ids
-     * @return list<int>
-     */
-    private function sortedInts(array $ids): array
-    {
-        sort($ids);
-
-        return $ids;
     }
 }

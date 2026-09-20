@@ -6,17 +6,17 @@ namespace Rominas\Reporting\Reports;
 
 use Rominas\Reporting\DataTransferObjects\ReportParameters;
 use Rominas\Reporting\Support\EntityLabeler;
-use Rominas\Scoring\RankPoints;
+use Rominas\Scoring\PublicRankPoints;
 use Rominas\Voting\Enums\BallotStatus;
 use Rominas\Voting\Model\BallotRanking;
 
 /**
  * Each entity's public "vote weight" per category: the rank-weighted sum of the public rankings on
- * submitted, non-cancelled ballots, using the {@see RankPoints} curve (rank 1 = 5 pts … 5 = 1). A plain
- * count would be meaningless — every ballot ranks every shortlisted nominee — so points are what
+ * submitted, non-cancelled ballots, using the public {@see PublicRankPoints} curve (rank 1 = 10 pts,
+ * 2 = 8, 3 = 6). A plain count would be less telling — the public ranks its 3 picks — so points are what
  * differentiate entities. Fraud-cancelled ballots are excluded; optionally narrowed to a `submitted_at`
  * window. Points are accumulated in PHP over the per-(entity, rank) counts so the curve stays
- * single-sourced in `RankPoints`.
+ * single-sourced in `PublicRankPoints`.
  */
 final class PublicVotesPerEntityReport implements ReportInterface
 {
@@ -78,7 +78,7 @@ final class PublicVotesPerEntityReport implements ReportInterface
                 'value' => 0,
             ];
 
-            $points[$key]['value'] += RankPoints::forRank((int) $row->vote_rank) * (int) $row->n;
+            $points[$key]['value'] += PublicRankPoints::forRank((int) $row->vote_rank) * (int) $row->n;
         }
 
         $entries = array_values($points);

@@ -29,8 +29,11 @@ use Rominas\Scoring\DataTransferObjects\NomineeScore;
  *
  * The class weights are per-edition (`editions.academy_vote_weight` / `public_vote_weight`), so they are
  * passed to {@see rank()} rather than fixed on the instance; only display precision is instance state.
+ *
+ * This is the `share` scoring algorithm; {@see NomineeScore}'s `academyShare` / `publicShare` are the 0..1
+ * class shares and `finalScore` is the 0..1 weighted blend. The `academy_position` tally key is unused here.
  */
-final class ScoreCalculator
+final class ScoreCalculator implements ScoringAlgorithm
 {
     public function __construct(
         private readonly int $precision,
@@ -39,7 +42,7 @@ final class ScoreCalculator
     /**
      * Rank a category's nominees best-first, assigning positions 1..n.
      *
-     * @param  list<array{nominee_type: \Rominas\Catalog\Enums\NomineeType, nominee_id: int, academy_points: int, public_points: int}>  $tallies
+     * @param  list<array{nominee_type: \Rominas\Catalog\Enums\NomineeType, nominee_id: int, academy_points: int, public_points: int, academy_position: int}>  $tallies
      * @return list<NomineeScore>
      */
     public function rank(array $tallies, int $academyWeight, int $publicWeight): array
@@ -60,8 +63,8 @@ final class ScoreCalculator
             $academyPoints = $tally['academy_points'];
             $publicPoints = $tally['public_points'];
 
-            $academyShare = $academyTotal > 0 ? $academyPoints / $academyTotal : 0.0;
-            $publicShare = $publicTotal > 0 ? $publicPoints / $publicTotal : 0.0;
+            $academyShare = $this->normalize($academyPoints, $academyTotal);
+            $publicShare = $this->normalize($publicPoints, $publicTotal);
 
             if ($publicTotal === 0) {
                 // No public votes → the public weight is void; academy alone decides (order by academyShare).
@@ -118,5 +121,14 @@ final class ScoreCalculator
         }
 
         return $scores;
+    }
+
+    /**
+     * Normalize a nominee's points to its share (0..1) of the class's category total. A zero total (the
+     * class had no votes) yields 0 — the caller's edge-case handling renormalizes onto the other class.
+     */
+    private function normalize(int $points, int $classTotal): float
+    {
+        return $classTotal > 0 ? $points / $classTotal : 0.0;
     }
 }

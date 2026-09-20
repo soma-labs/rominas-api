@@ -14,8 +14,9 @@ use Rominas\Voting\Model\Ballot;
 
 /**
  * The voting ballot payload: the edition, the ballot status, and each category's shortlisted nominees the
- * voter ranks (grouped by category, ordered by shortlist position). Nominees are flattened to
- * `{id, name, slug}`, matching ShortlistEntryResource.
+ * voter ranks (grouped by category). Nominees are presented in ALPHABETICAL order by name (PHAZE 4) so the
+ * public ballot never leaks the secret academy shortlist order; unresolved nominees sort last. Nominees
+ * are flattened to `{id, name, slug}`, matching ShortlistEntryResource.
  */
 class BallotResource extends JsonResource
 {
@@ -45,15 +46,20 @@ class BallotResource extends JsonResource
             $first = $entries->first();
             $category = $first->category;
 
+            // Alphabetical by nominee name (PHAZE 4); unresolved nominees sort last. Never expose the
+            // academy shortlist position — that ranking stays secret until results.
+            $ordered = $entries
+                ->sortBy(fn(ShortlistEntry $entry): string => $entry->nominee->name ?? "\u{FFFF}")
+                ->values();
+
             $nominees = [];
-            foreach ($entries as $entry) {
+            foreach ($ordered as $entry) {
                 /** @var object{id: int, name: string, slug: string}|null $nominee */
                 $nominee = $entry->nominee;
 
                 $nominees[] = [
                     'nominee_type' => $entry->nominee_type->value,
                     'nominee_id' => $entry->nominee_id,
-                    'position' => $entry->position,
                     'nominee' => $nominee === null ? null : [
                         'id' => $nominee->id,
                         'name' => $nominee->name,
