@@ -23,10 +23,15 @@ class NominationRankingResource extends JsonResource
 
         /** @var object{id: int, name: string, slug: string}|null $nominee */
         $nominee = $ranking->nominee;
+        $submission = $ranking->nomineeSubmission;
 
         return [
             'rank' => $ranking->rank,
             'nominee_type' => $ranking->nominee_type->value,
+            // The name the member typed, and its reconciliation state.
+            'raw_name' => $submission?->raw_name,
+            'submission_status' => $submission?->status->value,
+            // Populated once the typed name has been reconciled to a canonical Catalog entity.
             'nominee_id' => $ranking->nominee_id,
             'nominee' => $nominee === null ? null : [
                 'id' => $nominee->id,

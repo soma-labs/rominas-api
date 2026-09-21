@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Rominas\Catalog\Enums\NomineeType;
+use Rominas\Catalog\NomineeSubmission\Model\NomineeSubmission;
 use Rominas\Categories\Model\Category;
 
 /**
@@ -24,6 +25,7 @@ use Rominas\Categories\Model\Category;
     'nomination_id',
     'category_id',
     'rank',
+    'nominee_submission_id',
     'nominee_type',
     'nominee_id',
 ])]
@@ -57,6 +59,16 @@ class NominationRanking extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    /**
+     * The staged free-text submission this pick was typed as; reconciling it backfills `nominee_id`.
+     *
+     * @return BelongsTo<NomineeSubmission, $this>
+     */
+    public function nomineeSubmission(): BelongsTo
+    {
+        return $this->belongsTo(NomineeSubmission::class);
     }
 
     /**

@@ -52,6 +52,7 @@ Route::middleware(['auth:sanctum', 'audit'])->prefix('/admin')->name('api.admin.
     Route::prefix('/editions')->name('editions.')->group(__DIR__ . '/api/admin/shortlist.php');
     Route::prefix('/editions')->name('editions.')->group(__DIR__ . '/api/admin/results.php');
     Route::prefix('/editions')->name('editions.')->group(__DIR__ . '/api/admin/fraud-monitoring.php');
+    Route::prefix('/editions')->name('editions.')->group(__DIR__ . '/api/admin/nominee-submissions.php');
     Route::prefix('/categories')->name('categories.')->group(__DIR__ . '/api/admin/categories.php');
     Route::prefix('/members')->name('members.')->group(__DIR__ . '/api/admin/members.php');
     Route::prefix('/member-proposals')->name('member-proposals.')->group(__DIR__ . '/api/admin/member-proposals.php');

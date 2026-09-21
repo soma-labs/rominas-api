@@ -11,6 +11,7 @@ use Rominas\Academy\Nomination\Model\NominationRanking;
 use Rominas\Academy\Nomination\QueryBuilders\NominationQueryBuilder;
 use Rominas\Academy\Shortlist\Model\ShortlistEntry;
 use Rominas\Catalog\Enums\NomineeType;
+use Rominas\Catalog\NomineeSubmission\Model\NomineeSubmission;
 use Rominas\Categories\Model\Category;
 use Rominas\Editions\Enums\EditionStatus;
 use Rominas\Editions\Model\Edition;
@@ -76,6 +77,16 @@ class GenerateCategoryShortlistAction
                 'status' => 'Shortlists can only be generated while nominations are closed and before voting opens.',
             ]);
         }
+
+        // Free-text nominees must all be reconciled to canonical Catalog entities first — an unresolved
+        // name would otherwise be silently dropped from the tally, splitting or losing that nominee's points.
+        $pending = NomineeSubmission::query()->forEdition($edition)->pending()->count();
+
+        if ($pending > 0) {
+            throw ValidationException::withMessages([
+                'nominee_submissions' => "{$pending} free-text nomination(s) still need reconciliation before shortlists can be generated.",
+            ]);
+        }
     }
 
     /**
@@ -89,6 +100,7 @@ class GenerateCategoryShortlistAction
         $rankings = NominationRanking::query()
             ->whereHas('nomination', fn(NominationQueryBuilder $query) => $query->forEdition($edition)->submitted())
             ->where('category_id', '=', $category->id)
+            ->whereNotNull('nominee_id')
             ->get(['nominee_type', 'nominee_id', 'rank']);
 
         /** @var array<string, array{nominee_type: NomineeType, nominee_id: int, points: int}> $totals */

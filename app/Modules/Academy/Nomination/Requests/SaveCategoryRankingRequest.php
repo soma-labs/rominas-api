@@ -18,11 +18,12 @@ class SaveCategoryRankingRequest extends FormRequest
      */
     public function rules(): array
     {
-        // An empty array clears the category. Nominee existence + type are validated in the action,
-        // which has the Category (and thus its nominee_type) in hand.
+        // Members nominate by typing names (free text); each name is staged for admin reconciliation into
+        // a canonical Catalog entity. An empty array clears the category. `distinct` blocks exact repeats;
+        // the action additionally rejects names that normalize to the same entry (e.g. differing only in case).
         return [
             'nominees' => 'present|array|max:5',
-            'nominees.*' => 'integer|distinct',
+            'nominees.*' => 'string|distinct|min:1|max:255',
         ];
     }
 }

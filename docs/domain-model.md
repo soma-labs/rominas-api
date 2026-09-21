@@ -200,6 +200,32 @@ scoping). The `NomineeType` enum (see [Categories](#categories)) maps its slugs 
 > Type-specific scalar fields (e.g. Venue `city`, Album `release_year`) and inter-entity
 > relationships are intentionally deferred — add them when a concrete requirement lands.
 
+### NomineeSubmission (free-text reconciliation)
+
+`app/Modules/Catalog/NomineeSubmission/` — the staging area that turns the free text academy members type
+on the ballot into canonical Catalog entities. Because scoring and shortlisting tally by
+`(nominee_type, nominee_id)`, spelling/case variants of one name must collapse to a single Catalog row, so
+each typed name is deduplicated and reconciled once by an admin.
+
+| Field | Notes |
+| --- | --- |
+| `edition_id` | FK → Edition (`cascadeOnDelete`) |
+| `nominee_type` | `NomineeType` enum slug (the target Catalog type) |
+| `raw_name` | the name as first typed |
+| `normalized_name` | slug of `raw_name` — the dedup key |
+| `status` | `NomineeSubmissionStatus` — `pending` \| `resolved` \| `rejected` |
+| `resolved_nominee_id` | nullable Catalog row id once linked/created (morph type = `nominee_type`) |
+| `reviewed_by_user_id` | nullable FK → users (`nullOnDelete`) |
+| `reviewed_at` / `review_note` | nullable review metadata |
+
+Unique `(edition_id, nominee_type, normalized_name)` — one row per distinct name per type per edition, which
+also "remembers" a resolution for the rest of the edition (a later ballot typing the same name reuses the
+resolved row and gets `nominee_id` immediately). `hasMany` NominationRanking; `resolvedNominee()` is a
+`morphTo` on `(nominee_type, resolved_nominee_id)`. Reconciliation actions: `ResolveOrCreateNomineeSubmission`
+(ballot-side dedup), `SuggestCatalogMatches` (ranked match candidates), `LinkNomineeSubmission` (→ existing
+entity + backfill rankings), `CreateNomineeFromSubmission` (→ new entity), `RejectNomineeSubmission`. Admin
+API and the shortlist interlock: [access-control.md §2k](access-control.md#2k-nominee-reconciliation-the-nomineesubmission-module).
+
 ---
 
 ## Academy
@@ -255,14 +281,17 @@ Unique `(member_id, edition_id)`. `belongsTo` Member/Edition, `hasMany` rankings
 | --- | --- |
 | `nomination_id` | FK → Nomination (`cascadeOnDelete`) |
 | `category_id` | FK → Category (`cascadeOnDelete`) |
+| `nominee_submission_id` | FK → NomineeSubmission (nullable, `cascadeOnDelete`) — the free-text pick this rank was typed as |
 | `rank` | tinyint, 1 = top (order → points, later, in `Scoring`) |
 | `nominee_type` | `NomineeType` enum slug — the polymorphic morph alias |
-| `nominee_id` | the Catalog row id |
+| `nominee_id` | the Catalog row id — **nullable**, backfilled when the submission is reconciled |
 
-Unique `(nomination_id, category_id, rank)` and `(nomination_id, category_id, nominee_type,
-nominee_id)`. `nominee()` is a `morphTo` resolved via the **morph map** (`AppServiceProvider`, mapping
-each `NomineeType` slug → its Catalog model, so nominee rows store the slug not a FQN). Members rank
-from the **full Catalog** of the category's type; gating (open window) and the submit rule (every
+Unique `(nomination_id, category_id, rank)`, `(nomination_id, category_id, nominee_submission_id)` and
+`(nomination_id, category_id, nominee_type, nominee_id)`. `nominee()` is a `morphTo` resolved via the
+**morph map** (`AppServiceProvider`, mapping each `NomineeType` slug → its Catalog model, so nominee rows
+store the slug not a FQN); it is null until reconciliation. Members **type nominee names (free text)** —
+each name is staged as a [NomineeSubmission](#nomineesubmission-free-text-reconciliation) and the ranking
+points at it, carrying `nominee_id` = null while pending. Gating (open window) and the submit rule (every
 category has exactly 5) live in the Nomination actions — see the Academy nominations flow in
 [access-control.md](access-control.md#2c-ranked-nominations-the-nomination-module).
 

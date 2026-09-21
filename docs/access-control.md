@@ -250,6 +250,33 @@ Optional query inputs (shared by view + export): `edition_id` (defaults to the a
 `from` / `to` date window (applied to every vote report). Reports are read-only aggregations; see
 the [Reporting](domain-model.md#behavioural-modules-no-persistent-entities) domain notes.
 
+## 2k. Nominee reconciliation (the `NomineeSubmission` module)
+
+Academy members nominate by typing names (free text); each typed name is staged as a `NomineeSubmission`
+(deduplicated per edition + type) that an admin reconciles into a canonical Catalog entity before
+shortlists are generated. Authorization is the `nomineeSubmissions` permission, checked against the
+`NomineeSubmission` class (no id filtering — an admin sees the whole edition's queue). Granted to `admin`.
+
+Admin endpoints, nested under an edition (Sanctum-guarded):
+
+- `GET  /api/admin/editions/{edition}/nominee-submissions` (`can:viewAny,NomineeSubmission`) — the queue,
+  filterable by `?status=pending|resolved|rejected` and `?type=artist|band|…`; each row carries a
+  `ranking_count`.
+- `GET  /api/admin/editions/{edition}/nominee-submissions/{nomineeSubmission}` (`can:view,nomineeSubmission`) —
+  one submission; `?with_suggestions=1` adds ranked existing-catalog match candidates (exact normalized
+  match scores 100, the rest by string similarity).
+- `POST /api/admin/editions/{edition}/nominee-submissions/{nomineeSubmission}/link` (`can:update`) — resolve
+  to an existing Catalog entity (`{nominee_id}`); backfills `nominee_id` on every ranking that typed the name.
+- `POST /api/admin/editions/{edition}/nominee-submissions/{nomineeSubmission}/create` (`can:update`) —
+  materialize a **new** Catalog entity from the submission (optional corrected `{name}`) and link it. Refuses
+  if an entity with the same slug already exists (link instead).
+- `POST /api/admin/editions/{edition}/nominee-submissions/{nomineeSubmission}/reject` (`can:update`) — discard
+  junk/spam; leaves the rankings unresolved (surfaced by the shortlist-generation guard).
+
+Linking refuses (422) when it would list the same nominee twice on one member's ballot (two typed names that
+turn out to be the same act). **Interlock:** `Shortlist` generation refuses (422) while any submission for the
+edition is still pending — see [edition-lifecycle](edition-lifecycle.md).
+
 ## 2. Admin login (the `Auth` module)
 
 `POST /api/authenticate` (`Auth\Controllers\AuthController::authenticate`, `AuthenticateRequest`):
@@ -277,10 +304,10 @@ with the fraud monitor (the `fraudMonitoring` permission; see §2h). **`fraud_mo
 role whose sole right is that same vote review/cancellation.
 
 **Permissions** (`PermissionSeeder`) are resource-named: `editions`, `categories`, `members`,
-`memberProposals`, `shortlists`, `results`, `fraudMonitoring`, `reporting`, `audit`, `artists`, `bands`,
-`venues`, `songs`, `albums`, `taxonomies`, `taxonomyTerms` (plus `roles`, `permissions`).
-The `admin` role is granted the domain set (including `reporting`) **except `results`, `fraudMonitoring`
-and `audit`**; `custodian`
+`memberProposals`, `shortlists`, `results`, `fraudMonitoring`, `reporting`, `nomineeSubmissions`, `audit`,
+`artists`, `bands`, `venues`, `songs`, `albums`, `taxonomies`, `taxonomyTerms` (plus `roles`, `permissions`).
+The `admin` role is granted the domain set (including `reporting` and `nomineeSubmissions`) **except
+`results`, `fraudMonitoring` and `audit`**; `custodian`
 is granted `results` + `fraudMonitoring`; `fraud_monitor` is granted `fraudMonitoring`; `audit` is granted
 to **no role**, so only `super_admin` reads the audit trail (it bypasses — §5; see §2i). User/role/permission
 management is currently `super_admin`-only.

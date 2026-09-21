@@ -73,7 +73,7 @@ class NominationsController
         $nomination = Nomination::query()
             ->forMember($member)
             ->forEdition($edition)
-            ->with('rankings.nominee')
+            ->with(['rankings.nominee', 'rankings.nomineeSubmission'])
             ->first();
 
         if ($nomination === null) {

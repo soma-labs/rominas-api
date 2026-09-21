@@ -6,8 +6,8 @@ use Laravel\Sanctum\Sanctum;
 use Rominas\Academy\Member\Model\Member;
 use Rominas\Academy\Nomination\Enums\NominationStatus;
 use Rominas\Academy\Nomination\Model\Nomination;
-use Rominas\Catalog\Artist\Model\Artist;
 use Rominas\Catalog\Enums\NomineeType;
+use Rominas\Catalog\NomineeSubmission\Model\NomineeSubmission;
 use Rominas\Categories\Model\Category;
 use Rominas\Editions\Enums\EditionStatus;
 use Rominas\Editions\Model\Edition;
@@ -40,11 +40,15 @@ function actingMember(): Member
 }
 
 /**
- * @return list<int>
+ * Distinct free-text nominee names, as a member would type them.
+ *
+ * @return list<string>
  */
-function artistIds(int $count = 5): array
+function nomineeNames(int $count = 5): array
 {
-    return Artist::factory()->count($count)->create()->pluck('id')->all();
+    return collect(range(1, $count))
+        ->map(fn(int $n): string => "Nominee {$n}")
+        ->all();
 }
 
 it('returns the ballot with every category and no persisted row when resuming', function (): void {
@@ -61,64 +65,85 @@ it('returns the ballot with every category and no persisted row when resuming', 
     expect(Nomination::query()->count())->toBe(0);
 });
 
-it('saves a category ranking as a draft with ranks following the submitted order', function (): void {
+it('saves a typed-in category ranking, staging each name as a pending submission', function (): void {
     $edition = openEdition();
     $category = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist]);
-    $ids = artistIds();
+    $names = nomineeNames();
     $member = actingMember();
 
-    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => $ids])
+    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => $names])
         ->assertStatus(200)
         ->assertJsonPath('data.status', 'draft')
         ->assertJsonPath('data.categories.0.complete', true)
-        ->assertJsonPath('data.categories.0.rankings.0.nominee_id', $ids[0])
-        ->assertJsonPath('data.categories.0.rankings.0.nominee.id', $ids[0]);
+        ->assertJsonPath('data.categories.0.rankings.0.raw_name', $names[0])
+        ->assertJsonPath('data.categories.0.rankings.0.submission_status', 'pending')
+        ->assertJsonPath('data.categories.0.rankings.0.nominee_id', null)
+        ->assertJsonPath('data.categories.0.rankings.0.nominee', null);
+
+    // One pending submission per typed name, deduplicated per edition/type.
+    expect(NomineeSubmission::query()->where('edition_id', $edition->id)->count())->toBe(5);
 
     $nomination = Nomination::query()->forMember($member)->firstOrFail();
-    $ordered = $nomination->rankings()->orderBy('rank')->pluck('nominee_id')->all();
-    expect($ordered)->toBe($ids);
+    $ordered = $nomination->rankings()->orderBy('rank')->with('nomineeSubmission')->get()
+        ->map(fn($ranking): string => $ranking->nomineeSubmission->raw_name)->all();
+    expect($ordered)->toBe($names);
 });
 
 it('replaces and reorders a category ranking on re-save', function (): void {
     $edition = openEdition();
     $category = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist]);
-    $ids = artistIds();
+    $names = nomineeNames();
     $member = actingMember();
 
-    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => $ids])->assertStatus(200);
-    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => array_reverse($ids)])->assertStatus(200);
+    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => $names])->assertStatus(200);
+    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => array_reverse($names)])->assertStatus(200);
 
     $nomination = Nomination::query()->forMember($member)->firstOrFail();
     expect($nomination->rankings()->count())->toBe(5);
-    expect($nomination->rankings()->orderBy('rank')->pluck('nominee_id')->all())->toBe(array_reverse($ids));
+    $ordered = $nomination->rankings()->orderBy('rank')->with('nomineeSubmission')->get()
+        ->map(fn($ranking): string => $ranking->nomineeSubmission->raw_name)->all();
+    expect($ordered)->toBe(array_reverse($names));
+
+    // Re-save reuses the same deduplicated submissions rather than creating new ones.
+    expect(NomineeSubmission::query()->where('edition_id', $edition->id)->count())->toBe(5);
 });
 
-it('rejects a non-existent nominee', function (): void {
+it('accepts free-text nominees that are not in the catalog', function (): void {
     $edition = openEdition();
     $category = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist]);
     actingMember();
 
-    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => [999999]])
+    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => ['A Brand New Act']])
+        ->assertStatus(200)
+        ->assertJsonPath('data.categories.0.rankings.0.raw_name', 'A Brand New Act');
+
+    expect(NomineeSubmission::query()->where('normalized_name', 'a-brand-new-act')->exists())->toBeTrue();
+});
+
+it('rejects two picks that normalize to the same nominee', function (): void {
+    $edition = openEdition();
+    $category = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist]);
+    actingMember();
+
+    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => ['Taylor Swift', 'taylor  swift']])
         ->assertStatus(422);
 });
 
-it('rejects a duplicate nominee', function (): void {
+it('rejects an exact duplicate nominee', function (): void {
     $edition = openEdition();
     $category = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist]);
-    $ids = artistIds();
     actingMember();
 
-    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => [$ids[0], $ids[0]]])
+    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => ['Same', 'Same']])
         ->assertStatus(422);
 });
 
 it('rejects more than five nominees', function (): void {
     $edition = openEdition();
     $category = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist]);
-    $ids = artistIds(6);
     actingMember();
 
-    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => $ids])
+    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => nomineeNames(6)])
         ->assertStatus(422);
 });
 
@@ -126,20 +151,18 @@ it('rejects a category that does not belong to the open edition', function (): v
     openEdition();
     $otherEdition = Edition::factory()->archived()->create();
     $category = Category::factory()->for($otherEdition)->create(['nominee_type' => NomineeType::Artist]);
-    $ids = artistIds();
     actingMember();
 
-    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => $ids])
+    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => nomineeNames()])
         ->assertStatus(422);
 });
 
 it('rejects saving when the edition status is not nominations_open', function (): void {
     $edition = openEdition(['status' => EditionStatus::Draft]);
     $category = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist]);
-    $ids = artistIds();
     actingMember();
 
-    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => $ids])
+    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => nomineeNames()])
         ->assertStatus(422);
 });
 
@@ -149,10 +172,9 @@ it('rejects saving when the clock is outside the nomination window', function ()
         'nominations_end_at' => now()->addWeek(),
     ]);
     $category = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist]);
-    $ids = artistIds();
     actingMember();
 
-    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => $ids])
+    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => nomineeNames()])
         ->assertStatus(422);
 });
 
@@ -162,7 +184,7 @@ it('fails submission when a category is incomplete', function (): void {
     Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist]);
     $member = actingMember();
 
-    putJson("/api/academy/nominations/categories/{$categoryA->id}", ['nominees' => artistIds()])->assertStatus(200);
+    putJson("/api/academy/nominations/categories/{$categoryA->id}", ['nominees' => nomineeNames()])->assertStatus(200);
 
     postJson('/api/academy/nominations/submit')->assertStatus(422);
 
@@ -174,7 +196,7 @@ it('submits when every category has exactly five nominees', function (): void {
     $category = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist]);
     $member = actingMember();
 
-    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => artistIds()])->assertStatus(200);
+    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => nomineeNames()])->assertStatus(200);
 
     postJson('/api/academy/nominations/submit')
         ->assertStatus(200)
@@ -189,13 +211,13 @@ it('submits when every category has exactly five nominees', function (): void {
 it('locks the ballot after submission', function (): void {
     $edition = openEdition();
     $category = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist]);
-    $ids = artistIds();
+    $names = nomineeNames();
     actingMember();
 
-    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => $ids])->assertStatus(200);
+    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => $names])->assertStatus(200);
     postJson('/api/academy/nominations/submit')->assertStatus(200);
 
-    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => $ids])->assertStatus(422);
+    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => $names])->assertStatus(422);
     postJson('/api/academy/nominations/submit')->assertStatus(422);
 });
 
@@ -205,8 +227,8 @@ it('keeps a single ballot per member and edition across saves', function (): voi
     $categoryB = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist]);
     $member = actingMember();
 
-    putJson("/api/academy/nominations/categories/{$categoryA->id}", ['nominees' => artistIds()])->assertStatus(200);
-    putJson("/api/academy/nominations/categories/{$categoryB->id}", ['nominees' => artistIds()])->assertStatus(200);
+    putJson("/api/academy/nominations/categories/{$categoryA->id}", ['nominees' => nomineeNames()])->assertStatus(200);
+    putJson("/api/academy/nominations/categories/{$categoryB->id}", ['nominees' => nomineeNames()])->assertStatus(200);
 
     expect(Nomination::query()->forMember($member)->count())->toBe(1);
 });
@@ -226,11 +248,10 @@ it('rejects an admin User token on the member nomination routes', function (): v
 it('resumes a saved draft after re-authenticating', function (): void {
     $edition = openEdition();
     $category = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist]);
-    $ids = artistIds();
     $member = Member::factory()->active()->create();
     Sanctum::actingAs($member, ['member'], 'member');
 
-    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => $ids])->assertStatus(200);
+    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => nomineeNames()])->assertStatus(200);
 
     // Simulate a fresh request/session for the same member.
     Sanctum::actingAs($member, ['member'], 'member');

@@ -120,6 +120,7 @@ class ComputeCategoryScoresAction
         $picks = NominationRanking::query()
             ->whereHas('nomination', fn(NominationQueryBuilder $query) => $query->forEdition($edition)->submitted())
             ->where('category_id', '=', $category->id)
+            ->whereNotNull('nominee_id')
             ->get(['nominee_type', 'nominee_id', 'rank'])
             ->map(fn(NominationRanking $ranking): array => [
                 'type' => $ranking->nominee_type,
