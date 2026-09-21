@@ -17,4 +17,18 @@ class NomineeNameNormalizer
     {
         return Str::slug($name);
     }
+
+    /**
+     * The normalized name split into its distinct word tokens. `Str::slug` already casefolds and joins
+     * words with "-", so the slug segments are the tokens: "Delia Matache" and "Matache Delia" both yield
+     * ["delia", "matache"]. This is what lets match scoring ignore word order.
+     *
+     * @return list<string>
+     */
+    public static function tokens(string $name): array
+    {
+        $slug = self::normalize($name);
+
+        return $slug === '' ? [] : explode('-', $slug);
+    }
 }

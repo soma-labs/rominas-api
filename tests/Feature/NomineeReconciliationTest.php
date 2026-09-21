@@ -214,6 +214,47 @@ it('surfaces the top catalog match as a suggestion', function (): void {
         ->assertJsonPath('data.suggestions.0.score', 100);
 });
 
+it('matches names regardless of word order and drops unrelated catalog rows', function (): void {
+    reconcileActingAsAdmin();
+    $edition = reconcileClosedEdition();
+    $category = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist]);
+    Artist::factory()->create(['name' => 'Delia Matache']);
+    Artist::factory()->create(['name' => 'Delia']);
+    Artist::factory()->create(['name' => 'Aurelian Temisan']);
+    // Typed last-name-first — the exact same person, in the other word order.
+    reconcileBallot($edition, $category, ['Matache Delia']);
+
+    $submission = NomineeSubmission::query()->firstOrFail();
+
+    getJson("/api/admin/editions/{$edition->id}/nominee-submissions/{$submission->id}?with_suggestions=1")
+        ->assertStatus(200)
+        // Same token set in any order scores a full 100, ahead of the partial "Delia".
+        ->assertJsonPath('data.suggestions.0.name', 'Delia Matache')
+        ->assertJsonPath('data.suggestions.0.score', 100)
+        ->assertJsonPath('data.suggestions.1.name', 'Delia')
+        // Unrelated name shares no token, so it is scored 0 and never surfaced.
+        ->assertJsonCount(2, 'data.suggestions');
+});
+
+it('tolerates typos when ranking suggestions', function (): void {
+    reconcileActingAsAdmin();
+    $edition = reconcileClosedEdition();
+    $category = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist]);
+    Artist::factory()->create(['name' => 'Delia Matache']);
+    Artist::factory()->create(['name' => 'Aurelian Temisan']);
+    // "Matace" drops the "h" — a single-character slip that should still match "Matache".
+    reconcileBallot($edition, $category, ['Delia Matace']);
+
+    $submission = NomineeSubmission::query()->firstOrFail();
+
+    $response = getJson("/api/admin/editions/{$edition->id}/nominee-submissions/{$submission->id}?with_suggestions=1")
+        ->assertStatus(200)
+        ->assertJsonPath('data.suggestions.0.name', 'Delia Matache')
+        ->assertJsonCount(1, 'data.suggestions');
+
+    expect($response->json('data.suggestions.0.score'))->toBeGreaterThan(90.0);
+});
+
 it('blocks shortlist generation while free-text submissions are pending, then allows it once resolved', function (): void {
     $admin = User::factory()->create();
     $edition = reconcileClosedEdition();
