@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
 use Rominas\Auth\Controllers\AuthController;
+use Rominas\Menu\Controllers\MenuController;
+use Rominas\Users\Controllers\UsersController;
 
 // Admin / management authentication (username + password → Sanctum token). Audited (login/logout).
 Route::post('/authenticate', [AuthController::class, 'authenticate'])
@@ -42,6 +44,10 @@ Route::prefix('/results')->name('api.results.')->group(__DIR__ . '/api/results.p
 // Admin / management API (Sanctum-guarded, per-concern files under routes/api/admin/).
 // ---------------------------------------------------------------------------
 Route::middleware(['auth:sanctum', 'audit'])->prefix('/admin')->name('api.admin.')->group(function (): void {
+    // The authenticated admin's own account, and their permission-filtered sidebar menu.
+    Route::get('/me', [UsersController::class, 'me'])->name('me');
+    Route::get('/menu', [MenuController::class, 'menu'])->name('menu');
+
     Route::prefix('/permissions')->name('permissions.')->group(__DIR__ . '/api/admin/permissions.php');
     Route::prefix('/roles')->name('roles.')->group(__DIR__ . '/api/admin/roles.php');
     Route::prefix('/users')->name('users.')->group(__DIR__ . '/api/admin/users.php');

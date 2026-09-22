@@ -48,6 +48,18 @@ class UsersController
         return new UserResource($user);
     }
 
+    /**
+     * The authenticated admin's own account, with roles and effective permissions — the
+     * management dashboard hydrates the current user from here after login.
+     */
+    public function me(Request $request): UserResource
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        return new UserResource($user->load(['roles', 'permissions']));
+    }
+
     public function create(CreateUserRequest $request, CreateUserAction $createUserAction): JsonResponse
     {
         $user = DB::transaction(
