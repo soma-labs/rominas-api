@@ -31,51 +31,6 @@ return [
             'label' => 'Overview',
             'url' => '/',
         ],
-        [
-            'id' => 'sidenav.access',
-            'label' => 'Access control',
-            'permission' => 'permissions',
-            'children' => [
-                [
-                    'id' => 'sidenav.users',
-                    'label' => 'Users',
-                    'url' => '/users',
-                    'permission' => 'permissions',
-                ],
-                [
-                    'id' => 'sidenav.roles',
-                    'label' => 'Roles',
-                    'url' => '/roles',
-                    'permission' => 'roles',
-                ],
-                [
-                    'id' => 'sidenav.permissions',
-                    'label' => 'Permissions',
-                    'url' => '/permissions',
-                    'permission' => 'permissions',
-                ],
-            ],
-        ],
-        [
-            'id' => 'sidenav.taxonomy',
-            'label' => 'Taxonomy',
-            'permission' => 'taxonomies',
-            'children' => [
-                [
-                    'id' => 'sidenav.taxonomies',
-                    'label' => 'Taxonomies',
-                    'url' => '/taxonomies',
-                    'permission' => 'taxonomies',
-                ],
-                [
-                    'id' => 'sidenav.taxonomy-terms',
-                    'label' => 'Terms',
-                    'url' => '/taxonomy-terms',
-                    'permission' => 'taxonomyTerms',
-                ],
-            ],
-        ],
-
         // ------------------------------------------------------------------
         // Domain modules. The admin pages for these arrive in later phases;
         // the nav entries are gated by their real permissions so they light up
@@ -92,43 +47,6 @@ return [
             'label' => 'Categories',
             'url' => '/categories',
             'permission' => 'categories',
-        ],
-        [
-            'id' => 'sidenav.catalog',
-            'label' => 'Catalog',
-            'permission' => 'artists',
-            'children' => [
-                [
-                    'id' => 'sidenav.artists',
-                    'label' => 'Artists',
-                    'url' => '/artists',
-                    'permission' => 'artists',
-                ],
-                [
-                    'id' => 'sidenav.bands',
-                    'label' => 'Bands',
-                    'url' => '/bands',
-                    'permission' => 'bands',
-                ],
-                [
-                    'id' => 'sidenav.venues',
-                    'label' => 'Venues',
-                    'url' => '/venues',
-                    'permission' => 'venues',
-                ],
-                [
-                    'id' => 'sidenav.songs',
-                    'label' => 'Songs',
-                    'url' => '/songs',
-                    'permission' => 'songs',
-                ],
-                [
-                    'id' => 'sidenav.albums',
-                    'label' => 'Albums',
-                    'url' => '/albums',
-                    'permission' => 'albums',
-                ],
-            ],
         ],
         [
             'id' => 'sidenav.academy',
@@ -172,6 +90,87 @@ return [
             'label' => 'Audit log',
             'url' => '/audit-logs',
             'permission' => 'audit',
+        ],
+        [
+            'id' => 'sidenav.catalog',
+            'label' => 'Catalog',
+            'permission' => 'artists',
+            'children' => [
+                [
+                    'id' => 'sidenav.artists',
+                    'label' => 'Artists',
+                    'url' => '/artists',
+                    'permission' => 'artists',
+                ],
+                [
+                    'id' => 'sidenav.bands',
+                    'label' => 'Bands',
+                    'url' => '/bands',
+                    'permission' => 'bands',
+                ],
+                [
+                    'id' => 'sidenav.venues',
+                    'label' => 'Venues',
+                    'url' => '/venues',
+                    'permission' => 'venues',
+                ],
+                [
+                    'id' => 'sidenav.songs',
+                    'label' => 'Songs',
+                    'url' => '/songs',
+                    'permission' => 'songs',
+                ],
+                [
+                    'id' => 'sidenav.albums',
+                    'label' => 'Albums',
+                    'url' => '/albums',
+                    'permission' => 'albums',
+                ],
+            ],
+        ],
+        [
+            'id' => 'sidenav.access',
+            'label' => 'Access control',
+            'permission' => 'permissions',
+            'children' => [
+                [
+                    'id' => 'sidenav.users',
+                    'label' => 'Users',
+                    'url' => '/users',
+                    'permission' => 'permissions',
+                ],
+                [
+                    'id' => 'sidenav.roles',
+                    'label' => 'Roles',
+                    'url' => '/roles',
+                    'permission' => 'roles',
+                ],
+                [
+                    'id' => 'sidenav.permissions',
+                    'label' => 'Permissions',
+                    'url' => '/permissions',
+                    'permission' => 'permissions',
+                ],
+            ],
+        ],
+        [
+            'id' => 'sidenav.taxonomy',
+            'label' => 'Taxonomy',
+            'permission' => 'taxonomies',
+            'children' => [
+                [
+                    'id' => 'sidenav.taxonomies',
+                    'label' => 'Taxonomies',
+                    'url' => '/taxonomies',
+                    'permission' => 'taxonomies',
+                ],
+                [
+                    'id' => 'sidenav.taxonomy-terms',
+                    'label' => 'Terms',
+                    'url' => '/taxonomy-terms',
+                    'permission' => 'taxonomyTerms',
+                ],
+            ],
         ],
     ],
 ];
