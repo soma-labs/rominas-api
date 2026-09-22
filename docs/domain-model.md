@@ -226,6 +226,32 @@ resolved row and gets `nominee_id` immediately). `hasMany` NominationRanking; `r
 entity + backfill rankings), `CreateNomineeFromSubmission` (→ new entity), `RejectNomineeSubmission`. Admin
 API and the shortlist interlock: [access-control.md §2k](access-control.md#2k-nominee-reconciliation-the-nomineesubmission-module).
 
+#### How match suggestions are scored
+
+`SuggestCatalogMatches` ranks existing Catalog rows of the submission's type so an admin can link with one
+click. Scoring is **token-based and order-independent**, not a raw string comparison — human names routinely
+arrive in either order ("Delia Matache" vs "Matache Delia") and with typos, and a naive `similar_text` over
+the whole string is order-sensitive and over-credits incidental letter overlap (unrelated names would score
+~48%, and a first/last-name swap could rank *below* them).
+
+Each name is reduced to its word tokens (the slug's `-`-separated segments, via `NomineeNameNormalizer::tokens`).
+The score in `[0, 100]` is a **soft Dice coefficient** over the two token sets: for every token, we take its
+best per-token `similar_text` match in the other name, and a name's final score is the summed overlap divided
+by the combined token count. An exact normalized match short-circuits to 100; candidates that score 0 are
+dropped from the list entirely (rather than padding it with noise).
+
+**`SuggestCatalogMatchesAction::TOKEN_MATCH_THRESHOLD` (`0.7`)** is the one tuning knob. It is the
+"are these two words the same word?" cutoff, applied **per token pair, not per name**: a token's best match
+only contributes to the overlap when its similarity is `≥ 0.7`; below that it contributes `0`. This is what
+gives the scorer its clean behaviour — a dropped/swapped letter still matches (`matache` ≈ `matace` ≈ 0.92,
+`delia` ≈ `dalia` ≈ 0.8), while genuinely different words (`aurelian` vs `matache` ≈ 0.4) count as no match,
+so unrelated names collapse to 0 and disappear from suggestions instead of floating at a coincidental ~48%.
+
+Tuning: **raise** it (e.g. `0.85`) for stricter matching — fewer false suggestions, but a heavier typo may
+stop matching its real entry; **lower** it (e.g. `0.5`) to catch sloppier typos at the cost of letting
+incidental overlap creep back onto the list. It only ever answers "same word or not?" for one token pair, so
+it can be tuned in isolation against example pairs without affecting anything else.
+
 ---
 
 ## Academy

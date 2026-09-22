@@ -263,8 +263,8 @@ Admin endpoints, nested under an edition (Sanctum-guarded):
   filterable by `?status=pending|resolved|rejected` and `?type=artist|band|…`; each row carries a
   `ranking_count`.
 - `GET  /api/admin/editions/{edition}/nominee-submissions/{nomineeSubmission}` (`can:view,nomineeSubmission`) —
-  one submission; `?with_suggestions=1` adds ranked existing-catalog match candidates (exact normalized
-  match scores 100, the rest by string similarity).
+  one submission; `?with_suggestions=1` adds ranked existing-catalog match candidates (order-independent,
+  typo-tolerant token scoring — see [domain-model.md → How match suggestions are scored](domain-model.md#how-match-suggestions-are-scored)).
 - `POST /api/admin/editions/{edition}/nominee-submissions/{nomineeSubmission}/link` (`can:update`) — resolve
   to an existing Catalog entity (`{nominee_id}`); backfills `nominee_id` on every ranking that typed the name.
 - `POST /api/admin/editions/{edition}/nominee-submissions/{nomineeSubmission}/create` (`can:update`) —
