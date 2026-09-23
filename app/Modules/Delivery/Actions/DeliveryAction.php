@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rominas\Delivery\Actions;
 
+use Rominas\Delivery\Exceptions\DeliveryFailedException;
 use Rominas\Delivery\PayloadFactoryInterface;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -23,6 +24,8 @@ readonly class DeliveryAction
     public function execute(string $action, array $deliveryMethods, mixed ...$payloadFactoryParams): array
     {
         $deliveryStatuses = [];
+        $failedMethods = [];
+        $lastFailure = null;
 
         foreach ($this->availableDeliveryMethods as $deliveryMethodName => $deliveryMethodConfig) {
             if (! in_array($deliveryMethodName, $deliveryMethods, true)) {
@@ -50,7 +53,18 @@ readonly class DeliveryAction
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]);
+
+                $deliveryStatuses[$deliveryMethodName] = 'failed';
+                $failedMethods[] = $deliveryMethodName;
+                $lastFailure = $e;
             }
+        }
+
+        // Every requested method is attempted (and logged) before we raise, so a multi-method send
+        // still tries them all; but any failure must surface so the queued job is marked failed
+        // rather than completing silently after a swallowed delivery error.
+        if ($failedMethods !== []) {
+            throw new DeliveryFailedException($action, $failedMethods, $lastFailure);
         }
 
         return $deliveryStatuses;
