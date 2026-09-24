@@ -17,7 +17,7 @@ use function Pest\Laravel\postJson;
 /**
  * Seed a pending magic-link row for a member and return the raw token to verify with.
  */
-function seedMagicLink(Member $member, ?string $createdAt = null): string
+function seedMagicLink(Member $member, ?string $createdAt = null, ?string $expiresAt = null): string
 {
     $raw = 'raw-token-' . uniqid();
 
@@ -26,6 +26,7 @@ function seedMagicLink(Member $member, ?string $createdAt = null): string
         'guard' => 'member',
         'token' => Hash::make($raw),
         'created_at' => $createdAt ?? now(),
+        'expires_at' => $expiresAt ?? now()->addMinutes(15),
     ]);
 
     return $raw;
@@ -108,7 +109,7 @@ it('rejects an invalid token', function (): void {
 
 it('rejects an expired token', function (): void {
     $member = Member::factory()->invited()->create();
-    $raw = seedMagicLink($member, now()->subMinutes(20)->toDateTimeString());
+    $raw = seedMagicLink($member, now()->subMinutes(20)->toDateTimeString(), now()->subMinutes(5)->toDateTimeString());
 
     postJson('/api/academy/auth/magic/verify', ['email' => $member->email, 'token' => $raw])
         ->assertStatus(422);

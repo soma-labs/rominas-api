@@ -618,8 +618,8 @@ pointer entry rather than re-storing their detail.
 - **`Auth`** (`app/Modules/Auth/`) — admin username/password login → Sanctum token
   (`POST /api/authenticate`), and logout (see [access-control.md](access-control.md)). Also hosts the
   **guard-agnostic magic-link primitive** (`Auth/MagicLink/`): the `MagicLinkToken` model (table
-  `magic_link_tokens`, composite PK `(email, guard)`, hashed single-use token, 15-min TTL, 60s resend
-  cooldown) plus `SendMagicLinkAction`/`VerifyMagicLinkAction` (resolve the account through the
+  `magic_link_tokens`, composite PK `(email, guard)`, hashed single-use token, per-link `expires_at` — 15 min for sign-in links, 48 h for invitations, from
+  `config/magic-link.php` — and a 60s resend cooldown) plus `SendMagicLinkAction`/`VerifyMagicLinkAction` (resolve the account through the
   guard's own auth provider, so any participant guard reuses them) and a queued `SendMagicLinkJob`.
 - **`Delivery`** (`app/Modules/Delivery/`) — transactional email behind a transport seam
   (SMTP active; Brevo ported as an opt-in alternative). An `action → PayloadFactory → service`

@@ -36,8 +36,9 @@ Academy members are **passwordless** and log in via a **guard-agnostic** magic-l
    system is **closed** (a link is only actually issued to a known member), so the response never
    leaks whether the address exists.
 2. `SendMagicLinkAction` resolves the account through the guard's own auth provider, stores a hashed
-   `Str::random(48)` token in `magic_link_tokens` (composite PK `(email, guard)`, 15-min TTL, 60s
-   resend cooldown), and sends the email via the `Delivery` pipeline.
+   `Str::random(48)` token in `magic_link_tokens` (composite PK `(email, guard)`, 60s resend cooldown)
+   with a per-link `expires_at` (15 min for sign-in links; see *Link lifetime* below), and sends the
+   email via the `Delivery` pipeline.
 3. `POST /api/academy/auth/magic/verify` (`MemberAuthController::verify`) → `VerifyMagicLinkAction`
    validates + **consumes** the token (single-use), returns the `Member`; the controller activates it
    (`status = active`, marks the email verified) and mints `createToken($email, ['member'])`. Response
@@ -52,6 +53,15 @@ Academy members are **passwordless** and log in via a **guard-agnostic** magic-l
   `awaiting_invitation` member (returns the count invited).
 - **Single** — `POST /api/admin/members/{member}/invite` invites one member; also usable to re-send to
   an already-invited member (status is left unchanged, `invited_at` is re-stamped).
+
+**Link lifetime.** Each magic link stores its own `expires_at`, set when it is issued from
+`config/magic-link.php` by the Delivery action key the job carries: **15 minutes** by default (sign-in
+links), **48 hours** for `academy-invitation-email` (an invitation is usually opened hours after it is
+sent). Verification only checks the stored `expires_at`, so it needs no knowledge of the e-mail type, and
+changing a configured lifetime never alters links already issued. The e-mail templates state the
+lifetime in their own wording — update them with the config. A row is one per `(email, guard)`, so a
+member who requests a sign-in link before using their invitation replaces it with the shorter-lived link
+(which still activates them).
 
 Admin roster CRUD lives under `/api/admin/members` (the `members` permission).
 

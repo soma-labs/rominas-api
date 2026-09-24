@@ -17,8 +17,6 @@ use Rominas\Auth\MagicLink\Model\MagicLinkToken;
  */
 class VerifyMagicLinkAction
 {
-    private const int TTL_MINUTES = 15;
-
     public function execute(string $guard, string $email, string $token): ?Authenticatable
     {
         $record = MagicLinkToken::query()
@@ -26,9 +24,7 @@ class VerifyMagicLinkAction
             ->where('guard', $guard)
             ->first();
 
-        if ($record === null
-            || $record->created_at === null
-            || $record->created_at->lt(now()->subMinutes(self::TTL_MINUTES))) {
+        if ($record === null || $record->isExpired()) {
             return null;
         }
 

@@ -23,8 +23,6 @@ use Rominas\Delivery\Actions\DeliveryAction;
  */
 class SendMagicLinkAction
 {
-    private const int TTL_MINUTES = 15;
-
     private const int RESEND_COOLDOWN_SECONDS = 60;
 
     public function __construct(
@@ -51,17 +49,33 @@ class SendMagicLinkAction
 
         if ($existing !== null
             && $existing->created_at?->gt(now()->subSeconds(self::RESEND_COOLDOWN_SECONDS))
-            && $existing->created_at->gt(now()->subMinutes(self::TTL_MINUTES))) {
+            && ! $existing->isExpired()) {
             return;
         }
 
         $token = Str::random(48);
+        $issuedAt = now();
 
         MagicLinkToken::query()->updateOrCreate(
             ['email' => $email, 'guard' => $guard],
-            ['token' => Hash::make($token), 'created_at' => now()],
+            [
+                'token' => Hash::make($token),
+                'created_at' => $issuedAt,
+                'expires_at' => $issuedAt->copy()->addMinutes($this->lifetimeMinutes($emailAction)),
+            ],
         );
 
         $this->delivery->execute($emailAction, ['email'], $email, $token);
+    }
+
+    /**
+     * How long a link of this e-mail type stays valid (config/magic-link.php): the type's own entry,
+     * else the default that sign-in links use.
+     */
+    private function lifetimeMinutes(string $emailAction): int
+    {
+        $configured = config("magic-link.ttl_minutes.{$emailAction}");
+
+        return is_int($configured) ? $configured : (int) config('magic-link.default_ttl_minutes');
     }
 }

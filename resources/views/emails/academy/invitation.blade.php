@@ -31,7 +31,7 @@
             </p>
 
             <p style="margin:0 0 8px;font-size:13px;color:#64748b;line-height:1.5;">
-                Linkul expiră în 15 minute.
+                Linkul expiră în 48 de ore.
             </p>
             <p style="margin:0;font-size:13px;color:#64748b;line-height:1.5;">
                 Dacă nu te așteptai la această invitație, poți ignora acest mesaj.

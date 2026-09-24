@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Model;
     'guard',
     'token',
     'created_at',
+    'expires_at',
 ])]
 class MagicLinkToken extends Model
 {
@@ -44,6 +45,16 @@ class MagicLinkToken extends Model
     {
         return [
             'created_at' => 'datetime',
+            'expires_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Each link carries its own expiry, set when it is issued (invitations live longer than sign-in
+     * links — see config/magic-link.php), so verification needs no knowledge of the e-mail type.
+     */
+    public function isExpired(): bool
+    {
+        return $this->expires_at->isPast();
     }
 }
