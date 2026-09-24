@@ -19,7 +19,7 @@ class MemberDataFactory
         return new MemberData(
             name: $validated['name'],
             email: $validated['email'],
-            status: MemberStatus::Invited,
+            status: MemberStatus::AwaitingInvitation,
         );
     }
 

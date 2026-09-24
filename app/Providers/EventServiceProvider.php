@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
-use Rominas\Academy\Listeners\SendAcademyInvitationsOnEditionTransitioned;
 use Rominas\Editions\Events\EditionTransitioned;
 use Rominas\Results\Listeners\FreezeResultsOnEditionPublished;
 
@@ -20,7 +19,6 @@ class EventServiceProvider extends ServiceProvider
      */
     protected $listen = [
         EditionTransitioned::class => [
-            SendAcademyInvitationsOnEditionTransitioned::class,
             FreezeResultsOnEditionPublished::class,
         ],
     ];

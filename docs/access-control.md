@@ -45,12 +45,13 @@ Academy members are **passwordless** and log in via a **guard-agnostic** magic-l
    `suspended` member.
 4. Authenticated member endpoints run under `auth:member`: `GET /api/academy/me`, `POST /api/academy/logout`.
 
-**Invitations** run both automatically and on demand, via one shared `SendAcademyInvitationsAction`
-(sends the `academy-invitation-email` magic link to every `invited` member):
-- **Automatic** — `TransitionEditionAction` fires an `EditionTransitioned` event; the `Academy`
-  listener (wired in `EventServiceProvider`) runs the action when an edition enters `invitations_sent`.
-- **On demand** — `POST /api/admin/members/invitations` (bulk, returns the count invited) and
-  `POST /api/admin/members/{member}/invite` (single member).
+**Invitations are manual**, handled by admins at any point (typically before nominations open) and
+**not tied to the edition lifecycle**. A member is created as `awaiting_invitation`; sending the
+`academy-invitation-email` magic link moves them to `invited`, and their first login makes them `active`:
+- **Bulk** — `POST /api/admin/members/invitations` runs `SendAcademyInvitationsAction` for every
+  `awaiting_invitation` member (returns the count invited).
+- **Single** — `POST /api/admin/members/{member}/invite` invites one member; also usable to re-send to
+  an already-invited member (status is left unchanged, `invited_at` is re-stamped).
 
 Admin roster CRUD lives under `/api/admin/members` (the `members` permission).
 
@@ -89,8 +90,8 @@ open anytime. `app/Modules/Academy/MemberProposal/`:
 - **Admin-facing** (`auth:sanctum` + the `memberProposals` permission via `MemberProposalPolicy`):
   `GET /api/admin/member-proposals` (filter `?status=`), `GET /{memberProposal}`,
   `POST /{memberProposal}/approve`, `POST /{memberProposal}/reject` (both accept an optional `note`).
-  **Approve creates an invited Member** from the proposal (reusing `CreateMemberAction`) and links it
-  (`member_id`), so the new member flows into the invitation mechanism (§2b).
+  **Approve creates an `awaiting_invitation` Member** from the proposal (reusing `CreateMemberAction`)
+  and links it (`member_id`); an admin then invites it manually like any other member (§2b).
 
 ## 2e. Nominee shortlist (the `Shortlist` module)
 

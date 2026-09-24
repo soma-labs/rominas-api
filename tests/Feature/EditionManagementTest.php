@@ -120,9 +120,18 @@ it('performs a valid lifecycle transition', function (): void {
     $edition = Edition::factory()->create(); // draft
 
     patchJson("/api/admin/editions/{$edition->id}/status", [
-        'status' => EditionStatus::InvitationsSent->value,
+        'status' => EditionStatus::NominationsOpen->value,
     ])->assertStatus(200)
-        ->assertJsonPath('data.status', 'invitations_sent');
+        ->assertJsonPath('data.status', 'nominations_open');
+});
+
+it('rejects the removed invitations_sent status', function (): void {
+    actingAsSuperAdmin();
+    $edition = Edition::factory()->create(); // draft
+
+    patchJson("/api/admin/editions/{$edition->id}/status", [
+        'status' => 'invitations_sent',
+    ])->assertStatus(422);
 });
 
 it('rejects an illegal lifecycle transition', function (): void {

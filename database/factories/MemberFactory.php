@@ -30,6 +30,16 @@ class MemberFactory extends Factory
         ];
     }
 
+    public function awaitingInvitation(): static
+    {
+        return $this->state(fn(array $attributes) => [
+            'status' => MemberStatus::AwaitingInvitation,
+            'email_verified_at' => null,
+            'invited_at' => null,
+            'activated_at' => null,
+        ]);
+    }
+
     public function invited(): static
     {
         return $this->state(fn(array $attributes) => [

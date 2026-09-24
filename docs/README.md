@@ -12,7 +12,7 @@ ecosystem architecture decisions, locked choices and open questions see the ecos
 | [Domain model](domain-model.md) | Every persistent entity, per module, with fields and relationships (ER diagrams included). |
 | [Module architecture](architecture.md) | The Modular-DDD layout: PSR-4 module system, per-entity skeleton, centralized wiring, how to add a module, ide-helper + tooling. |
 | [Access control & auth](access-control.md) | Sanctum token flow, guards per population, spatie roles/permissions, the wildcard-permission scheme + permission-target encoding, the super_admin bypass. |
-| [Edition lifecycle](edition-lifecycle.md) | The nine-state `EditionStatus` machine + guarded transitions, the six-datetime timeline (strict ordering), and the one-active-edition invariant. |
+| [Edition lifecycle](edition-lifecycle.md) | The eight-state `EditionStatus` machine + guarded transitions, the six-datetime timeline (strict ordering), and the one-active-edition invariant. |
 
 ## Planned chapters
 

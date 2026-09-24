@@ -138,7 +138,7 @@ All six datetimes are **strictly ordered**: `starts_at < nominations_start_at < 
 < voting_start_at < voting_end_at < ends_at`, enforced by chained `after:` rules in
 `Create`/`UpdateEditionRequest`.
 
-**Enum** — `EditionStatus` (`Editions/Enums`): `draft` → `invitations_sent` → `nominations_open`
+**Enum** — `EditionStatus` (`Editions/Enums`): `draft` → `nominations_open`
 → `nominations_closed` → `voting_open` → `voting_closed` → `committee_review` → `results_published`
 → `archived` (linear; `archived` is terminal). `isActive()` = not `archived`.
 
@@ -258,8 +258,8 @@ it can be tuned in isolation against example pairs without affecting anything el
 
 Academy-member accounts, their passwordless auth, and their **ranked nominations**. A **Member** is a
 participant account on its own `member` Sanctum guard (never the admin `web` guard); members log in
-via magic link. Admins manage the roster; invitations are emailed when an edition enters
-`invitations_sent`. Members then rank nominees per category. Member proposals are handled here too;
+via magic link. Admins manage the roster and send invitations manually (independent of the edition
+lifecycle). Members then rank nominees per category. Member proposals are handled here too;
 the per-category voting **shortlist** — generated on demand by admins once nominations close — is a
 sibling submodule ([Shortlist](#shortlist)).
 
@@ -279,15 +279,15 @@ erDiagram
 | --- | --- |
 | `name` | required |
 | `email` | unique |
-| `status` | `MemberStatus` enum — `invited` \| `active` \| `suspended` |
+| `status` | `MemberStatus` enum — `awaiting_invitation` (default) \| `invited` \| `active` \| `suspended` |
 | `email_verified_at` | nullable; set on first magic-link login |
 | `invited_at` | nullable; set when an invitation is sent |
 | `activated_at` | nullable; set on first successful login |
 
 Authenticatable (`HasApiTokens`, `Notifiable`); **passwordless** (no password column). `#[UsePolicy(MemberPolicy)]`
 gates admin-side CRUD on the `members` permission. `MemberQueryBuilder` adds search/sort +
-`filterByStatus()`. A member becomes `active` on first magic-link verify; `suspended` members are
-barred from logging in. Full auth story in [access-control.md](access-control.md).
+`filterByStatus()`. A member starts `awaiting_invitation`, becomes `invited` when an admin sends the
+invitation, and `active` on first magic-link verify; `suspended` members are barred from logging in. Full auth story in [access-control.md](access-control.md).
 
 **Nomination** — `app/Modules/Academy/Nomination/Model/Nomination.php` — a member's ballot for one
 edition (one row per member+edition).
@@ -331,15 +331,15 @@ proposal, made by a member, to add a future academy member. Not edition-scoped (
 | `position`, `company`, `phone` | nullable — the proposed person's contact/identity details (*functie* / *firma* / *nr. telefon*) |
 | `reason` | nullable — the proposer's justification |
 | `status` | `MemberProposalStatus` enum — `pending` \| `approved` \| `rejected` |
-| `member_id` | nullable FK → Member — the invited Member created on approval |
+| `member_id` | nullable FK → Member — the `awaiting_invitation` Member created on approval |
 | `reviewed_by_user_id` | nullable FK → User — the admin who reviewed |
 | `reviewed_at`, `review_note` | nullable — review metadata |
 
 Members submit/list/withdraw their own proposals (guard `member`, anytime), subject to a **per-member
 lifetime cap** (`config('academy.max_proposals_per_member')`, default 5 — counts every proposal the
 member has ever made, any status); admins review under the `memberProposals` permission — **approving
-creates an invited Member** (reusing `CreateMemberAction`, from `name` + `email` only), feeding the
-invitation flow. See [access-control.md](access-control.md#2d-member-proposals).
+creates an `awaiting_invitation` Member** (reusing `CreateMemberAction`, from `name` + `email` only),
+which an admin then invites manually. See [access-control.md](access-control.md#2d-member-proposals).
 
 **MagicLinkToken** — `app/Modules/Auth/MagicLink/Model/MagicLinkToken.php` (guard-agnostic; see the
 Behavioural modules note).

@@ -11,6 +11,6 @@ class MemberData
     public function __construct(
         public string $name,
         public string $email,
-        public MemberStatus $status = MemberStatus::Invited,
+        public MemberStatus $status = MemberStatus::AwaitingInvitation,
     ) {}
 }

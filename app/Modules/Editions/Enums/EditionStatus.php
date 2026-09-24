@@ -12,7 +12,6 @@ namespace Rominas\Editions\Enums;
 enum EditionStatus: string
 {
     case Draft = 'draft';
-    case InvitationsSent = 'invitations_sent';
     case NominationsOpen = 'nominations_open';
     case NominationsClosed = 'nominations_closed';
     case VotingOpen = 'voting_open';
@@ -30,7 +29,6 @@ enum EditionStatus: string
     {
         return match ($this) {
             self::Draft => 'Draft',
-            self::InvitationsSent => 'Invitations sent',
             self::NominationsOpen => 'Nominations open',
             self::NominationsClosed => 'Nominations closed',
             self::VotingOpen => 'Voting open',
@@ -49,8 +47,7 @@ enum EditionStatus: string
     public function allowedTransitions(): array
     {
         return match ($this) {
-            self::Draft => [self::InvitationsSent],
-            self::InvitationsSent => [self::NominationsOpen],
+            self::Draft => [self::NominationsOpen],
             self::NominationsOpen => [self::NominationsClosed],
             self::NominationsClosed => [self::VotingOpen],
             self::VotingOpen => [self::VotingClosed],

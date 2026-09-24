@@ -11,6 +11,7 @@ use Rominas\Academy\Actions\SendAcademyInvitationsAction;
 use Rominas\Academy\Member\Actions\CreateMemberAction;
 use Rominas\Academy\Member\Actions\DeleteMemberAction;
 use Rominas\Academy\Member\Actions\UpdateMemberAction;
+use Rominas\Academy\Member\Enums\MemberStatus;
 use Rominas\Academy\Member\Factories\MemberDataFactory;
 use Rominas\Academy\Member\Model\Member;
 use Rominas\Academy\Member\QueryBuilders\MemberQueryBuilder;
@@ -71,20 +72,26 @@ class MembersController
     }
 
     /**
-     * (Re)send a magic-link invitation to a single member.
+     * (Re)send a magic-link invitation to a single member. A member still awaiting their first
+     * invitation moves to `Invited`; a re-send leaves an invited/active/suspended member's status alone.
      */
     public function invite(Member $member): JsonResponse
     {
         SendMagicLinkJob::dispatch('member', $member->email, 'academy-invitation-email');
 
-        $member->forceFill(['invited_at' => now()])->save();
+        $member->forceFill([
+            'status' => $member->status === MemberStatus::AwaitingInvitation
+                ? MemberStatus::Invited
+                : $member->status,
+            'invited_at' => now(),
+        ])->save();
 
         return response()->json(['success' => true]);
     }
 
     /**
-     * Send a magic-link invitation to every member still awaiting one (`invited` status) on demand —
-     * the same operation the edition's `invitations_sent` transition fires automatically.
+     * Send a magic-link invitation to every member still awaiting one (`awaiting_invitation` status)
+     * and move them to `invited`. Invitations are manual — never triggered by an edition transition.
      */
     public function inviteAll(SendAcademyInvitationsAction $action): JsonResponse
     {

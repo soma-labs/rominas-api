@@ -122,7 +122,7 @@ it('lets an admin list proposals', function (): void {
         ->assertJsonCount(3, 'data');
 });
 
-it('creates an invited member when an admin approves a proposal', function (): void {
+it('creates a member awaiting invitation when an admin approves a proposal', function (): void {
     actingAsSuperAdmin();
     $proposal = MemberProposal::factory()->create([
         'name' => 'Approved Person',
@@ -135,7 +135,7 @@ it('creates an invited member when an admin approves a proposal', function (): v
 
     $member = Member::query()->where('email', 'approved@example.test')->first();
     expect($member)->not->toBeNull();
-    expect($member->status)->toBe(MemberStatus::Invited);
+    expect($member->status)->toBe(MemberStatus::AwaitingInvitation);
 
     $proposal->refresh();
     expect($proposal->status)->toBe(MemberProposalStatus::Approved);

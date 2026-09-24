@@ -12,14 +12,14 @@ use function Pest\Laravel\getJson;
 use function Pest\Laravel\patchJson;
 use function Pest\Laravel\postJson;
 
-it('lets an admin create a member in the invited state', function (): void {
+it('lets an admin create a member awaiting invitation', function (): void {
     actingAsSuperAdmin();
 
     postJson('/api/admin/members', [
         'name' => 'Ana Popescu',
         'email' => 'ana@example.test',
     ])->assertStatus(201)
-        ->assertJsonPath('data.status', 'invited')
+        ->assertJsonPath('data.status', 'awaiting_invitation')
         ->assertJsonPath('data.email', 'ana@example.test');
 
     expect(Member::query()->where('email', 'ana@example.test')->exists())->toBeTrue();

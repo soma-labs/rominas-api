@@ -10,7 +10,7 @@ use Rominas\Editions\Model\Edition;
 
 /**
  * Fired after an edition's lifecycle status changes (see TransitionEditionAction). Cross-module
- * side-effects hang off this — e.g. the Academy module sends invitations on `invitations_sent`.
+ * side-effects hang off this — e.g. the Results module freezes the snapshot on `results_published`.
  * Listeners are wired explicitly in EventServiceProvider (auto-discovery does not scan app/Modules).
  */
 readonly class EditionTransitioned

@@ -15,8 +15,8 @@ use Rominas\Academy\MemberProposal\Model\MemberProposal;
 use Rominas\Users\Model\User;
 
 /**
- * Approves a pending proposal: creates an invited Member from it (feeding the existing invitation
- * flow) and records the review. Rejects a non-pending proposal, or one whose email has meanwhile
+ * Approves a pending proposal: creates a Member awaiting invitation from it (feeding the manual
+ * invitation flow) and records the review. Rejects a non-pending proposal, or one whose email has meanwhile
  * become a Member.
  */
 class ApproveMemberProposalAction
@@ -43,7 +43,7 @@ class ApproveMemberProposalAction
             $member = $this->createMember->execute(new MemberData(
                 name: $proposal->name,
                 email: $proposal->email,
-                status: MemberStatus::Invited,
+                status: MemberStatus::AwaitingInvitation,
             ));
 
             $proposal->forceFill([
