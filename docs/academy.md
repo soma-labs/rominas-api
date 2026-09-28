@@ -192,7 +192,11 @@ Ties at the cut-off, or any other editorial call, are settled by hand:
   Catalog type; its `points` are re-derived from the tally (0 for a nominee the academy never picked).
 
 Same `nominations_closed` guard. **Once voting opens the shortlist is frozen**, because every write endpoint
-fails the status check. `GET /api/admin/editions/{edition}/shortlist` shows the result.
+fails the status check. `GET /api/admin/editions/{edition}/shortlist` shows the result, alongside
+`meta.rejected_picks` — a `category_id => count` map of submitted rankings whose free-text pick was
+rejected during reconciliation (`CountRejectedPicksAction`), so a category short of picks because of a
+rejection stays visible even after generation, not just as a one-time warning in the reconciliation queue.
+See [nominee-reconciliation.md §5](nominee-reconciliation.md#5-the-shortlist-interlock).
 
 All shortlist endpoints use the `shortlists` permission (held by `admin`).
 

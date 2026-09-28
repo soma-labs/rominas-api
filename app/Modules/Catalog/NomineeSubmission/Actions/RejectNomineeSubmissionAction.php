@@ -10,9 +10,11 @@ use Rominas\Catalog\NomineeSubmission\Model\NomineeSubmission;
 use Rominas\Users\Model\User;
 
 /**
- * Discards a pending submission (junk/spam typed name). Its rankings stay unresolved — a fully-rejected
- * pick leaves that ballot's category short of five nominees, which the shortlist-generation guard surfaces
- * so an admin can follow up. Rejection does not touch the Catalog.
+ * Discards a pending submission (junk/spam typed name). Its rankings stay unresolved — permanently
+ * excluded from every tally that reads `NominationRankingQueryBuilder::resolved()` (shortlist generation,
+ * Scoring, Reporting) — and are surfaced instead as `rejected_picks` per category in the shortlist
+ * listing ({@see \Rominas\Academy\Shortlist\Actions\CountRejectedPicksAction}), so a rejected pick doesn't
+ * just silently vanish from the count. Rejection does not touch the Catalog.
  */
 class RejectNomineeSubmissionAction
 {

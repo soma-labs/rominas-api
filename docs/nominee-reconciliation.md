@@ -78,7 +78,8 @@ creating a duplicate.
 `RejectNomineeSubmissionAction` marks the submission `rejected`. The Catalog is untouched, and the rankings
 keep `nominee_id = null` **permanently**. Every tally uses `NominationRanking::resolved()`, which skips null
 nominees, so a rejected pick counts for nothing in the shortlist, scoring or reporting. The member's other
-picks on that ballot still count.
+picks on that ballot still count. It doesn't just vanish though: `CountRejectedPicksAction` counts these
+rankings per category and the shortlist listing returns them as `meta.rejected_picks` (see §5).
 
 ## 4. Match suggestions
 
@@ -111,6 +112,11 @@ nominations close → reconcile every pending name → generate shortlists → o
 
 Members can keep adding new names until the deadline, so the queue is only final once the edition leaves
 `nominations_open`.
+
+A rejected pick is not the same as a missing one: it's a deliberate admin call that a category simply won't
+know about. `GET …/shortlist` returns `meta.rejected_picks` — a count of rejected picks per category id —
+so that stays visible after generation too, not just as a one-time warning during reconciliation. See
+[academy.md](academy.md) for the shortlist listing shape.
 
 ## 6. Files
 

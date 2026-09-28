@@ -49,6 +49,11 @@ class NomineeSubmissionQueryBuilder extends Builder
         return $this->where('status', '=', NomineeSubmissionStatus::Pending->value);
     }
 
+    public function rejected(): self
+    {
+        return $this->where('status', '=', NomineeSubmissionStatus::Rejected->value);
+    }
+
     public function filterByStatus(NomineeSubmissionStatus $status): self
     {
         return $this->where('status', '=', $status->value);

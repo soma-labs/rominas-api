@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Rominas\Academy\Shortlist\Actions\AdjustCategoryShortlistAction;
+use Rominas\Academy\Shortlist\Actions\CountRejectedPicksAction;
 use Rominas\Academy\Shortlist\Actions\GenerateCategoryShortlistAction;
 use Rominas\Academy\Shortlist\Actions\GenerateEditionShortlistsAction;
 use Rominas\Academy\Shortlist\Actions\GetCategoryShortlistCandidatesAction;
@@ -24,7 +25,7 @@ use Rominas\Users\Model\User;
  */
 class ShortlistController
 {
-    public function index(Edition $edition, Request $request): AnonymousResourceCollection
+    public function index(Edition $edition, Request $request, CountRejectedPicksAction $rejectedPicks): AnonymousResourceCollection
     {
         /** @var User $user */
         $user = $request->user();
@@ -37,7 +38,7 @@ class ShortlistController
                 ->orderBy('category_id')
                 ->orderBy('position')
                 ->get(),
-        );
+        )->additional(['meta' => ['rejected_picks' => $rejectedPicks->execute($edition)]]);
     }
 
     public function generateEdition(Edition $edition, GenerateEditionShortlistsAction $action): AnonymousResourceCollection

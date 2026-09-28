@@ -21,4 +21,13 @@ class NominationRankingQueryBuilder extends Builder
     {
         return $this->whereNotNull($this->qualifyColumn('nominee_id'));
     }
+
+    /**
+     * The counterpart of {@see resolved()}: rankings whose free-text pick has not (yet, or ever) been
+     * linked to a Catalog entity.
+     */
+    public function unresolved(): self
+    {
+        return $this->whereNull($this->qualifyColumn('nominee_id'));
+    }
 }
