@@ -104,6 +104,11 @@ Every write goes through `ResolveOpenNominationEditionAction`, which requires:
 Otherwise the request is a 422 on `nominations`. Reading the ballot is allowed at any time. See
 [edition-lifecycle.md](edition-lifecycle.md) for the statuses and timeline.
 
+`GET /api/academy/nominations` (`NominationResource`) also carries the edition's
+`nominations_start_at` / `nominations_end_at`, so a client can gate the ballot form on the window
+itself — hide it before the start date, lock it read-only after the end date — without needing a
+rejected write to discover either state.
+
 ### Save and resume
 
 `PUT /api/academy/nominations/categories/{category}` with `{"nominees": ["Name one", "Name two", …]}` —

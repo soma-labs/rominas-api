@@ -60,6 +60,8 @@ it('returns the ballot with every category and no persisted row when resuming', 
         ->assertStatus(200)
         ->assertJsonPath('data.status', 'draft')
         ->assertJsonPath('data.is_complete', false)
+        ->assertJsonPath('data.nominations_start_at', $edition->nominations_start_at->toJSON())
+        ->assertJsonPath('data.nominations_end_at', $edition->nominations_end_at->toJSON())
         ->assertJsonCount(2, 'data.categories');
 
     expect(Nomination::query()->count())->toBe(0);

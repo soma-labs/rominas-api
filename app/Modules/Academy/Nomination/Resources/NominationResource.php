@@ -15,8 +15,11 @@ use Rominas\Categories\Model\Category;
 
 /**
  * The member's whole ballot: status + every category of the edition with the member's current ranked
- * picks (empty where none), so the SPA can render progress and resume. Expects the wrapped Nomination
- * to have `edition.categories` and `rankings.nominee` loaded.
+ * picks (empty where none), so the SPA can render progress and resume. Also carries the edition's
+ * `nominations_start_at` / `nominations_end_at` so the SPA can gate the form on the window itself,
+ * without needing a rejected write to discover it's closed (see `ResolveOpenNominationEditionAction`
+ * for the write-side gate this mirrors for display only). Expects the wrapped Nomination to have
+ * `edition.categories` and `rankings.nominee` loaded.
  */
 class NominationResource extends JsonResource
 {
@@ -53,6 +56,8 @@ class NominationResource extends JsonResource
 
         return [
             'edition_id' => $nomination->edition_id,
+            'nominations_start_at' => $nomination->edition->nominations_start_at,
+            'nominations_end_at' => $nomination->edition->nominations_end_at,
             'status' => $nomination->status->value,
             'status_label' => $nomination->status->label(),
             'submitted_at' => $nomination->submitted_at,
