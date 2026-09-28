@@ -38,7 +38,8 @@ final class NominationsPerEntityReport implements ReportInterface
         $query = NominationRanking::query()
             ->join('nominations', 'nominations.id', '=', 'nomination_rankings.nomination_id')
             ->where('nominations.edition_id', '=', $parameters->edition->id)
-            ->where('nominations.status', '=', NominationStatus::Submitted->value);
+            ->where('nominations.status', '=', NominationStatus::Submitted->value)
+            ->resolved();
 
         if ($parameters->from !== null) {
             $query->where('nominations.submitted_at', '>=', $parameters->from);

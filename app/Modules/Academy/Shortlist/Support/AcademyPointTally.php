@@ -25,6 +25,7 @@ class AcademyPointTally
         $rankings = NominationRanking::query()
             ->whereHas('nomination', fn(NominationQueryBuilder $query) => $query->forEdition($edition)->submitted())
             ->where('category_id', '=', $category->id)
+            ->resolved()
             ->get(['nominee_id', 'rank']);
 
         $totals = [];

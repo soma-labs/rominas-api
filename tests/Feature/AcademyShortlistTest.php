@@ -8,6 +8,7 @@ use Rominas\Academy\Nomination\Model\NominationRanking;
 use Rominas\Academy\Shortlist\Model\ShortlistEntry;
 use Rominas\Catalog\Artist\Model\Artist;
 use Rominas\Catalog\Enums\NomineeType;
+use Rominas\Catalog\NomineeSubmission\Model\NomineeSubmission;
 use Rominas\Categories\Model\Category;
 use Rominas\Editions\Enums\EditionStatus;
 use Rominas\Editions\Model\Edition;
@@ -168,6 +169,40 @@ it('lists ranked shortlist candidates for a category', function (): void {
         ->assertJsonPath('data.0.points', 10)
         ->assertJsonPath('data.0.rank', 1)
         ->assertJsonPath('data.2.nominee_id', $c->id);
+});
+
+it('excludes rankings whose free-text pick was rejected, from candidates and generation alike', function (): void {
+    actingAsSuperAdmin();
+    [$edition, $category] = shortlistEditionAndCategory();
+
+    [$a, $b] = Artist::factory()->count(2)->create()->all();
+    seedShortlistBallot($edition, $category, [$a->id, $b->id]); // A=10, B=8
+
+    // A third ballot's top pick was a rejected free-text name — its ranking keeps nominee_id null.
+    $rejected = NomineeSubmission::factory()->rejected()->create([
+        'edition_id' => $edition->id,
+        'nominee_type' => NomineeType::Artist,
+    ]);
+    $nomination = Nomination::factory()->submitted()->create(['edition_id' => $edition->id]);
+    NominationRanking::factory()->create([
+        'nomination_id' => $nomination->id,
+        'category_id' => $category->id,
+        'rank' => 1,
+        'nominee_type' => NomineeType::Artist,
+        'nominee_id' => null,
+        'nominee_submission_id' => $rejected->id,
+    ]);
+
+    getJson("/api/admin/editions/{$edition->id}/categories/{$category->id}/shortlist/candidates")
+        ->assertStatus(200)
+        ->assertJsonCount(2, 'data');
+
+    postJson("/api/admin/editions/{$edition->id}/categories/{$category->id}/shortlist")
+        ->assertStatus(200)
+        ->assertJsonCount(2, 'data');
+
+    expect(ShortlistEntry::query()->forEdition($edition)->forCategory($category)->where('nominee_id', 0)->exists())
+        ->toBeFalse();
 });
 
 it('replaces a category shortlist with the admin\'s final ordered nominees', function (): void {

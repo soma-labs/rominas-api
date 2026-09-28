@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Rominas\Academy\Nomination\QueryBuilders\NominationRankingQueryBuilder;
 use Rominas\Catalog\Enums\NomineeType;
 use Rominas\Catalog\NomineeSubmission\Model\NomineeSubmission;
 use Rominas\Categories\Model\Category;
@@ -43,6 +44,19 @@ class NominationRanking extends Model
             'rank' => 'integer',
             'nominee_type' => NomineeType::class,
         ];
+    }
+
+    public static function query(): NominationRankingQueryBuilder
+    {
+        /** @var NominationRankingQueryBuilder $builder */
+        $builder = parent::query();
+
+        return $builder;
+    }
+
+    public function newEloquentBuilder($query): NominationRankingQueryBuilder
+    {
+        return new NominationRankingQueryBuilder($query);
     }
 
     /**

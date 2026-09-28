@@ -100,7 +100,7 @@ class GenerateCategoryShortlistAction
         $rankings = NominationRanking::query()
             ->whereHas('nomination', fn(NominationQueryBuilder $query) => $query->forEdition($edition)->submitted())
             ->where('category_id', '=', $category->id)
-            ->whereNotNull('nominee_id')
+            ->resolved()
             ->get(['nominee_type', 'nominee_id', 'rank']);
 
         /** @var array<string, array{nominee_type: NomineeType, nominee_id: int, points: int}> $totals */

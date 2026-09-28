@@ -8,6 +8,7 @@ use Rominas\Academy\Nomination\Model\Nomination;
 use Rominas\Academy\Nomination\Model\NominationRanking;
 use Rominas\Catalog\Artist\Model\Artist;
 use Rominas\Catalog\Enums\NomineeType;
+use Rominas\Catalog\NomineeSubmission\Model\NomineeSubmission;
 use Rominas\Categories\Model\Category;
 use Rominas\Editions\Model\Edition;
 use Rominas\FraudMonitoring\Model\InvalidationBatch;
@@ -300,6 +301,38 @@ it('counts academy nominations per entity per category, excluding drafts', funct
         ->assertJsonPath('data.rows.0.category', 'Best Album')
         ->assertJsonPath('data.rows.0.entity', 'The Nominee')
         ->assertJsonPath('data.rows.0.nominations', 2)
+        ->assertJsonCount(1, 'data.rows');
+});
+
+it('excludes rankings whose free-text pick was rejected, from the nominations-per-entity report', function (): void {
+    reportingActingAsAdmin();
+
+    $edition = reportingActiveEdition();
+    $category = reportingCategory($edition, 'Best Album');
+    $artist = Artist::factory()->create(['name' => 'The Nominee']);
+
+    reportingSubmittedNomination($edition, $category, $artist);
+
+    // A submitted ballot's pick was a rejected free-text name — its ranking keeps nominee_id null,
+    // and must not surface as a phantom "nominee 0" row.
+    $rejected = NomineeSubmission::factory()->rejected()->create([
+        'edition_id' => $edition->id,
+        'nominee_type' => NomineeType::Artist,
+    ]);
+    $nomination = Nomination::factory()->submitted()->create(['edition_id' => $edition->id]);
+    NominationRanking::factory()->create([
+        'nomination_id' => $nomination->id,
+        'category_id' => $category->id,
+        'rank' => 1,
+        'nominee_type' => NomineeType::Artist,
+        'nominee_id' => null,
+        'nominee_submission_id' => $rejected->id,
+    ]);
+
+    getJson('/api/admin/reports/nominations-per-entity')
+        ->assertStatus(200)
+        ->assertJsonPath('data.rows.0.entity', 'The Nominee')
+        ->assertJsonPath('data.rows.0.nominations', 1)
         ->assertJsonCount(1, 'data.rows');
 });
 
