@@ -52,8 +52,8 @@ per-entity submodules (e.g. `Catalog/Artist/…`). See [docs/architecture.md](do
 
 Deeper documentation lives in [`docs/`](docs/README.md). Start with the
 [domain model](docs/domain-model.md) for every entity and its relationships, then
-[module architecture](docs/architecture.md), [access control & auth](docs/access-control.md) and the
-[edition lifecycle](docs/edition-lifecycle.md). Ecosystem-level decisions and open questions are
+[module architecture](docs/architecture.md), [access control & auth](docs/access-control.md), the
+[edition lifecycle](docs/edition-lifecycle.md) and the [audit trail](docs/audit.md). Ecosystem-level decisions and open questions are
 tracked in the ecosystem [`CLAUDE.md`](../CLAUDE.md).
 
 ## Getting started

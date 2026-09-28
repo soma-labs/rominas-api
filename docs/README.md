@@ -13,6 +13,7 @@ ecosystem architecture decisions, locked choices and open questions see the ecos
 | [Module architecture](architecture.md) | The Modular-DDD layout: PSR-4 module system, per-entity skeleton, centralized wiring, how to add a module, ide-helper + tooling. |
 | [Access control & auth](access-control.md) | Sanctum token flow, guards per population, spatie roles/permissions, the wildcard-permission scheme + permission-target encoding, the super_admin bypass. |
 | [Edition lifecycle](edition-lifecycle.md) | The eight-state `EditionStatus` machine + guarded transitions, the six-datetime timeline (strict ordering), and the one-active-edition invariant. |
+| [Audit trail](audit.md) | The append-only `AuditLog`: the `RecordAuditTrail` middleware, route-name coverage rules (opt-out `/admin`, opt-in elsewhere), actor/subject resolution, redaction + email hashing, the `Context` enrichment hook, the read API, and a checklist for new routes. |
 
 ## Planned chapters
 

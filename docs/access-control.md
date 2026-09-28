@@ -236,7 +236,7 @@ Admin endpoints, under `/api/admin/audit-logs` (Sanctum-guarded):
 
 Both routes are listed in `config('audit.ignore')`, so reading the trail records no fresh entries. What is
 and isn't recorded, redaction, and the `Context` enrichment hook are covered in the
-[Audit](domain-model.md#audit-cross-cutting-trail) domain notes.
+[audit trail](audit.md) chapter.
 
 ## 2j. Reporting (the `Reporting` module)
 

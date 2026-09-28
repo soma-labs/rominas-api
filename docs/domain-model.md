@@ -586,7 +586,8 @@ attached both to the `/admin` group and to the audited auth/account routes.
 
 `AuditLogQueryBuilder` adds `forCauser` (type + id) / `forAction` / `forSubject` / `betweenDates` +
 `visibleToUser` / `actionableByUser` (the `audit` permission). **Append-only** — no create/update/delete
-endpoints; rows are written only by the middleware.
+endpoints; rows are written only by the middleware. How rows are recorded is covered in the
+[audit trail](audit.md) chapter.
 
 **How it records** (`RecordAuditTrail::terminate`): logs after the response is sent (no added latency) off
 the final rendered response. Two coverage rules (config/audit.php):
