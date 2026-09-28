@@ -61,7 +61,7 @@ throws a `ValidationException` (**422**). On success it sets and saves the new s
 > while the edition is `voting_open` and now is within
 > `[voting_start_at, voting_end_at]` (`Voting\ResolveOpenVotingEditionAction`). See the
 > [Shortlist](domain-model.md#shortlist) / [Voting](domain-model.md#voting) domain notes and
-> [access-control.md](access-control.md#2e-nominee-shortlist).
+> [access-control.md](access-control.md#2e-nominee-shortlist-the-shortlist-module).
 >
 > Likewise **results scoring** (`Scoring` module) gates on edition state directly: it is computed on
 > demand once the edition reaches `voting_closed` and stays available through `committee_review` and
@@ -70,7 +70,7 @@ throws a `ValidationException` (**422**). On success it sets and saves the new s
 > domain note.
 >
 > The **one deliberate exception** to "inputs frozen from `voting_closed`" is **vote cancellation**
-> (`FraudMonitoring`, see [access-control.md](access-control.md#2h-fraud-monitoring)): a fraud monitor or
+> (`FraudMonitoring`, see [access-control.md](access-control.md#2h-fraud-monitoring-the-fraudmonitoring-module)): a fraud monitor or
 > custodian may cancel fraudulent ballots during the review window, before the `results_published` freeze.
 > Cancelling excludes those ballots from the public tally (`->valid()`) and busts the edition's cached
 > Scoring output, so the live results view reflects it immediately; the snapshot frozen at publish

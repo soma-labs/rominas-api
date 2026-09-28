@@ -224,7 +224,8 @@ resolved row and gets `nominee_id` immediately). `hasMany` NominationRanking; `r
 `morphTo` on `(nominee_type, resolved_nominee_id)`. Reconciliation actions: `ResolveOrCreateNomineeSubmission`
 (ballot-side dedup), `SuggestCatalogMatches` (ranked match candidates), `LinkNomineeSubmission` (→ existing
 entity + backfill rankings), `CreateNomineeFromSubmission` (→ new entity), `RejectNomineeSubmission`. Admin
-API and the shortlist interlock: [access-control.md §2k](access-control.md#2k-nominee-reconciliation-the-nomineesubmission-module).
+API and the shortlist interlock: [access-control.md §2k](access-control.md#2k-nominee-reconciliation-the-nomineesubmission-module);
+the full flow: [nominee-reconciliation.md](nominee-reconciliation.md).
 
 #### How match suggestions are scored
 
@@ -261,7 +262,7 @@ participant account on its own `member` Sanctum guard (never the admin `web` gua
 via magic link. Admins manage the roster and send invitations manually (independent of the edition
 lifecycle). Members then rank nominees per category. Member proposals are handled here too;
 the per-category voting **shortlist** — generated on demand by admins once nominations close — is a
-sibling submodule ([Shortlist](#shortlist)).
+sibling submodule ([Shortlist](#shortlist)). How it all works end to end: [academy.md](academy.md).
 
 ```mermaid
 erDiagram
@@ -339,7 +340,7 @@ Members submit/list/withdraw their own proposals (guard `member`, anytime), subj
 lifetime cap** (`config('academy.max_proposals_per_member')`, default 5 — counts every proposal the
 member has ever made, any status); admins review under the `memberProposals` permission — **approving
 creates an `awaiting_invitation` Member** (reusing `CreateMemberAction`, from `name` + `email` only),
-which an admin then invites manually. See [access-control.md](access-control.md#2d-member-proposals).
+which an admin then invites manually. See [access-control.md](access-control.md#2d-member-proposals-the-memberproposal-module).
 
 **MagicLinkToken** — `app/Modules/Auth/MagicLink/Model/MagicLinkToken.php` (guard-agnostic; see the
 Behavioural modules note).
@@ -360,7 +361,7 @@ use the separate, shorter `Rominas\Scoring\PublicRankPoints` curve.
 Nominees are ordered points desc, ties broken by nominee id; genuine ties at the cutoff (and any other
 manual edit) are settled by admins via the **review/adjust flow**: `GET …/candidates` returns the full
 ranked candidate pool and `PUT …/shortlist` replaces a category's shortlist with the admin's final
-ordered nominees (see [access-control.md](access-control.md#2e-nominee-shortlist)).
+ordered nominees (see [access-control.md](access-control.md#2e-nominee-shortlist-the-shortlist-module)).
 
 **ShortlistEntry** — `app/Modules/Academy/Shortlist/Model/ShortlistEntry.php` — one finalist on a
 category's shortlist.
@@ -377,7 +378,7 @@ category's shortlist.
 Unique `(edition_id, category_id, nominee_type, nominee_id)` and `(edition_id, category_id, position)`.
 `belongsTo` Edition/Category; `nominee()` is a `morphTo` resolved through the morph map. Generation lives
 in `GenerateCategoryShortlistAction` (one category) and `GenerateEditionShortlistsAction` (bulk); the
-admin endpoints and `shortlists` permission are in [access-control.md](access-control.md#2e-nominee-shortlist).
+admin endpoints and `shortlists` permission are in [access-control.md](access-control.md#2e-nominee-shortlist-the-shortlist-module).
 
 ---
 
@@ -388,7 +389,7 @@ shortlisted nominees, and votes once. There is **no account and no guard** — p
 link token is the authorization, checked in application code. Personal data is pseudonymized: only HMAC
 hashes of the email and IP are stored (never plaintext), keyed by a stable `voting.pepper`
 (`config/voting.php`). Voting reads the [Shortlist](#shortlist) as the candidate set and stores ranks
-only; points/weighting are a later `Scoring`/`Results` concern.
+only; points/weighting are a later `Scoring`/`Results` concern. The full flow: [voting.md](voting.md).
 
 ```mermaid
 erDiagram
@@ -435,7 +436,7 @@ Unique `(ballot_id, category_id, rank)` and `(ballot_id, category_id, nominee_ty
 order of preference (client PHAZE 4; fewer only if the shortlist itself holds fewer than 3), and ≥1
 category is required. Public points use the `Rominas\Scoring\PublicRankPoints` curve (rank 1 → 10, 2 → 8,
 3 → 6). The ballot presents nominees **alphabetically** so the secret academy shortlist order never leaks.
-The endpoints and the accountless flow are in [access-control.md](access-control.md#2f-public-voting).
+The endpoints and the accountless flow are in [access-control.md](access-control.md#2f-public-voting-the-voting-module).
 
 ---
 
@@ -448,7 +449,7 @@ engine: while Scoring only ever computes on demand, `Results` (`app/Modules/Resu
 published edition is served from its frozen snapshot, an unpublished one is computed live — so the same
 JSON shape (a Scoring `EditionScore`, enriched with category/nominee names by `EditionResultsPresenter`)
 covers both. The snapshot is what becomes **public** at publish time. Access rules are in
-[access-control.md](access-control.md#2g-results).
+[access-control.md](access-control.md#2g-results-the-results-module); the full flow: [scoring-results.md](scoring-results.md).
 
 ```mermaid
 erDiagram
@@ -481,7 +482,7 @@ Scoring's `NomineeScore` DTO).
 | `nominee_type` | `NomineeType` enum slug — the polymorphic morph alias |
 | `nominee_id` | the Catalog row id |
 | `academy_points` / `public_points` | raw summed points on each side |
-| `academy_share` / `public_share` / `final_score` | normalized shares and the weighted score (0..1, display-rounded) |
+| `academy_share` / `public_share` / `final_score` | algorithm-dependent: under `attributed` (default) the academy / public ladder scores and their total, in whole points; under `share` the 0..1 class shares and weighted score (display-rounded) |
 | `position` | 1 = winner |
 
 Unique `(result_snapshot_id, category_id, nominee_type, nominee_id)` and
@@ -496,7 +497,8 @@ event (→ `results_published`); see [edition-lifecycle.md](edition-lifecycle.md
 `FraudMonitoring` (`app/Modules/FraudMonitoring/`) gives a **fraud monitor** or **custodian** two things:
 a **reactive** side — review an edition's public ballots and cancel fraudulent votes — and a
 **proactive** side — a scheduled sweep that flags suspicious clusters as reviewable alerts. Both are
-gated by the single `fraudMonitoring` permission. Endpoints/authorization: [access-control.md](access-control.md#2h-fraud-monitoring).
+gated by the single `fraudMonitoring` permission. Endpoints/authorization: [access-control.md](access-control.md#2h-fraud-monitoring-the-fraudmonitoring-module);
+the full flow: [fraud-monitoring.md](fraud-monitoring.md).
 
 **Reactive — vote cancellation.** Cancellation is done in **batches**, each carrying a single mandatory
 reason and the acting admin — the batch is the audit unit. Cancelled ballots point back at their batch
@@ -650,7 +652,7 @@ pointer entry rather than re-storing their detail.
   `attributed`). `ComputeCategoryScoresAction` / `ComputeEditionScoresAction` wire the DB and cache per
   edition + status (inputs are frozen from `voting_closed` onward). Weights live on the edition; the
   algorithm choice and ladders live in `config/scoring.php`. Guarded to `voting_closed` / `committee_review`
-  / `results_published`.
+  / `results_published`. The full flow: [scoring-results.md](scoring-results.md).
 - **`Reporting`** (`app/Modules/Reporting/`) — general management statistics, **kept separate from
   final `Results`**; **read-only aggregation, persists nothing** (no table, no model). Its foundation is
   the `ReportInterface` (`Reports/`): every report exposes `key()` / `title()` / `columns()` and a
@@ -669,7 +671,8 @@ pointer entry rather than re-storing their detail.
     submitted + `->valid()` only. A plain count is less telling (the public ranks its 3 picks).
   - **`CancelledVotesPerDayReport`** (`cancelled-votes-per-day`) — invalidated ballots per UTC day.
   The **final ranking** ("clasament final") is served by the existing `Results` module, not duplicated
-  here. Endpoints in [access-control.md](access-control.md); `reporting` permission (admin).
+  here. Endpoints in [access-control.md](access-control.md); `reporting` permission (admin). The full
+  picture: [reporting.md](reporting.md).
 
 ---
 

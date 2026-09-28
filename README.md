@@ -60,8 +60,12 @@ per-entity submodules (e.g. `Catalog/Artist/…`). See [docs/architecture.md](do
 
 Deeper documentation lives in [`docs/`](docs/README.md). Start with the
 [domain model](docs/domain-model.md) for every entity and its relationships, then
-[module architecture](docs/architecture.md), [access control & auth](docs/access-control.md), the
-[edition lifecycle](docs/edition-lifecycle.md) and the [audit trail](docs/audit.md). Ecosystem-level decisions and open questions are
+[module architecture](docs/architecture.md), [access control & auth](docs/access-control.md) and the
+[edition lifecycle](docs/edition-lifecycle.md). The awards flow is then covered chapter by chapter:
+[academy & nominations](docs/academy.md), [nominee reconciliation](docs/nominee-reconciliation.md),
+[public voting](docs/voting.md), [scoring & results](docs/scoring-results.md),
+[fraud monitoring](docs/fraud-monitoring.md), [reporting](docs/reporting.md) and the
+[audit trail](docs/audit.md). Ecosystem-level decisions and open questions are
 tracked in the ecosystem [`CLAUDE.md`](../CLAUDE.md).
 
 ## Getting started

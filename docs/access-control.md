@@ -63,7 +63,8 @@ lifetime in their own wording — update them with the config. A row is one per 
 member who requests a sign-in link before using their invitation replaces it with the shorter-lived link
 (which still activates them).
 
-Admin roster CRUD lives under `/api/admin/members` (the `members` permission).
+Admin roster CRUD lives under `/api/admin/members` (the `members` permission). Full flow:
+[academy.md](academy.md).
 
 ## 2c. Ranked nominations (the `Nomination` module)
 
@@ -82,9 +83,9 @@ endpoint operates on the caller's own ballot for the single active edition; ther
 **Deadline gate** (`ResolveOpenNominationEditionAction`): save/submit are allowed only while the
 active edition's `status == nominations_open` **and** now ∈ `[nominations_start_at,
 nominations_end_at]`. This is the first feature to read the edition datetimes (see
-[edition-lifecycle.md](edition-lifecycle.md) §3). **Nominee pool** = the full Catalog of the
-category's `nominee_type`; each id is validated to exist in that type's table. Rankings store `rank`
-only — the points curve is deferred to `Scoring`.
+[edition-lifecycle.md](edition-lifecycle.md) §3). Members **type nominee names (free text)**; each is
+staged as a `NomineeSubmission` for admin reconciliation (§2k). Rankings store `rank` only — the points
+curve is deferred to `Scoring`. Full flow: [academy.md](academy.md#4-ranked-nominations).
 
 ## 2d. Member proposals (the `MemberProposal` module)
 
@@ -122,7 +123,8 @@ The generate and adjust write endpoints **422** unless the edition is `nominatio
 frozen, voting not yet open); this same guard is the regeneration/adjust lock (re-running or adjusting
 while `nominations_closed` replaces the category's entries; once voting opens, the shortlist is frozen).
 `shortlists` is granted to `admin` in `PermissionSeeder`. See the [Shortlist](domain-model.md#shortlist)
-domain notes for the entity and the `Rominas\Scoring\RankPoints` points curve.
+domain notes for the entity and the `Rominas\Scoring\RankPoints` points curve, and
+[academy.md](academy.md#6-the-shortlist) for the full flow.
 
 ## 2f. Public voting (the `Voting` module)
 
@@ -149,7 +151,7 @@ on any failure (missing / used / expired — no distinction), like the academy m
 **GDPR**: no plaintext personal data is stored. `email_hash`/`ip_hash` are HMAC-SHA256 (`VoterHasher`)
 keyed by `config('voting.pepper')` (env `VOTING_PEPPER`, falls back to `APP_KEY`) — the pepper must be set
 and never rotated once ballots exist. The link token is stored only as its SHA-256. See the
-[Voting](domain-model.md#voting) domain notes.
+[Voting](domain-model.md#voting) domain notes and the [public voting](voting.md) chapter.
 
 ## 2g. Results (the `Results` module)
 
@@ -176,7 +178,7 @@ Public endpoint, **unauthenticated**, under `/api/results`:
 
 The snapshot is frozen automatically by the `FreezeResultsOnEditionPublished` listener when the edition
 transitions to `results_published` (see [edition-lifecycle.md](edition-lifecycle.md)). See the
-[Results](domain-model.md#results) domain notes.
+[Results](domain-model.md#results) domain notes and the [scoring & results](scoring-results.md) chapter.
 
 ## 2h. Fraud monitoring (the `FraudMonitoring` module)
 
@@ -215,7 +217,8 @@ the `->valid()` filter keeps cancelled ballots out of the public tally.
 
 Alerts are produced by the `fraud:detect` command (scheduled hourly in `routes/console.php`) — the
 scheduler only fires if the OS cron runs `php artisan schedule:run`. See the
-[FraudMonitoring](domain-model.md#fraudmonitoring) domain notes.
+[FraudMonitoring](domain-model.md#fraudmonitoring) domain notes and the
+[fraud monitoring](fraud-monitoring.md) chapter.
 
 ## 2i. Audit trail (the `Audit` module)
 
@@ -259,7 +262,8 @@ Registered report keys: `votes-per-category-per-day`, `nominations-per-entity`,
 
 Optional query inputs (shared by view + export): `edition_id` (defaults to the active edition), and a
 `from` / `to` date window (applied to every vote report). Reports are read-only aggregations; see
-the [Reporting](domain-model.md#behavioural-modules-no-persistent-entities) domain notes.
+the [Reporting](domain-model.md#behavioural-modules-no-persistent-entities) domain notes and the
+[reporting](reporting.md) chapter.
 
 ## 2k. Nominee reconciliation (the `NomineeSubmission` module)
 
@@ -286,7 +290,8 @@ Admin endpoints, nested under an edition (Sanctum-guarded):
 
 Linking refuses (422) when it would list the same nominee twice on one member's ballot (two typed names that
 turn out to be the same act). **Interlock:** `Shortlist` generation refuses (422) while any submission for the
-edition is still pending — see [edition-lifecycle](edition-lifecycle.md).
+edition is still pending — see [edition-lifecycle](edition-lifecycle.md) and the
+[nominee reconciliation](nominee-reconciliation.md) chapter.
 
 ## 2. Admin login (the `Auth` module)
 
