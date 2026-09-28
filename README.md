@@ -22,8 +22,8 @@ The public presentation site is a separate WordPress project, out of scope for t
 
 - **PHP 8.5 / Laravel 13**, API-first.
 - **Auth:** Laravel **Sanctum** (token-based); spatie/laravel-permission with wildcard permissions.
-  Admin login is username+password; participant (academy/critic) magic-link/OTP and accountless
-  public voting are planned.
+  Admin login is email + password; academy members sign in by passwordless magic link on their own
+  `member` guard; public voting is accountless (a one-time, single-use emailed link).
 - **Messaging:** transactional email behind a transport seam (SMTP; Brevo opt-in).
 - **Testing:** Pest. **Quality:** Laravel Pint (PER), Larastan (level 6).
 - **Local dev:** Laravel Sail (MySQL 8.4).
@@ -39,14 +39,22 @@ per-entity submodules (e.g. `Catalog/Artist/…`). See [docs/architecture.md](do
 | Module | Responsibility | Status |
 | --- | --- | --- |
 | `Users` / `Roles` / `Permissions` | Admin accounts + role/permission access control | built |
-| `Auth` | Sanctum admin login / logout | built |
+| `Auth` | Sanctum admin login / logout + the guard-agnostic magic-link primitive | built |
+| `Menu` | The admin's permission-filtered sidebar menu | built |
 | `Taxonomies` | Reusable classification vocabulary (genre, region, tag) | built |
 | `Editions` | Yearly award editions + lifecycle | built |
 | `Categories` | Award categories, scoped to an edition, typed by nominee kind | built |
-| `Catalog` | Nominatable entities: artists, bands, venues, songs, albums | built |
+| `Catalog` | Nominatable entities: artists, bands, venues, songs, albums; free-text nominee reconciliation | built |
+| `Academy` | Members + magic-link auth, invitations, ranked nominations, member proposals, voting shortlist | built |
+| `Voting` | Accountless public voting: one-time links, multi-step ballot, one submission per person | built |
+| `Scoring` | Results engine: rank→points curves + academy/public weighting, computed on demand | built |
+| `Results` | Custodian-gated results view/export + the immutable snapshot frozen on publication | built |
+| `FraudMonitoring` | Ballot review, reason-required vote cancellation, scheduled fraud alerts | built |
+| `Reporting` | Management statistics (JSON / CSV / Excel), separate from final results | built |
+| `Audit` | Append-only audit trail of admin actions and auth / account events | built |
 | `Delivery` | Transactional messaging (SMTP / Brevo) | built |
 | `Shared` | Cross-module query-builder concerns | built |
-| `Academy`, `CriticsChoice`, `Voting`, `Scoring`, `Results`, `FraudMonitoring`, `Audit` | Nominations, public voting, scoring, results, anti-fraud, audit | planned |
+| `CriticsChoice` | Critics' Choice committee submissions | planned |
 
 ## Documentation
 
