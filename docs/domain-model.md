@@ -8,15 +8,19 @@ picture stays complete. Keep this file in sync whenever an entity is added or ch
 
 ## Module overview
 
-| Module | Entities | Kind |
-| --- | --- | --- |
-| [Access control](#access-control--users-roles-permissions) (`Users`, `Roles`, `Permissions`) | User, Role, Permission | Admin accounts & authorization |
-| [Taxonomies](#taxonomies) | Taxonomy, TaxonomyTerm | Classification vocabulary |
-| [Editions](#editions) | Edition | Yearly award edition + lifecycle |
-| [Categories](#categories) | Category | Award categories, scoped to an edition |
-| [Catalog](#catalog) | Artist, Band, Venue, Song, Album | Nominatable entities |
-| [Academy](#academy) | Member, Nomination, NominationRanking, MemberProposal | Participant accounts, ranked nominations, member proposals |
-| [Behavioural modules](#behavioural-modules-no-persistent-entities) (`Auth`, `Delivery`, `Shared`) | MagicLinkToken | Behaviour + the magic-link token store |
+| Module | Entities | Kind | Chapter |
+| --- | --- | --- | --- |
+| [Access control](#access-control--users-roles-permissions) (`Users`, `Roles`, `Permissions`) | User, Role, Permission | Admin accounts & authorization | [access-control.md](access-control.md) |
+| [Taxonomies](#taxonomies) | Taxonomy, TaxonomyTerm | Classification vocabulary | — |
+| [Editions](#editions) | Edition | Yearly award edition + lifecycle | [edition-lifecycle.md](edition-lifecycle.md) |
+| [Categories](#categories) | Category | Award categories, scoped to an edition | — |
+| [Catalog](#catalog) | Artist, Band, Venue, Song, Album, NomineeSubmission | Nominatable entities + free-text reconciliation | [nominee-reconciliation.md](nominee-reconciliation.md) |
+| [Academy](#academy) | Member, Nomination, NominationRanking, MemberProposal, ShortlistEntry | Participant accounts, ranked nominations, member proposals, shortlist | [academy.md](academy.md) |
+| [Voting](#voting) | Ballot, BallotRanking | Accountless public voting | [voting.md](voting.md) |
+| [Results](#results) | ResultSnapshot, ResultEntry | Custodian-gated results + publish-time snapshot | [scoring-results.md](scoring-results.md) |
+| [FraudMonitoring](#fraudmonitoring) | InvalidationBatch, FraudAlert | Vote cancellation + automatic fraud detection | [fraud-monitoring.md](fraud-monitoring.md) |
+| [Audit](#audit-cross-cutting-trail) | AuditLog | Cross-cutting audit trail | [audit.md](audit.md) |
+| [Behavioural modules](#behavioural-modules-no-persistent-entities) (`Auth`, `Delivery`, `Shared`, `Menu`, `Scoring`, `Reporting`) | MagicLinkToken | Behaviour only, plus the magic-link token store | [scoring-results.md](scoring-results.md), [reporting.md](reporting.md) |
 
 ```mermaid
 erDiagram
@@ -33,8 +37,10 @@ erDiagram
 ```
 
 > **Catalog entities are standalone** — there are no relationships between Artist/Band/Venue/Song/
-> Album (nor to Categories) yet. A category names the *type* of catalog entity it accepts via the
-> `NomineeType` enum; the actual nominee↔category links arrive with the `Academy`/`Voting` modules.
+> Album, nor foreign keys to Categories. A category names the *type* of catalog entity it accepts via the
+> `NomineeType` enum; the actual nominee↔category links are the `(nominee_type, nominee_id)` pairs on
+> [NominationRanking](#academy), [ShortlistEntry](#shortlist), [BallotRanking](#voting) and
+> [ResultEntry](#results).
 
 ---
 
@@ -618,7 +624,7 @@ pointer entry rather than re-storing their detail.
 
 ## Behavioural modules (no persistent entities)
 
-- **`Auth`** (`app/Modules/Auth/`) — admin username/password login → Sanctum token
+- **`Auth`** (`app/Modules/Auth/`) — admin email + password login → Sanctum token
   (`POST /api/authenticate`), and logout (see [access-control.md](access-control.md)). Also hosts the
   **guard-agnostic magic-link primitive** (`Auth/MagicLink/`): the `MagicLinkToken` model (table
   `magic_link_tokens`, composite PK `(email, guard)`, hashed single-use token, per-link `expires_at` — 15 min for sign-in links, 48 h for invitations, from
@@ -629,8 +635,10 @@ pointer entry rather than re-storing their detail.
   pipeline driven by `config/delivery.php`; no stored models.
 - **`Shared`** (`app/Modules/Shared/Concerns/`) — cross-module query-builder concerns
   (`QueryBuilderSearchableTrait`, `QueryBuilderSortableTrait`).
+- **`Menu`** (`app/Modules/Menu/`) — the admin dashboard's sidebar menu, filtered to the permissions of
+  the signed-in user (`GetMenuForUserAction`); no stored models.
 - **`Scoring`** (`app/Modules/Scoring/`) — the results engine; **computes on demand, persists nothing**
-  (the future `Results` module owns the custodian-gated view/export and the publish-time snapshot). Per
+  (the [`Results`](#results) module owns the custodian-gated view/export and the publish-time snapshot). Per
   category it re-tallies each shortlisted nominee's academy points (submitted `NominationRanking`s, via the
   `RankPoints` curve) and public points (submitted, **non-cancelled** `BallotRanking`s — `->valid()`,
   excluding any ballot cancelled by `FraudMonitoring` — via the `PublicRankPoints` curve), then hands them
