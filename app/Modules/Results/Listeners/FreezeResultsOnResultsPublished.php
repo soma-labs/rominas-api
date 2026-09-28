@@ -13,7 +13,7 @@ use Rominas\Results\Actions\PublishEditionResultsAction;
  * synchronously so the snapshot exists as soon as the transition returns; the action is idempotent, and
  * if it ever fails the read path falls back to live Scoring computation. Wired in EventServiceProvider.
  */
-class FreezeResultsOnEditionPublished
+class FreezeResultsOnResultsPublished
 {
     public function __construct(
         private readonly PublishEditionResultsAction $action,

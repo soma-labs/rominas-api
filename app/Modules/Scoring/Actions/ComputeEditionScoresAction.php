@@ -13,9 +13,9 @@ use Rominas\Scoring\DataTransferObjects\EditionScore;
  * Computes an entire edition's results — every category, in order — on demand.
  *
  * The inputs are frozen the moment public voting closes (no new nominations or ballots in the scorable
- * states), so the result is cached per edition and status; a status change (e.g. publishing) yields a new
- * key, and passing `fresh: true` forces a recompute. Nothing is persisted — the (future) Results module
- * owns the custodian-gated view/export and the publish-time frozen snapshot.
+ * states), so the result is cached per edition and status; a status change (e.g. results being published) yields
+ * a new key, and passing `fresh: true` forces a recompute. Nothing is persisted — the (future) Results
+ * module owns the custodian-gated view/export and the snapshot frozen when results are published.
  */
 class ComputeEditionScoresAction
 {

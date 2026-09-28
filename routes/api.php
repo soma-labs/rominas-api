@@ -36,7 +36,7 @@ Route::middleware(['auth:member', 'audit'])->prefix('/academy')->name('api.acade
 Route::prefix('/voting')->name('api.voting.')->group(__DIR__ . '/api/voting/public.php');
 
 // ---------------------------------------------------------------------------
-// Public results API (unauthenticated — a published edition's frozen results snapshot).
+// Public results API (unauthenticated — an edition's frozen results snapshot, once published).
 // ---------------------------------------------------------------------------
 Route::prefix('/results')->name('api.results.')->group(__DIR__ . '/api/results.php');
 

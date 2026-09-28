@@ -42,7 +42,7 @@ throws a `ValidationException` (**422**). On success it sets and saves the new s
 > **Transitions now emit an event.** `TransitionEditionAction` fires `EditionTransitioned`
 > (`Editions/Events/`) after saving; cross-module listeners hang off it (wired in `EventServiceProvider`).
 > Entering `results_published` **freezes the results snapshot**
-> (`Results\Listeners\FreezeResultsOnEditionPublished` → `PublishEditionResultsAction`; see
+> (`Results\Listeners\FreezeResultsOnResultsPublished` → `PublishEditionResultsAction`; see
 > [Results](domain-model.md#results)). There is no separate `committee_review` lock hook: Scoring's inputs
 > are already frozen from `voting_closed` (submitted rankings/ballots are terminal), so the custodian
 > review window is simply the scorable states — the results view is live-computed until publication, then
@@ -73,8 +73,8 @@ throws a `ValidationException` (**422**). On success it sets and saves the new s
 > (`FraudMonitoring`, see [access-control.md](access-control.md#2h-fraud-monitoring-the-fraudmonitoring-module)): a fraud monitor or
 > custodian may cancel fraudulent ballots during the review window, before the `results_published` freeze.
 > Cancelling excludes those ballots from the public tally (`->valid()`) and busts the edition's cached
-> Scoring output, so the live results view reflects it immediately; the snapshot frozen at publish
-> captures the post-cancellation result.
+> Scoring output, so the live results view reflects it immediately; the snapshot frozen when results are
+> published captures the post-cancellation result.
 
 ## 3. The timeline (six datetimes, strictly ordered)
 

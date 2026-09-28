@@ -5,8 +5,8 @@ How an edition's winners are decided and published. Two modules split the work:
 - **`Scoring`** (`app/Modules/Scoring/`) is the **engine**. It turns academy and public rankings into a
   ranked result per category, **computes on demand and stores nothing**.
 - **`Results`** (`app/Modules/Results/`) is the **custodian-gated face** of that engine. It serves results
-  to the custodian during review, and **freezes an immutable snapshot** the moment the edition is published,
-  which is also when results become public.
+  to the custodian during review, and **freezes an immutable snapshot** the moment the edition's results are
+  published, which is also when they become public.
 
 Entity fields (`ResultSnapshot`, `ResultEntry`) are in [domain-model.md](domain-model.md#results);
 permissions are in [access-control.md §2g](access-control.md#2g-results-the-results-module).
@@ -124,7 +124,7 @@ position, nominee type and name, both raw points, both share/score fields, final
 ## 6. Publishing and the snapshot
 
 When the edition transitions to **`results_published`**, the `EditionTransitioned` event fires the
-`FreezeResultsOnEditionPublished` listener, which runs `PublishEditionResultsAction` **synchronously**:
+`FreezeResultsOnResultsPublished` listener, which runs `PublishEditionResultsAction` **synchronously**:
 
 1. recompute fresh (bypassing the cache);
 2. in one transaction, delete any existing snapshot for the edition (entries cascade) and write a new
@@ -141,8 +141,8 @@ deliberately.
 ## 7. Public results
 
 `GET /api/results/editions/{edition}` — **unauthenticated**. It is served **only from the snapshot**, and
-an edition without one returns **404**. Results therefore become public exactly at publish time, never
-before.
+an edition without one returns **404**. Results therefore become public exactly when they are published,
+never before.
 
 ## 8. Files
 
@@ -154,5 +154,5 @@ before.
 | Algorithms | `Scoring/Support/{ScoringAlgorithm,AttributedScoreCalculator,ScoreCalculator}.php`, bound in `AppServiceProvider` |
 | Config | `config/scoring.php` |
 | Read path | `Results/Actions/GetEditionResultsAction.php`, `Results/Support/EditionResultsPresenter.php` |
-| Publish | `Results/Listeners/FreezeResultsOnEditionPublished.php`, `Results/Actions/PublishEditionResultsAction.php` |
+| Publish | `Results/Listeners/FreezeResultsOnResultsPublished.php`, `Results/Actions/PublishEditionResultsAction.php` |
 | Endpoints | `routes/api/admin/results.php`, `routes/api/results.php` |

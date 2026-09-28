@@ -11,9 +11,9 @@ return new class extends Migration {
     {
         Schema::create('result_snapshots', function (Blueprint $table): void {
             $table->id();
-            // One immutable snapshot per edition, frozen when the edition is published.
+            // One immutable snapshot per edition, frozen when the edition's results are published.
             $table->foreignId('edition_id')->unique()->constrained('editions')->cascadeOnDelete();
-            // The weighting in force at publish time, captured so the snapshot is self-describing.
+            // The weighting in force when results are published, captured so the snapshot is self-describing.
             $table->unsignedTinyInteger('academy_vote_weight');
             $table->unsignedTinyInteger('public_vote_weight');
             $table->timestamp('published_at');

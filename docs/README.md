@@ -16,7 +16,7 @@ ecosystem architecture decisions, locked choices and open questions see the ecos
 | [Academy & nominations](academy.md) | Members and their `member` guard, magic-link sign-in and invitations, ranked nominations (window, save/resume, submit-all), member proposals, and the per-category shortlist that feeds public voting. |
 | [Nominee reconciliation](nominee-reconciliation.md) | Turning free-text nominee names into canonical Catalog entries: capture + dedup, link / create / reject, match suggestions, and the shortlist interlock. |
 | [Public voting](voting.md) | Accountless voting: one link per email, token-gated ballot (alphabetical), exactly-three-picks submit, and voter pseudonymization. |
-| [Scoring & results](scoring-results.md) | The points curves, the tally, the `attributed` and `share` algorithms, caching, custodian review/export, the publish-time snapshot and the public results API. |
+| [Scoring & results](scoring-results.md) | The points curves, the tally, the `attributed` and `share` algorithms, caching, custodian review/export, the snapshot frozen when results are published, and the public results API. |
 | [Fraud monitoring](fraud-monitoring.md) | Ballot review, reason-required cancellation batches, the scheduled `fraud:detect` detectors, severity and alert triage/dedup. |
 | [Reporting](reporting.md) | The report contract and registry, JSON / CSV / Excel output, the four reports and how to add one. |
 | [Audit trail](audit.md) | The append-only `AuditLog`: the `RecordAuditTrail` middleware, route-name coverage rules (opt-out `/admin`, opt-in elsewhere), actor/subject resolution, redaction + email hashing, the `Context` enrichment hook, the read API, and a checklist for new routes. |

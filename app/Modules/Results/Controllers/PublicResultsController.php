@@ -10,8 +10,9 @@ use Rominas\Results\Model\ResultSnapshot;
 use Rominas\Results\Resources\EditionResultsResource;
 
 /**
- * Public, unauthenticated results for a published edition — served only from the frozen snapshot. An
- * edition without a snapshot (not yet published) is 404; results only ever become public at publish time.
+ * Public, unauthenticated results for an edition whose results are published — served only from the
+ * frozen snapshot. An edition without a snapshot (results not yet published) is 404; results only ever
+ * become public when they are published.
  */
 class PublicResultsController
 {

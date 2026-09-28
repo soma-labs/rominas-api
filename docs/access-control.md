@@ -163,7 +163,8 @@ granted `results` — an admin cannot see complete results before they are publi
 Admin/custodian endpoints, under `/api/admin/editions` (Sanctum-guarded):
 
 - `GET /api/admin/editions/{edition}/results` (`can:viewAny,ResultSnapshot`) — the edition's complete
-  results. Computed live during the review window, served from the frozen snapshot once published.
+  results. Computed live during the review window, served from the frozen snapshot once results are
+  published.
 - `GET /api/admin/editions/{edition}/results/export` (`can:viewAny,ResultSnapshot`) — the same data as a
   CSV download (`response()->streamDownload()`, no extra dependency).
 
@@ -172,11 +173,11 @@ Both inherit Scoring's gate: results are only available once public voting has c
 
 Public endpoint, **unauthenticated**, under `/api/results`:
 
-- `GET /api/results/editions/{edition}` — a **published** edition's results, served from the frozen
-  snapshot only. An edition without a snapshot (not yet published) is a **404**; results become public
-  only at publish time.
+- `GET /api/results/editions/{edition}` — an edition whose results are **published**, served from the
+  frozen snapshot only. An edition without a snapshot (results not yet published) is a **404**; results
+  become public only when they are published.
 
-The snapshot is frozen automatically by the `FreezeResultsOnEditionPublished` listener when the edition
+The snapshot is frozen automatically by the `FreezeResultsOnResultsPublished` listener when the edition
 transitions to `results_published` (see [edition-lifecycle.md](edition-lifecycle.md)). See the
 [Results](domain-model.md#results) domain notes and the [scoring & results](scoring-results.md) chapter.
 

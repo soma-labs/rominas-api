@@ -12,7 +12,7 @@ use Rominas\Scoring\Actions\ComputeEditionScoresAction;
 
 /**
  * Freezes an edition's final results into an immutable {@see ResultSnapshot}. Called by the
- * FreezeResultsOnEditionPublished listener when the edition transitions to `results_published`.
+ * FreezeResultsOnResultsPublished listener when the edition transitions to `results_published`.
  *
  * Recomputes the scores fresh (bypassing Scoring's cache) with the just-published status, then persists
  * the DTO tree as snapshot + entry rows, capturing the edition's vote weights. Idempotent: an existing

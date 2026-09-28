@@ -13,7 +13,7 @@ use Rominas\Scoring\DataTransferObjects\EditionScore;
 use Rominas\Scoring\DataTransferObjects\NomineeScore;
 
 /**
- * The single read path for an edition's results: once the edition is published a frozen
+ * The single read path for an edition's results: once the edition's results are published a frozen
  * {@see ResultSnapshot} exists and is rebuilt into the Scoring DTO tree; otherwise (during the
  * custodian review window) the scores are computed live from Scoring. Both paths yield the same
  * {@see EditionScore} shape, so callers render one JSON structure regardless of publication state.

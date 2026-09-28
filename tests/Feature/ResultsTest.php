@@ -120,7 +120,7 @@ function resultsSeedPublicRanking(Edition $edition, Category $category, array $a
     }
 }
 
-it('lets a custodian view an edition\'s live results before publication', function (): void {
+it('lets a custodian view an edition\'s live results before results are published', function (): void {
     actingAsCustodian();
     [$edition, , $a] = seedScorableCategory();
 
@@ -132,7 +132,7 @@ it('lets a custodian view an edition\'s live results before publication', functi
         ->assertJsonPath('data.categories.0.nominees.0.position', 1)
         ->assertJsonPath('data.categories.0.nominees.0.nominee.name', $a->name);
 
-    // Nothing is persisted while the edition is unpublished — the view is computed live.
+    // Nothing is persisted while the edition's results are unpublished — the view is computed live.
     expect(ResultSnapshot::query()->forEdition($edition)->exists())->toBeFalse();
 });
 
@@ -153,7 +153,7 @@ it('refuses to show results before public voting has closed', function (): void 
         ->assertJsonValidationErrorFor('status');
 });
 
-it('freezes an immutable snapshot when the edition is published', function (): void {
+it('freezes an immutable snapshot when the edition\'s results are published', function (): void {
     actingAsCustodian();
     [$edition, , $a] = seedScorableCategory(EditionStatus::CommitteeReview);
 
@@ -183,7 +183,7 @@ it('exports the results as CSV', function (): void {
         ->toContain($a->name);
 });
 
-it('serves published results publicly and 404s before publication', function (): void {
+it('serves results publicly once published and 404s before results are published', function (): void {
     [$edition] = seedScorableCategory(EditionStatus::CommitteeReview);
 
     // Unauthenticated, and no snapshot yet.

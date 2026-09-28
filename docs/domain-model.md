@@ -17,7 +17,7 @@ picture stays complete. Keep this file in sync whenever an entity is added or ch
 | [Catalog](#catalog) | Artist, Band, Venue, Song, Album, NomineeSubmission | Nominatable entities + free-text reconciliation | [nominee-reconciliation.md](nominee-reconciliation.md) |
 | [Academy](#academy) | Member, Nomination, NominationRanking, MemberProposal, ShortlistEntry | Participant accounts, ranked nominations, member proposals, shortlist | [academy.md](academy.md) |
 | [Voting](#voting) | Ballot, BallotRanking | Accountless public voting | [voting.md](voting.md) |
-| [Results](#results) | ResultSnapshot, ResultEntry | Custodian-gated results + publish-time snapshot | [scoring-results.md](scoring-results.md) |
+| [Results](#results) | ResultSnapshot, ResultEntry | Custodian-gated results + the snapshot frozen when results are published | [scoring-results.md](scoring-results.md) |
 | [FraudMonitoring](#fraudmonitoring) | InvalidationBatch, FraudAlert | Vote cancellation + automatic fraud detection | [fraud-monitoring.md](fraud-monitoring.md) |
 | [Audit](#audit-cross-cutting-trail) | AuditLog | Cross-cutting audit trail | [audit.md](audit.md) |
 | [Behavioural modules](#behavioural-modules-no-persistent-entities) (`Auth`, `Delivery`, `Shared`, `Menu`, `Scoring`, `Reporting`) | MagicLinkToken | Behaviour only, plus the magic-link token store | [scoring-results.md](scoring-results.md), [reporting.md](reporting.md) |
@@ -451,15 +451,16 @@ The endpoints and the accountless flow are in [access-control.md](access-control
 The custodian-gated, persistent face of the [Scoring](#behavioural-modules-no-persistent-entities)
 engine: while Scoring only ever computes on demand, `Results` (`app/Modules/Results/`) lets the
 **custodian** view/export an edition's complete results during the review window, and freezes an
-**immutable snapshot** into the database the moment the edition is published. Read path is unified — a
-published edition is served from its frozen snapshot, an unpublished one is computed live — so the same
-JSON shape (a Scoring `EditionScore`, enriched with category/nominee names by `EditionResultsPresenter`)
-covers both. The snapshot is what becomes **public** at publish time. Access rules are in
+**immutable snapshot** into the database the moment the edition's results are published. Read path is
+unified — an edition whose results are published is served from its frozen snapshot, one whose results
+aren't yet is computed live — so the same JSON shape (a Scoring `EditionScore`, enriched with
+category/nominee names by `EditionResultsPresenter`) covers both. The snapshot is what becomes **public**
+when results are published. Access rules are in
 [access-control.md](access-control.md#2g-results-the-results-module); the full flow: [scoring-results.md](scoring-results.md).
 
 ```mermaid
 erDiagram
-    EDITION ||--o| RESULT_SNAPSHOT : "one, at publish"
+    EDITION ||--o| RESULT_SNAPSHOT : "one, when results are published"
     RESULT_SNAPSHOT ||--o{ RESULT_ENTRY : "per nominee per category"
     CATEGORY ||--o{ RESULT_ENTRY : "within"
     RESULT_ENTRY }o--|| CATALOG : "nominee (morph by NomineeType slug)"
@@ -470,8 +471,8 @@ erDiagram
 | Field | Notes |
 | --- | --- |
 | `edition_id` | FK → Edition (`cascadeOnDelete`), **unique** — one snapshot per edition |
-| `academy_vote_weight` | the academy weight in force at publish (captured so the snapshot is self-describing) |
-| `public_vote_weight` | the public weight in force at publish |
+| `academy_vote_weight` | the academy weight in force when results are published (captured so the snapshot is self-describing) |
+| `public_vote_weight` | the public weight in force when results are published |
 | `published_at` | when the snapshot was frozen |
 
 `belongsTo` Edition; `hasMany` entries. `ResultSnapshotQueryBuilder` adds `forEdition` +
@@ -493,7 +494,7 @@ Scoring's `NomineeScore` DTO).
 
 Unique `(result_snapshot_id, category_id, nominee_type, nominee_id)` and
 `(result_snapshot_id, category_id, position)`. `nominee()` is a `morphTo` via the app-wide morph map.
-The snapshot is frozen by the `FreezeResultsOnEditionPublished` listener on the `EditionTransitioned`
+The snapshot is frozen by the `FreezeResultsOnResultsPublished` listener on the `EditionTransitioned`
 event (→ `results_published`); see [edition-lifecycle.md](edition-lifecycle.md).
 
 ---
@@ -638,7 +639,8 @@ pointer entry rather than re-storing their detail.
 - **`Menu`** (`app/Modules/Menu/`) — the admin dashboard's sidebar menu, filtered to the permissions of
   the signed-in user (`GetMenuForUserAction`); no stored models.
 - **`Scoring`** (`app/Modules/Scoring/`) — the results engine; **computes on demand, persists nothing**
-  (the [`Results`](#results) module owns the custodian-gated view/export and the publish-time snapshot). Per
+  (the [`Results`](#results) module owns the custodian-gated view/export and the snapshot frozen when
+  results are published). Per
   category it re-tallies each shortlisted nominee's academy points (submitted `NominationRanking`s, via the
   `RankPoints` curve) and public points (submitted, **non-cancelled** `BallotRanking`s — `->valid()`,
   excluding any ballot cancelled by `FraudMonitoring` — via the `PublicRankPoints` curve), then hands them

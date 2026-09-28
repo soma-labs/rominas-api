@@ -14,7 +14,7 @@ use Rominas\Catalog\Enums\NomineeType;
 use Rominas\Categories\Model\Category;
 
 /**
- * One nominee's frozen standing within a category of a published edition: the raw summed academy and
+ * One nominee's frozen standing within a category of an edition whose results are published: the raw summed academy and
  * public points, each side's normalized share, the weighted `final_score` and the resulting `position`
  * (1 = winner). Mirrors Scoring's NomineeScore DTO; the nominee is polymorphic via the stable
  * NomineeType slug (morph map), not a FQN.

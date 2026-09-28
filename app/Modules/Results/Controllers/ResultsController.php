@@ -12,7 +12,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Custodian-facing results: view an edition's complete results (live-computed during the review window,
- * or the frozen snapshot once published) and export them as CSV. Authorization is the `results`
+ * or the frozen snapshot once results are published) and export them as CSV. Authorization is the `results`
  * permission via ResultPolicy; the underlying read enforces Scoring's "voting closed" gate.
  */
 class ResultsController
