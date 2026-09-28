@@ -134,9 +134,10 @@ When the edition transitions to **`results_published`**, the `EditionTransitione
 The action is idempotent, so re-running it is safe. If the listener ever failed, reads would fall back to
 live computation.
 
-From then on the snapshot **is** the result. Later changes, such as cancelling a ballot, switching algorithm
-or editing weights, do not touch it. To change published results, the snapshot has to be regenerated
-deliberately.
+From then on the snapshot **is** the result. Later changes, such as switching algorithm or editing weights,
+do not touch it. Cancelling a ballot is refused outright once results are published (see
+[fraud-monitoring.md §3](fraud-monitoring.md#3-cancelling-votes)), since it could not change the frozen
+snapshot either. To change published results, the snapshot has to be regenerated deliberately.
 
 ## 7. Public results
 

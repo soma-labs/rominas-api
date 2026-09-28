@@ -19,6 +19,10 @@ use Rominas\Voting\Model\Ballot;
  * not-already-invalidated ballots among the requested ids are affected (idempotent on re-run); the batch
  * records the reason and the acting admin, and each cancelled ballot's `invalidation_batch_id` is set so
  * it no longer counts toward Scoring. Invalidation is terminal — there is no reversal.
+ *
+ * Refused once the edition's results are published (`results_published` / `archived`): the published
+ * snapshot is frozen and a cancellation at that point could not change it, so the request is a 422 on
+ * `status` instead of silently doing nothing useful.
  */
 class InvalidateBallotsAction
 {
@@ -37,6 +41,12 @@ class InvalidateBallotsAction
      */
     public function execute(Edition $edition, InvalidateBallotsData $data, User $actor): InvalidationBatch
     {
+        if (in_array($edition->status, [EditionStatus::ResultsPublished, EditionStatus::Archived], strict: true)) {
+            throw ValidationException::withMessages([
+                'status' => "Votes cannot be cancelled once the edition's results are published; the published results are frozen.",
+            ]);
+        }
+
         $batch = DB::transaction(function () use ($edition, $data, $actor): InvalidationBatch {
             $eligibleIds = Ballot::query()
                 ->forEdition($edition)

@@ -69,9 +69,10 @@ Key properties:
   room for one later.
 - **Nothing is deleted.** A cancelled ballot keeps its rankings. The `Ballot::valid()` scope
   (`invalidation_batch_id IS NULL`) is what removes it from Scoring, the detectors and the vote reports.
-- **Timing.** There is no status guard, so cancelling works in any status. Before publication it changes
-  live results. **After `results_published`, it does not change the frozen snapshot** (see
-  [scoring-results.md](scoring-results.md#6-publishing-and-the-snapshot)), so cancel before publishing.
+- **Timing.** Cancelling is refused with a **422** on `status` once the edition's results are published
+  (`results_published` / `archived`) — the published snapshot is frozen and a cancellation at that point
+  could not change it (see [scoring-results.md](scoring-results.md#6-publishing-and-the-snapshot)). Before
+  that, cancelling works in any status and changes live results immediately.
 
 ## 4. Automatic detection
 

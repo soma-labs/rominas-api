@@ -74,7 +74,9 @@ throws a `ValidationException` (**422**). On success it sets and saves the new s
 > custodian may cancel fraudulent ballots during the review window, before the `results_published` freeze.
 > Cancelling excludes those ballots from the public tally (`->valid()`) and busts the edition's cached
 > Scoring output, so the live results view reflects it immediately; the snapshot frozen when results are
-> published captures the post-cancellation result.
+> published captures the post-cancellation result. Once the edition reaches `results_published` (or
+> `archived`), cancellation is refused with a 422 — it could not change the frozen snapshot, so the
+> published results are final.
 
 ## 3. The timeline (six datetimes, strictly ordered)
 

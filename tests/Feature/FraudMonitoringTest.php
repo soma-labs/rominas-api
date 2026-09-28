@@ -205,6 +205,20 @@ it('422s when no selected ballot is eligible', function (): void {
     expect($issued->refresh()->invalidation_batch_id)->toBeNull();
 });
 
+it('422s when cancelling votes once the edition\'s results are published', function (EditionStatus $status): void {
+    fraudActingAs('fraud_monitor');
+    [$edition, $category, $a, $b, $c] = fraudSeedScorableEdition($status);
+    $ballot = fraudSeedBallot($edition, $category, [$a->id, $b->id, $c->id]);
+
+    postJson("/api/admin/editions/{$edition->id}/invalidations", [
+        'reason' => 'Too late, results are already published.',
+        'ballot_ids' => [$ballot->id],
+    ])->assertStatus(422)->assertJsonValidationErrorFor('status');
+
+    expect(InvalidationBatch::query()->forEdition($edition)->doesntExist())->toBeTrue()
+        ->and($ballot->refresh()->invalidation_batch_id)->toBeNull();
+})->with([EditionStatus::ResultsPublished, EditionStatus::Archived]);
+
 it('excludes invalidated ballots from the public scoring tally', function (): void {
     $actor = fraudActingAs('fraud_monitor');
     [$edition, $category, $a, $b, $c] = fraudSeedScorableEdition();

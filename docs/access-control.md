@@ -196,8 +196,9 @@ Admin endpoints, under `/api/admin/editions` (Sanctum-guarded):
   only — never plaintext PII.
 - `POST /api/admin/editions/{edition}/invalidations` (`can:create,InvalidationBatch`) — cancel the
   selected ballots as one batch (`reason` + `ballot_ids` required). Only the edition's submitted,
-  not-already-cancelled ballots are affected; a selection with none eligible is a **422**. Returns the
-  batch (**201**).
+  not-already-cancelled ballots are affected; a selection with none eligible is a **422**. Once the
+  edition's results are published (`results_published` / `archived`) the whole request is refused with a
+  **422** on `status`, since the frozen snapshot could not change anyway. Returns the batch (**201**).
 - `GET /api/admin/editions/{edition}/invalidations` (`can:viewAny,InvalidationBatch`) — the edition's
   cancellation batches (audit log).
 - `GET /api/admin/editions/{edition}/invalidations/{invalidationBatch}` (`can:view,invalidationBatch`) —
