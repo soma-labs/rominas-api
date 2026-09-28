@@ -37,7 +37,7 @@ class GenerateCategoryShortlistAction
 
         if ($category->edition_id !== $edition->id) {
             throw ValidationException::withMessages([
-                'category' => 'The category does not belong to this edition.',
+                'category' => __('The category does not belong to this edition.'),
             ]);
         }
 
@@ -74,7 +74,7 @@ class GenerateCategoryShortlistAction
     {
         if ($edition->status !== EditionStatus::NominationsClosed) {
             throw ValidationException::withMessages([
-                'status' => 'Shortlists can only be generated while nominations are closed and before voting opens.',
+                'status' => __('Shortlists can only be generated while nominations are closed and before voting opens.'),
             ]);
         }
 
@@ -84,7 +84,12 @@ class GenerateCategoryShortlistAction
 
         if ($pending > 0) {
             throw ValidationException::withMessages([
-                'nominee_submissions' => "{$pending} free-text nomination(s) still need reconciliation before shortlists can be generated.",
+                'nominee_submissions' => trans_choice(
+                    ':count free-text nomination still needs reconciliation before shortlists can be generated.'
+                        . '|:count free-text nominations still need reconciliation before shortlists can be generated.',
+                    $pending,
+                    ['count' => $pending],
+                ),
             ]);
         }
     }

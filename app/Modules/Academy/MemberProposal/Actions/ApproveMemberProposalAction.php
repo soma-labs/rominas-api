@@ -29,13 +29,13 @@ class ApproveMemberProposalAction
     {
         if ($proposal->status !== MemberProposalStatus::Pending) {
             throw ValidationException::withMessages([
-                'status' => 'Only a pending proposal can be approved.',
+                'status' => __('Only a pending proposal can be approved.'),
             ]);
         }
 
         if (Member::query()->where('email', $proposal->email)->exists()) {
             throw ValidationException::withMessages([
-                'email' => 'A member with this email already exists.',
+                'email' => __('A member with this email already exists.'),
             ]);
         }
 

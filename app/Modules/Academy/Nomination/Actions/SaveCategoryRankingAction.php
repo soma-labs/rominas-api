@@ -36,7 +36,7 @@ class SaveCategoryRankingAction
 
         if ($category->edition_id !== $edition->id) {
             throw ValidationException::withMessages([
-                'category' => 'This category does not belong to the open edition.',
+                'category' => __('This category does not belong to the open edition.'),
             ]);
         }
 
@@ -44,7 +44,7 @@ class SaveCategoryRankingAction
 
         if ($nomination !== null && $nomination->status === NominationStatus::Submitted) {
             throw ValidationException::withMessages([
-                'nominations' => 'Your nominations have already been submitted.',
+                'nominations' => __('Your nominations have already been submitted.'),
             ]);
         }
 
@@ -65,7 +65,7 @@ class SaveCategoryRankingAction
 
                 if (isset($seen[$submission->id])) {
                     throw ValidationException::withMessages([
-                        'nominees' => 'Two of your picks refer to the same nominee.',
+                        'nominees' => __('Two of your picks refer to the same nominee.'),
                     ]);
                 }
 

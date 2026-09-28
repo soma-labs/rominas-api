@@ -17,7 +17,7 @@ class WithdrawMemberProposalAction
     {
         if ($proposal->status !== MemberProposalStatus::Pending) {
             throw ValidationException::withMessages([
-                'status' => 'Only a pending proposal can be withdrawn.',
+                'status' => __('Only a pending proposal can be withdrawn.'),
             ]);
         }
 

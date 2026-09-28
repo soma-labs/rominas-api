@@ -166,6 +166,33 @@ it('rejects saving when the edition status is not nominations_open', function ()
         ->assertStatus(422);
 });
 
+it('translates a validation error message when Accept-Language is ro', function (): void {
+    $edition = openEdition(['status' => EditionStatus::Draft]);
+    $category = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist]);
+    actingMember();
+
+    putJson(
+        "/api/academy/nominations/categories/{$category->id}",
+        ['nominees' => nomineeNames()],
+        ['Accept-Language' => 'ro'],
+    )
+        ->assertStatus(422)
+        ->assertJsonPath('errors.nominations.0', 'Nominalizările nu sunt deschise.')
+        ->assertJsonPath('message', 'Nominalizările nu sunt deschise.');
+});
+
+it('keeps the English message when Accept-Language is absent or names an unsupported locale', function (?string $acceptLanguage): void {
+    $edition = openEdition(['status' => EditionStatus::Draft]);
+    $category = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist]);
+    actingMember();
+
+    $headers = $acceptLanguage === null ? [] : ['Accept-Language' => $acceptLanguage];
+
+    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => nomineeNames()], $headers)
+        ->assertStatus(422)
+        ->assertJsonPath('errors.nominations.0', 'Nominations are not open.');
+})->with([null, 'fr']);
+
 it('rejects saving when the clock is outside the nomination window', function (): void {
     $edition = openEdition([
         'nominations_start_at' => now()->addDay(),

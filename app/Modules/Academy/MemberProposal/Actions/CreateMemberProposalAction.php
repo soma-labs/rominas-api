@@ -23,13 +23,15 @@ class CreateMemberProposalAction
     {
         if (MemberProposal::query()->forProposer($proposer)->count() >= $this->maxProposalsPerMember) {
             throw ValidationException::withMessages([
-                'proposals' => "You have reached the maximum of {$this->maxProposalsPerMember} proposals.",
+                'proposals' => __('You have reached the maximum of :max proposals.', [
+                    'max' => $this->maxProposalsPerMember,
+                ]),
             ]);
         }
 
         if (Member::query()->where('email', $data->email)->exists()) {
             throw ValidationException::withMessages([
-                'email' => 'This person is already an academy member.',
+                'email' => __('This person is already an academy member.'),
             ]);
         }
 
@@ -40,7 +42,7 @@ class CreateMemberProposalAction
 
         if ($pendingExists) {
             throw ValidationException::withMessages([
-                'email' => 'There is already a pending proposal for this person.',
+                'email' => __('There is already a pending proposal for this person.'),
             ]);
         }
 

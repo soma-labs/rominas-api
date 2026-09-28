@@ -27,7 +27,7 @@ class GetCategoryShortlistCandidatesAction
     {
         if ($category->edition_id !== $edition->id) {
             throw ValidationException::withMessages([
-                'category' => 'The category does not belong to this edition.',
+                'category' => __('The category does not belong to this edition.'),
             ]);
         }
 

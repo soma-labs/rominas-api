@@ -1,0 +1,34 @@
+{
+    "The given data was invalid.": "Datele trimise nu sunt valide.",
+    "(and :count more error)": "(și încă :count eroare)",
+    "(and :count more errors)": "(și încă :count erori)",
+
+    "Nominations are not open.": "Nominalizările nu sunt deschise.",
+    "The nomination window is closed.": "Perioada de nominalizare s-a încheiat.",
+    "This category does not belong to the open edition.": "Această categorie nu aparține ediției deschise.",
+    "Your nominations have already been submitted.": "Nominalizările tale au fost deja trimise.",
+    "Two of your picks refer to the same nominee.": "Două dintre alegerile tale se referă la același nominalizat.",
+    "You have not saved any nominations yet.": "Nu ai salvat încă nicio nominalizare.",
+    "Every category must have exactly 5 ranked nominees. Incomplete: :categories.": "Fiecare categorie trebuie să aibă exact 5 nominalizați clasați. Incomplete: :categories.",
+    "There is no active edition.": "Nu există nicio ediție activă.",
+
+    "You have reached the maximum of :max proposals.": "Ai atins numărul maxim de :max propuneri.",
+    "This person is already an academy member.": "Această persoană este deja membru al academiei.",
+    "There is already a pending proposal for this person.": "Există deja o propunere în așteptare pentru această persoană.",
+    "Only a pending proposal can be withdrawn.": "Doar o propunere în așteptare poate fi retrasă.",
+    "Only a pending proposal can be approved.": "Doar o propunere în așteptare poate fi aprobată.",
+    "Only a pending proposal can be rejected.": "Doar o propunere în așteptare poate fi respinsă.",
+    "A member with this email already exists.": "Există deja un membru cu această adresă de e-mail.",
+
+    "If this address is registered, you will receive a sign-in link.": "Dacă adresa este validă, vei primi un link de autentificare.",
+    "The sign-in link is invalid or has expired.": "Link-ul de autentificare este invalid sau a expirat.",
+    "Too many requests. Please wait a minute and try again.": "Prea multe cereri. Așteaptă un minut și încearcă din nou.",
+
+    "The category does not belong to this edition.": "Categoria nu aparține acestei ediții.",
+    "A shortlist may hold at most :count nominees.": "O listă scurtă poate avea cel mult :count nominalizați.",
+    "One or more nominees do not exist for this category.": "Unul sau mai mulți nominalizați nu există pentru această categorie.",
+    "The shortlist can only be adjusted while nominations are closed and before voting opens.": "Lista scurtă poate fi ajustată doar cât timp nominalizările sunt închise și înainte de deschiderea votului.",
+    "Shortlists can only be generated while nominations are closed and before voting opens.": "Listele scurte pot fi generate doar cât timp nominalizările sunt închise și înainte de deschiderea votului.",
+
+    ":count free-text nomination still needs reconciliation before shortlists can be generated.|:count free-text nominations still need reconciliation before shortlists can be generated.": ":count nominalizare cu text liber mai trebuie reconciliată înainte ca listele scurte să poată fi generate.|:count nominalizări cu text liber mai trebuie reconciliate înainte ca listele scurte să poată fi generate.|:count de nominalizări cu text liber mai trebuie reconciliate înainte ca listele scurte să poată fi generate."
+}

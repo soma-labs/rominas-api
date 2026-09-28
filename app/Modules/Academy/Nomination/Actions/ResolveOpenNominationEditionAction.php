@@ -21,7 +21,7 @@ class ResolveOpenNominationEditionAction
 
         if ($edition === null || $edition->status !== EditionStatus::NominationsOpen) {
             throw ValidationException::withMessages([
-                'nominations' => 'Nominations are not open.',
+                'nominations' => __('Nominations are not open.'),
             ]);
         }
 
@@ -29,7 +29,7 @@ class ResolveOpenNominationEditionAction
 
         if ($now->lt($edition->nominations_start_at) || $now->gt($edition->nominations_end_at)) {
             throw ValidationException::withMessages([
-                'nominations' => 'The nomination window is closed.',
+                'nominations' => __('The nomination window is closed.'),
             ]);
         }
 

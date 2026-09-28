@@ -31,13 +31,13 @@ class SubmitNominationAction
 
         if ($nomination === null) {
             throw ValidationException::withMessages([
-                'nominations' => 'You have not saved any nominations yet.',
+                'nominations' => __('You have not saved any nominations yet.'),
             ]);
         }
 
         if ($nomination->status === NominationStatus::Submitted) {
             throw ValidationException::withMessages([
-                'nominations' => 'Your nominations have already been submitted.',
+                'nominations' => __('Your nominations have already been submitted.'),
             ]);
         }
 
@@ -55,8 +55,9 @@ class SubmitNominationAction
 
         if ($incomplete->isNotEmpty()) {
             throw ValidationException::withMessages([
-                'nominations' => 'Every category must have exactly 5 ranked nominees. Incomplete: '
-                    . $incomplete->implode(', ') . '.',
+                'nominations' => __('Every category must have exactly 5 ranked nominees. Incomplete: :categories.', [
+                    'categories' => $incomplete->implode(', '),
+                ]),
             ]);
         }
 

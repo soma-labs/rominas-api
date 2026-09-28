@@ -32,7 +32,7 @@ class MemberAuthController
 
         return response()->json([
             'success' => true,
-            'message' => 'Dacă adresa este validă, vei primi un link de autentificare.',
+            'message' => __('If this address is registered, you will receive a sign-in link.'),
         ]);
     }
 
@@ -47,7 +47,7 @@ class MemberAuthController
         $member = $verify->execute('member', $data['email'], $data['token']);
 
         if (! $member instanceof Member || $member->status === MemberStatus::Suspended) {
-            return response()->json(['message' => 'Link invalid sau expirat.'], 422);
+            return response()->json(['message' => __('The sign-in link is invalid or has expired.')], 422);
         }
 
         $member->forceFill([

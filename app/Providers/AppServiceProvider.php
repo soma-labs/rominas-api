@@ -7,6 +7,7 @@ namespace App\Providers;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -196,7 +197,12 @@ class AppServiceProvider extends ServiceProvider
     private function configureRateLimiting(): void
     {
         RateLimiter::for('magic-request', static fn(Request $request): Limit => Limit::perMinute(5)
-            ->by((string) $request->input('email') . '|' . $request->ip()));
+            ->by((string) $request->input('email') . '|' . $request->ip())
+            // ThrottleRequestsException's own message ("Too Many Attempts.") isn't translated, so give
+            // it a translated response directly.
+            ->response(static fn(Request $request, array $headers): JsonResponse => response()->json([
+                'message' => __('Too many requests. Please wait a minute and try again.'),
+            ], 429, $headers)));
 
         RateLimiter::for('otp-request', static fn(Request $request): Limit => Limit::perMinute(5)
             ->by((string) $request->input('email') . '|' . $request->ip()));

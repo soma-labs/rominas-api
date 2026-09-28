@@ -111,3 +111,28 @@ or `@phpstan-ignore`.
   helper in `tests/Pest.php` (bypasses gates) or `Sanctum::actingAs()` for permission-boundary cases.
 - **DB inspection (optional):** `./dbhub-start.sh` from the `rominas/` parent starts the dbhub server
   the DB MCP connects to (`rominas-api/dbhub.toml`, `localhost:3306`).
+
+## 7. Localization
+
+The API is the **single translation point** for user-facing error text — a frontend displays the
+`message` / `errors` an endpoint returns rather than inventing its own copy, so every client (academy,
+voting, admin) gets one translation for free.
+
+- `Rominas\Shared\Middleware\SetLocaleFromRequest` (registered on the whole `api` group in
+  `bootstrap/app.php`) sets the app locale from `Accept-Language`, matched against
+  `config('app.supported_locales')` (currently `['en', 'ro']`); anything else keeps `config('app.locale')`
+  (`en`).
+- **Every new user-facing message must be wrapped in `__()`** — `ValidationException::withMessages([...])`,
+  an `abort(status, message)`, a plain `response()->json(['message' => ...])`. Keep the English text as
+  the translation key (Laravel's JSON translation convention) and add the Romanian line to `lang/ro.json`.
+  A message needing a count/name uses a `:placeholder` (`__('... :count ...', ['count' => $n])`) or, for
+  real pluralization (singular/few/other — Romanian's plural rule needs three forms), `trans_choice()`
+  with `|`-separated forms and a matching `lang/ro.json` entry.
+- Laravel's own validation rule messages come from `lang/ro/validation.php` — hand-written and covering
+  only the rules this app's Form Requests actually use (`required`, `email`, `string`, `array`, `max`,
+  `min`, `distinct`, `present`, plus `attributes` for human field names). Anything not listed there falls
+  back to the published `lang/en/validation.php` per-key, via `fallback_locale` — no need to duplicate the
+  whole file. Re-run `php artisan lang:publish` if the English baseline ever needs refreshing.
+- A route that throttles (`RateLimiter::for(...)`) needs its own `->response()` callback if it should be
+  translated: `ThrottleRequestsException`'s built-in message ("Too Many Attempts.") is a raw string, never
+  passed through the translator. See the `magic-request` limiter in `AppServiceProvider` for the pattern.

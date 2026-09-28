@@ -67,7 +67,7 @@ class NominationsController
         $edition = Edition::query()->active()->with('categories')->first();
 
         if ($edition === null) {
-            abort(404, 'There is no active edition.');
+            abort(404, __('There is no active edition.'));
         }
 
         $nomination = Nomination::query()

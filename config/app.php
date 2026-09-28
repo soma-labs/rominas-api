@@ -86,6 +86,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Supported Locales
+    |--------------------------------------------------------------------------
+    |
+    | Locales a client may request via `Accept-Language` (see
+    | Rominas\Shared\Middleware\SetLocaleFromRequest). Anything else falls
+    | back to `locale` above.
+    |
+    */
+
+    'supported_locales' => ['en', 'ro'],
+
+    /*
+    |--------------------------------------------------------------------------
     | Encryption Key
     |--------------------------------------------------------------------------
     |

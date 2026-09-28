@@ -40,13 +40,13 @@ class AdjustCategoryShortlistAction
 
         if ($category->edition_id !== $edition->id) {
             throw ValidationException::withMessages([
-                'category' => 'The category does not belong to this edition.',
+                'category' => __('The category does not belong to this edition.'),
             ]);
         }
 
         if (count($nomineeIds) > RankPoints::RANKS) {
             throw ValidationException::withMessages([
-                'nominees' => 'A shortlist may hold at most ' . RankPoints::RANKS . ' nominees.',
+                'nominees' => __('A shortlist may hold at most :count nominees.', ['count' => RankPoints::RANKS]),
             ]);
         }
 
@@ -85,7 +85,7 @@ class AdjustCategoryShortlistAction
     {
         if ($edition->status !== EditionStatus::NominationsClosed) {
             throw ValidationException::withMessages([
-                'status' => 'The shortlist can only be adjusted while nominations are closed and before voting opens.',
+                'status' => __('The shortlist can only be adjusted while nominations are closed and before voting opens.'),
             ]);
         }
     }
@@ -110,7 +110,7 @@ class AdjustCategoryShortlistAction
 
         if (array_diff($nomineeIds, $existing) !== []) {
             throw ValidationException::withMessages([
-                'nominees' => 'One or more nominees do not exist for this category.',
+                'nominees' => __('One or more nominees do not exist for this category.'),
             ]);
         }
     }

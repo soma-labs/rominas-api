@@ -5,6 +5,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Rominas\FraudMonitoring\Commands\DetectVotingFraudCommand;
+use Rominas\Shared\Middleware\SetLocaleFromRequest;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -23,6 +24,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'audit' => \Rominas\Audit\Middleware\RecordAuditTrail::class,
         ]);
+
+        // Translates user-facing error messages: sets the app locale from Accept-Language.
+        $middleware->api(prepend: [SetLocaleFromRequest::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

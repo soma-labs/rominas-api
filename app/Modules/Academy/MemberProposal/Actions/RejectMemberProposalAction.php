@@ -18,7 +18,7 @@ class RejectMemberProposalAction
     {
         if ($proposal->status !== MemberProposalStatus::Pending) {
             throw ValidationException::withMessages([
-                'status' => 'Only a pending proposal can be rejected.',
+                'status' => __('Only a pending proposal can be rejected.'),
             ]);
         }
 
