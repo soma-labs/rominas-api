@@ -54,8 +54,9 @@ An unknown key is a **404**.
 | `edition_id` | The edition to report on. Defaults to the **active edition**; a 422 on `edition_id` if none is active and none is given |
 | `from`, `to` | Optional inclusive bounds on the relevant `submitted_at`; `to` must be ≥ `from` |
 
-`from` / `to` are compared as timestamps. A bare date such as `to=2026-10-05` means **midnight at the
-start** of that day, so to include the whole day pass `2026-10-05 23:59:59` or the next day's date.
+`from` / `to` are compared as timestamps. A bare date includes the whole day: `from=2026-10-05` starts
+at that day's midnight, as expected, and `to=2026-10-05` now also includes the whole day — it means
+`2026-10-05 23:59:59.999999`, not midnight at the start. Pass a full timestamp for a narrower bound.
 
 ## 4. Exports
 

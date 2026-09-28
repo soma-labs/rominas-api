@@ -387,6 +387,24 @@ it('filters a report to the given date window', function (): void {
         ->assertJsonPath('data.rows.0.date', '2026-06-05');
 });
 
+it('treats a bare date "to" filter as including the whole day', function (): void {
+    reportingActingAsAdmin();
+
+    $edition = reportingActiveEdition();
+    $category = reportingCategory($edition, 'Best Album');
+
+    reportingSubmittedBallot($edition, $category, submittedAt: Carbon::parse('2026-06-01 18:00:00'));
+
+    getJson('/api/admin/reports/votes-per-category-per-day?to=2026-06-01')
+        ->assertStatus(200)
+        ->assertJsonCount(1, 'data.rows')
+        ->assertJsonPath('data.rows.0.date', '2026-06-01');
+
+    getJson('/api/admin/reports/votes-per-category-per-day?to=' . urlencode('2026-06-01 12:00:00'))
+        ->assertStatus(200)
+        ->assertJsonCount(0, 'data.rows');
+});
+
 it('exports a per-entity report as CSV and XLSX', function (): void {
     reportingActingAsAdmin();
 

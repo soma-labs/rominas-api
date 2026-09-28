@@ -34,7 +34,16 @@ class ReportParametersFactory
         return new ReportParameters(
             edition: $edition,
             from: isset($validated['from']) ? CarbonImmutable::parse($validated['from']) : null,
-            to: isset($validated['to']) ? CarbonImmutable::parse($validated['to']) : null,
+            to: isset($validated['to']) ? self::parseTo($validated['to']) : null,
         );
+    }
+
+    private static function parseTo(string $to): CarbonImmutable
+    {
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $to) === 1) {
+            return CarbonImmutable::parse($to)->endOfDay();
+        }
+
+        return CarbonImmutable::parse($to);
     }
 }
