@@ -16,11 +16,13 @@ stateDiagram-v2
     pending --> resolved : link to an existing entity
     pending --> resolved : create a new entity from it
     pending --> rejected : junk / spam
+    resolved --> pending : unlink (before voting opens)
     resolved --> [*]
     rejected --> [*]
 ```
 
-Only `pending` submissions can be acted on; `resolved` and `rejected` are final.
+Only `pending` submissions can be linked, created from or rejected. `rejected` is final; a `resolved`
+submission can be **unlinked** back to `pending` until voting opens (§3).
 
 ## 1. Capture and deduplication
 
@@ -53,7 +55,7 @@ in one click (§4).
 All endpoints require the `nomineeSubmissions` permission (held by `admin`) and return 404 for a submission
 belonging to another edition.
 
-## 3. The three decisions
+## 3. The decisions
 
 ### Link — `POST …/{nomineeSubmission}/link {nominee_id, note?}`
 
@@ -80,6 +82,20 @@ keep `nominee_id = null` **permanently**. Every tally uses `NominationRanking::r
 nominees, so a rejected pick counts for nothing in the shortlist, scoring or reporting. The member's other
 picks on that ballot still count. It doesn't just vanish though: `CountRejectedPicksAction` counts these
 rankings per category and the shortlist listing returns them as `meta.rejected_picks` (see §5).
+
+### Unlink — `POST …/{nomineeSubmission}/unlink`
+
+Undoes a mistaken link or create. `UnlinkNomineeSubmissionAction`:
+
+1. refuses (422) unless the submission is `resolved`;
+2. refuses (422) unless the edition is still `nominations_open` or `nominations_closed`. Once voting opens the
+   shortlist is locked, and moving academy points would silently shift the results;
+3. in one transaction, reverts the submission to `pending` (clearing `resolved_nominee_id` and the reviewer,
+   time and note) and **clears `nominee_id` on every ranking** that points at it.
+
+The Catalog entity is left in place, even one made by *create*: remove it through Catalog CRUD if it was a
+mistake. Who unlinked what is kept by the audit trail. A shortlist generated earlier isn't touched, but the
+submission is pending again, so regeneration is blocked (§5) until the name is reconciled.
 
 ## 4. Match suggestions
 
@@ -123,7 +139,7 @@ so that stays visible after generation too, not just as a one-time warning durin
 | Concern | Where |
 | --- | --- |
 | Capture / dedup | `Actions/ResolveOrCreateNomineeSubmissionAction.php`, `Support/NomineeNameNormalizer.php` |
-| Decisions | `Actions/{Link,CreateNomineeFrom,Reject}NomineeSubmissionAction.php` |
+| Decisions | `Actions/{Link,CreateNomineeFrom,Reject,Unlink}NomineeSubmissionAction.php` |
 | Suggestions | `Actions/SuggestCatalogMatchesAction.php` |
 | Admin API | `Controllers/NomineeSubmissionsController.php`, `routes/api/admin/nominee-submissions.php` |
 | Interlock | `Academy/Shortlist/Actions/GenerateCategoryShortlistAction::assertGeneratable()` |

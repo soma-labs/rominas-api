@@ -11,6 +11,7 @@ use Rominas\Catalog\NomineeSubmission\Actions\CreateNomineeFromSubmissionAction;
 use Rominas\Catalog\NomineeSubmission\Actions\LinkNomineeSubmissionAction;
 use Rominas\Catalog\NomineeSubmission\Actions\RejectNomineeSubmissionAction;
 use Rominas\Catalog\NomineeSubmission\Actions\SuggestCatalogMatchesAction;
+use Rominas\Catalog\NomineeSubmission\Actions\UnlinkNomineeSubmissionAction;
 use Rominas\Catalog\NomineeSubmission\Enums\NomineeSubmissionStatus;
 use Rominas\Catalog\NomineeSubmission\Model\NomineeSubmission;
 use Rominas\Catalog\NomineeSubmission\QueryBuilders\NomineeSubmissionQueryBuilder;
@@ -26,7 +27,7 @@ use function abort_unless;
 /**
  * Admin reconciliation of an edition's free-text nominee submissions (guard `sanctum` + the
  * `nomineeSubmissions` permission). Each submission is resolved once: link it to an existing Catalog
- * entity, create a new one from it, or reject it.
+ * entity, create a new one from it, or reject it. A mistaken link can be undone (unlink) before voting opens.
  */
 class NomineeSubmissionsController
 {
@@ -118,6 +119,16 @@ class NomineeSubmissionsController
         $submission = $action->execute($nomineeSubmission, $user, $request->validated()['note'] ?? null);
 
         return new NomineeSubmissionResource($submission->loadCount('rankings'));
+    }
+
+    public function unlink(
+        Edition $edition,
+        NomineeSubmission $nomineeSubmission,
+        UnlinkNomineeSubmissionAction $action,
+    ): NomineeSubmissionResource {
+        $this->assertInEdition($edition, $nomineeSubmission);
+
+        return new NomineeSubmissionResource($action->execute($nomineeSubmission)->loadCount('rankings'));
     }
 
     private function assertInEdition(Edition $edition, NomineeSubmission $submission): void

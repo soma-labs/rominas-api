@@ -309,3 +309,78 @@ it('requires the nomineeSubmissions permission', function (): void {
     Sanctum::actingAs(User::factory()->create());
     getJson("/api/admin/editions/{$edition->id}/nominee-submissions")->assertStatus(403);
 });
+
+it('unlinks a linked submission back to pending and clears its rankings', function (): void {
+    reconcileActingAsAdmin();
+    $edition = reconcileClosedEdition();
+    $category = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist]);
+    $wrongArtist = Artist::factory()->create(['name' => 'Wrong Act']);
+    $rightArtist = Artist::factory()->create(['name' => 'Right Act']);
+    reconcileBallot($edition, $category, ['Right Act']);
+    reconcileBallot($edition, $category, ['right act']);
+
+    $submission = NomineeSubmission::query()->firstOrFail();
+    $url = "/api/admin/editions/{$edition->id}/nominee-submissions/{$submission->id}";
+
+    postJson("{$url}/link", ['nominee_id' => $wrongArtist->id, 'note' => 'oops'])->assertStatus(200);
+
+    postJson("{$url}/unlink")
+        ->assertStatus(200)
+        ->assertJsonPath('data.status', 'pending');
+
+    $submission->refresh();
+    expect($submission->resolved_nominee_id)->toBeNull()
+        ->and($submission->reviewed_by_user_id)->toBeNull()
+        ->and($submission->reviewed_at)->toBeNull()
+        ->and($submission->review_note)->toBeNull()
+        ->and(NominationRanking::query()->where('nominee_submission_id', $submission->id)->whereNotNull('nominee_id')->exists())->toBeFalse()
+        ->and($wrongArtist->fresh())->not->toBeNull();
+
+    // Pending again, so it blocks shortlist generation until it is reconciled correctly.
+    expect(fn() => app(GenerateEditionShortlistsAction::class)->execute($edition))
+        ->toThrow(Illuminate\Validation\ValidationException::class);
+
+    postJson("{$url}/link", ['nominee_id' => $rightArtist->id])->assertStatus(200);
+
+    expect(NominationRanking::query()->where('nominee_id', $rightArtist->id)->count())->toBe(2);
+});
+
+it('refuses to unlink a submission that is not linked', function (NomineeSubmissionStatus $status): void {
+    reconcileActingAsAdmin();
+    $edition = reconcileClosedEdition();
+    $submission = NomineeSubmission::factory()->create(['edition_id' => $edition->id, 'status' => $status]);
+
+    postJson("/api/admin/editions/{$edition->id}/nominee-submissions/{$submission->id}/unlink")
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('status');
+})->with([
+    'pending' => NomineeSubmissionStatus::Pending,
+    'rejected' => NomineeSubmissionStatus::Rejected,
+]);
+
+it('refuses to unlink once voting has opened', function (): void {
+    reconcileActingAsAdmin();
+    $edition = Edition::factory()->status(EditionStatus::VotingOpen)->create();
+    $submission = NomineeSubmission::factory()->resolved()->create(['edition_id' => $edition->id]);
+
+    postJson("/api/admin/editions/{$edition->id}/nominee-submissions/{$submission->id}/unlink")
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('status');
+
+    expect($submission->fresh()->status)->toBe(NomineeSubmissionStatus::Resolved);
+});
+
+it('guards unlink by edition ownership and the nomineeSubmissions permission', function (): void {
+    $edition = reconcileClosedEdition();
+    $submission = NomineeSubmission::factory()->resolved()->create(['edition_id' => $edition->id]);
+    $url = "/api/admin/editions/{$edition->id}/nominee-submissions/{$submission->id}/unlink";
+
+    Sanctum::actingAs(User::factory()->create());
+    postJson($url)->assertStatus(403);
+
+    reconcileActingAsAdmin();
+    postJson('/api/admin/editions/' . reconcileClosedEdition()->id . "/nominee-submissions/{$submission->id}/unlink")
+        ->assertStatus(404);
+
+    expect($submission->fresh()->status)->toBe(NomineeSubmissionStatus::Resolved);
+});

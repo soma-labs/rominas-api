@@ -27,3 +27,7 @@ Route::post('/{edition}/nominee-submissions/{nomineeSubmission}/create', [Nomine
 Route::post('/{edition}/nominee-submissions/{nomineeSubmission}/reject', [NomineeSubmissionsController::class, 'reject'])
     ->name('nominee-submissions.reject')
     ->middleware('can:update,nomineeSubmission');
+
+Route::post('/{edition}/nominee-submissions/{nomineeSubmission}/unlink', [NomineeSubmissionsController::class, 'unlink'])
+    ->name('nominee-submissions.unlink')
+    ->middleware('can:update,nomineeSubmission');

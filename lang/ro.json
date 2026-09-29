@@ -30,5 +30,8 @@
     "The shortlist can only be adjusted while nominations are closed and before voting opens.": "Lista scurtă poate fi ajustată doar cât timp nominalizările sunt închise și înainte de deschiderea votului.",
     "Shortlists can only be generated while nominations are closed and before voting opens.": "Listele scurte pot fi generate doar cât timp nominalizările sunt închise și înainte de deschiderea votului.",
 
-    ":count free-text nomination still needs reconciliation before shortlists can be generated.|:count free-text nominations still need reconciliation before shortlists can be generated.": ":count nominalizare cu text liber mai trebuie reconciliată înainte ca listele scurte să poată fi generate.|:count nominalizări cu text liber mai trebuie reconciliate înainte ca listele scurte să poată fi generate.|:count de nominalizări cu text liber mai trebuie reconciliate înainte ca listele scurte să poată fi generate."
+    ":count free-text nomination still needs reconciliation before shortlists can be generated.|:count free-text nominations still need reconciliation before shortlists can be generated.": ":count nominalizare cu text liber mai trebuie reconciliată înainte ca listele scurte să poată fi generate.|:count nominalizări cu text liber mai trebuie reconciliate înainte ca listele scurte să poată fi generate.|:count de nominalizări cu text liber mai trebuie reconciliate înainte ca listele scurte să poată fi generate.",
+
+    "Only a linked submission can be unlinked.": "Doar o propunere asociată poate fi disociată.",
+    "Submissions can only be unlinked before voting opens.": "Propunerile pot fi disociate doar înainte de deschiderea votului."
 }

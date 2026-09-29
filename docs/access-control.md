@@ -289,6 +289,10 @@ Admin endpoints, nested under an edition (Sanctum-guarded):
   if an entity with the same slug already exists (link instead).
 - `POST /api/admin/editions/{edition}/nominee-submissions/{nomineeSubmission}/reject` (`can:update`) — discard
   junk/spam; leaves the rankings unresolved (surfaced by the shortlist-generation guard).
+- `POST /api/admin/editions/{edition}/nominee-submissions/{nomineeSubmission}/unlink` (`can:update`) — undo a
+  mistaken link: reverts a `resolved` submission to `pending` and clears `nominee_id` on its rankings. Only
+  while the edition is `nominations_open` / `nominations_closed` (422 otherwise, and for a submission that
+  isn't linked); the Catalog entity is kept.
 
 Linking refuses (422) when it would list the same nominee twice on one member's ballot (two typed names that
 turn out to be the same act). **Interlock:** `Shortlist` generation refuses (422) while any submission for the
