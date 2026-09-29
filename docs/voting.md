@@ -132,6 +132,16 @@ where rotation only breaks correlation.)
 
 None of the public voting routes are in the [audit trail](audit.md); the ballot row is its own record.
 
+**The IP must be the voter's, not a proxy's.** The voting frontend calls the API through its own Next.js
+server (a same-origin rewrite of `/api/voting/*`), so the API's direct caller is that server. Next forwards
+the client address in `X-Forwarded-For` (keeping one set by an upstream proxy), and Laravel's
+`TrustProxies` honours it only from addresses listed in **`TRUSTED_PROXIES`** (`config/trustedproxy.php`;
+comma-separated IPs/CIDRs, or `*`). Unset, every ballot would hash the Next server's IP and shared-IP fraud
+detection would flag them all. In production (Cloudflare → Next → API) trust the Next host, and make sure
+Next itself sees the real client: trust Cloudflare's ranges at that hop, or have the edge set
+`X-Forwarded-For` from `CF-Connecting-IP`. Use `*` only when the API is reachable solely through trusted
+proxies, since otherwise anyone can forge the header.
+
 ## 6. After submission
 
 - **Fraud monitoring** reviews submitted ballots, flags suspicious clusters, and can **cancel** ballots in
@@ -152,5 +162,5 @@ None of the public voting routes are in the [audit trail](audit.md); the ballot 
 | Token → ballot | `Actions/ResolveBallotByTokenAction.php` |
 | Submit | `Actions/SubmitBallotAction.php`, `Requests/SubmitBallotRequest.php` |
 | Ballot payload | `Resources/BallotResource.php` |
-| Hashing | `Support/VoterHasher.php`, `config/voting.php` |
+| Hashing | `Support/VoterHasher.php`, `config/voting.php`, `config/trustedproxy.php` (real client IP) |
 | Routes | `routes/api/voting/public.php` |

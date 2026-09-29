@@ -11,9 +11,11 @@ use Rominas\Editions\Model\Edition;
 use Rominas\Voting\Enums\BallotStatus;
 use Rominas\Voting\Model\Ballot;
 use Rominas\Voting\Model\BallotRanking;
+use Rominas\Voting\Support\VoterHasher;
 
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\postJson;
+use function Pest\Laravel\withServerVariables;
 
 /**
  * A voting-open edition whose window contains "now" (see also VotingLinkRequestTest::votingOpenEdition,
@@ -122,6 +124,27 @@ it('casts a three-of-five ballot and consumes the link', function (): void {
     expect($ballot->submitted_at)->not->toBeNull();
     expect($ballot->ip_hash)->not->toBeNull();
 });
+
+it('hashes the voter IP forwarded by a trusted proxy', function (?string $trustedProxies, string $expectedIp): void {
+    config(['trustedproxy.proxies' => $trustedProxies]);
+    $edition = openVotingEdition();
+    $artists = Artist::factory()->count(3)->create();
+    $category = categoryWithShortlist($edition, $artists->pluck('id')->all());
+    $ballot = issuedBallot($edition, 'valid-token');
+
+    withServerVariables(['REMOTE_ADDR' => '10.0.0.5'])
+        ->withHeader('X-Forwarded-For', '203.0.113.7')
+        ->postJson('/api/voting/ballot', [
+            'token' => 'valid-token',
+            'categories' => [['category_id' => $category->id, 'nominees' => $artists->pluck('id')->all()]],
+        ])
+        ->assertStatus(200);
+
+    expect($ballot->refresh()->ip_hash)->toBe(VoterHasher::ipHash($expectedIp));
+})->with([
+    'trusted proxy: the forwarded client IP' => ['10.0.0.5', '203.0.113.7'],
+    'untrusted caller: the header is ignored' => [null, '10.0.0.5'],
+]);
 
 it('rejects picking fewer than three nominees', function (): void {
     $edition = openVotingEdition();
