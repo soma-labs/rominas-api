@@ -9,9 +9,13 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Laravel\Sanctum\PersonalAccessToken;
 use Rominas\Academy\Member\Model\Member;
+use Rominas\Academy\MemberProposal\Model\MemberProposal;
 use Rominas\Academy\Nomination\Enums\NominationStatus;
 use Rominas\Academy\Nomination\Model\Nomination;
+use Rominas\Academy\Nomination\Model\NominationRanking;
+use Rominas\Auth\MagicLink\Model\MagicLinkToken;
 use Rominas\Catalog\Enums\NomineeType;
 use Rominas\Catalog\NomineeSubmission\Actions\ResolveOrCreateNomineeSubmissionAction;
 use Rominas\Catalog\NomineeSubmission\Enums\NomineeSubmissionStatus;
@@ -27,8 +31,11 @@ use Rominas\Editions\Model\Edition;
  * members, and a submitted nomination per member covering every category with 5 ranked picks. Every typed
  * name stays a `pending` NomineeSubmission, so reconciliation (and the shortlist interlock) has real work.
  *
- * Reuses the active edition if one exists (and its categories, if any) — moving it forward to
- * `nominations_closed` when it is still `draft` / `nominations_open`, otherwise leaving its status alone.
+ * Starts from a clean slate: all members (with their proposals and member auth tokens), categories (with
+ * everything hanging off them — rankings, shortlist, ballot rankings, result entries), Catalog entities and
+ * nominee submissions are deleted first. Editions are never deleted: the active one is reused — moved
+ * forward to `nominations_closed` when still `draft` / `nominations_open`, otherwise its status is left
+ * alone — and the default category set is created for it.
  * Names are typed as spelling variants of a fixed pool, so dedup, match suggestions and link/create all
  * get exercised; about half of each pool also exists in the Catalog to link against.
  *
@@ -36,7 +43,7 @@ use Rominas\Editions\Model\Edition;
  */
 class NominationsClosedEditionSeeder extends Seeder
 {
-    private const int MEMBER_COUNT = 10;
+    private const int MEMBER_COUNT = 5;
 
     private const int PICKS_PER_CATEGORY = 5;
 
@@ -44,12 +51,11 @@ class NominationsClosedEditionSeeder extends Seeder
      * @var list<array{name: string, nominee_type: NomineeType}>
      */
     private const array DEFAULT_CATEGORIES = [
-        ['name' => 'Best Male Artist', 'nominee_type' => NomineeType::Artist],
-        ['name' => 'Best Female Artist', 'nominee_type' => NomineeType::Artist],
+        ['name' => 'Best Artist', 'nominee_type' => NomineeType::Artist],
         ['name' => 'Best Band', 'nominee_type' => NomineeType::Band],
         ['name' => 'Song of the Year', 'nominee_type' => NomineeType::Song],
-        ['name' => 'Album of the Year', 'nominee_type' => NomineeType::Album],
-        ['name' => 'Best Live Venue', 'nominee_type' => NomineeType::Venue],
+        /* ['name' => 'Album of the Year', 'nominee_type' => NomineeType::Album], */
+        /* ['name' => 'Best Live Venue', 'nominee_type' => NomineeType::Venue], */
     ];
 
     /**
@@ -90,14 +96,14 @@ class NominationsClosedEditionSeeder extends Seeder
     public function run(): void
     {
         DB::transaction(function (): void {
+            $this->deleteExistingData();
+
             $existingEdition = Edition::query()->active()->first();
             $edition = $existingEdition ?? $this->createEdition();
             $statusKept = $this->closeNominations($edition);
 
-            $categories = $this->categoriesFor($edition);
+            $categories = $this->createCategories($edition);
             $this->seedCatalog($categories);
-
-            $pendingBefore = $this->pendingSubmissionCount($edition);
 
             $members = Member::factory()->active()->count(self::MEMBER_COUNT)->create();
 
@@ -106,14 +112,14 @@ class NominationsClosedEditionSeeder extends Seeder
             }
 
             $this->command->info(sprintf(
-                '%s edition "%s" (%s%s): %d members, %d submitted nominations, %d new pending submissions.',
+                '%s edition "%s" (%s%s): %d members, %d submitted nominations, %d pending submissions.',
                 $existingEdition === null ? 'Created' : 'Reused',
                 $edition->name,
                 $edition->status->value,
                 $statusKept ? ', status kept' : '',
                 $members->count(),
                 $members->count(),
-                $this->pendingSubmissionCount($edition) - $pendingBefore,
+                $this->pendingSubmissionCount($edition),
             ));
         });
     }
@@ -156,16 +162,32 @@ class NominationsClosedEditionSeeder extends Seeder
     }
 
     /**
-     * @return Collection<int, Category>
+     * Wipes the members, categories, Catalog and nomination tables. Deletes go through the query builder so the
+     * FK cascades clear the dependants: nominations/rankings and proposals with their members; rankings,
+     * shortlist, ballot rankings and result entries with their categories.
      */
-    private function categoriesFor(Edition $edition): Collection
+    private function deleteExistingData(): void
     {
-        $categories = Category::query()->filterByEditionId($edition->id)->orderBy('position')->get();
+        NominationRanking::query()->delete();
+        Nomination::query()->delete();
+        NomineeSubmission::query()->delete();
+        Category::query()->delete();
 
-        if ($categories->isNotEmpty()) {
-            return $categories;
+        foreach (NomineeType::cases() as $type) {
+            $type->modelClass()::query()->delete();
         }
 
+        MagicLinkToken::query()->where('guard', 'member')->delete();
+        PersonalAccessToken::query()->where('tokenable_type', Member::class)->delete();
+        MemberProposal::query()->delete();
+        Member::query()->delete();
+    }
+
+    /**
+     * @return Collection<int, Category>
+     */
+    private function createCategories(Edition $edition): Collection
+    {
         return collect(self::DEFAULT_CATEGORIES)->map(
             fn(array $category, int $index): Category => Category::factory()->create([
                 'edition_id' => $edition->id,
