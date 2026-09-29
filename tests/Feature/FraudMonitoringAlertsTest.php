@@ -136,7 +136,8 @@ it('records a velocity-burst alert for a spike within one window', function (): 
     config(['fraud.velocity.threshold' => 3, 'fraud.velocity.window_minutes' => 10]);
     $edition = Edition::factory()->status(EditionStatus::VotingOpen)->create();
 
-    $burstAt = now()->setSeconds(0);
+    // Start at an hour boundary so the whole burst sits inside one epoch-aligned window, whatever the clock.
+    $burstAt = now()->startOfHour();
     alertsSeedBallot($edition, hash('sha256', '203.0.113.1'), $burstAt);
     alertsSeedBallot($edition, hash('sha256', '203.0.113.2'), $burstAt->copy()->addMinutes(1));
     alertsSeedBallot($edition, hash('sha256', '203.0.113.3'), $burstAt->copy()->addMinutes(2));
