@@ -103,7 +103,7 @@ class NominationsClosedEditionSeeder extends Seeder
             $statusKept = $this->closeNominations($edition);
 
             $categories = $this->createCategories($edition);
-            $this->seedCatalog($categories);
+            /* $this->seedCatalog($categories); */
 
             $members = Member::factory()->active()->count(self::MEMBER_COUNT)->create();
 
