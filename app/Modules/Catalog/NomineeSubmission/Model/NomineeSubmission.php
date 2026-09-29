@@ -28,7 +28,6 @@ use Rominas\Users\Model\User;
  *
  * @property list<array{id: int, name: string, slug: string, score: float}>|null $suggestions transient,
  *           non-persisted match suggestions attached by the show endpoint (see SuggestCatalogMatchesAction)
- *
  * @mixin IdeHelperNomineeSubmission
  */
 #[Fillable([
