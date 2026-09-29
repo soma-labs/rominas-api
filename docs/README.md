@@ -14,7 +14,7 @@ ecosystem architecture decisions, locked choices and open questions see the ecos
 | [Access control & auth](access-control.md) | Sanctum token flow, guards per population, spatie roles/permissions, the wildcard-permission scheme + permission-target encoding, the super_admin bypass. |
 | [Edition lifecycle](edition-lifecycle.md) | The eight-state `EditionStatus` machine + guarded transitions, the six-datetime timeline (strict ordering), and the one-active-edition invariant. |
 | [Academy & nominations](academy.md) | Members and their `member` guard, magic-link sign-in and invitations, ranked nominations (window, save/resume, submit-all), member proposals, and the per-category shortlist that feeds public voting. |
-| [Nominee reconciliation](nominee-reconciliation.md) | Turning free-text nominee names into canonical Catalog entries: capture + dedup, link / create / reject, match suggestions, and the shortlist interlock. |
+| [Nominee reconciliation](nominee-reconciliation.md) | Turning free-text nominee names into canonical Catalog entries: capture + dedup, link / create / reject / unlink, match suggestions, and the shortlist interlock. |
 | [Public voting](voting.md) | Accountless voting: one link per email, token-gated ballot (alphabetical), exactly-three-picks submit, and voter pseudonymization. |
 | [Scoring & results](scoring-results.md) | The points curves, the tally, the `attributed` and `share` algorithms, caching, custodian review/export, the snapshot frozen when results are published, and the public results API. |
 | [Fraud monitoring](fraud-monitoring.md) | Ballot review, reason-required cancellation batches, the scheduled `fraud:detect` detectors, severity and alert triage/dedup. |

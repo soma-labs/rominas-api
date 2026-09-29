@@ -63,7 +63,7 @@ an allow-list) and add `actionableByUser()`/`visibleToUser()` for permission sco
 | Routes | `routes/api.php` + `routes/api/admin/<x>.php` | admin group `auth:sanctum` + `audit` (the `Audit` middleware `RecordAuditTrail`, aliased in `bootstrap/app.php`; also on the audited auth/academy routes) + `/admin`; one per-concern file per entity, mounted with `Route::prefix()->group(__DIR__.'/api/admin/x.php')`; `can:` middleware inline |
 | Migrations | `database/migrations/` | standard timestamped files |
 | Eloquent factories | `database/factories/` | `class XFactory extends Factory { protected $model = X::class; }` |
-| Seeders | `database/seeders/` | `RoleSeeder`, `PermissionSeeder`, called from `DatabaseSeeder` |
+| Seeders | `database/seeders/` | `RoleSeeder`, `PermissionSeeder`, called from `DatabaseSeeder`. On demand (not in `DatabaseSeeder`): `NominationsClosedEditionSeeder` — wipes members/categories/Catalog/submissions/nominations, then seeds the active (or a new) edition at `nominations_closed` with members and submitted, unreconciled free-text nominations. Seeders are not tested |
 | Module config | `config/<module>.php` | e.g. `config/delivery.php`, `config/permission.php` |
 | Blade (emails) | `resources/views/emails/` | Delivery payload factories render these |
 
