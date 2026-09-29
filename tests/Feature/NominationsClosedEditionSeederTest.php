@@ -25,7 +25,7 @@ it('creates a nominations_closed edition with fully submitted, unreconciled nomi
 
     $nominations = Nomination::query()->where('edition_id', $edition->id)->with('rankings')->get();
 
-    expect($nominations)->toHaveCount(20);
+    expect($nominations)->toHaveCount(10);
 
     foreach ($nominations as $nomination) {
         expect($nomination->status)->toBe(NominationStatus::Submitted)
@@ -48,7 +48,7 @@ it('reuses the active edition and its categories, closing nominations', function
     expect(Edition::query()->active()->sole()->is($edition))->toBeTrue()
         ->and($edition->fresh()->status)->toBe(EditionStatus::NominationsClosed)
         ->and(Category::query()->filterByEditionId($edition->id)->pluck('id')->all())->toBe([$category->id])
-        ->and(NominationRanking::query()->where('category_id', $category->id)->count())->toBe(20 * 5);
+        ->and(NominationRanking::query()->where('category_id', $category->id)->count())->toBe(10 * 5);
 });
 
 it('keeps the status of an active edition already past nominations_closed', function (): void {
@@ -57,5 +57,5 @@ it('keeps the status of an active edition already past nominations_closed', func
     seed(NominationsClosedEditionSeeder::class);
 
     expect($edition->fresh()->status)->toBe(EditionStatus::VotingOpen)
-        ->and(Nomination::query()->where('edition_id', $edition->id)->count())->toBe(20);
+        ->and(Nomination::query()->where('edition_id', $edition->id)->count())->toBe(10);
 });

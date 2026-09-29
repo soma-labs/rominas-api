@@ -36,7 +36,7 @@ use Rominas\Editions\Model\Edition;
  */
 class NominationsClosedEditionSeeder extends Seeder
 {
-    private const int MEMBER_COUNT = 20;
+    private const int MEMBER_COUNT = 10;
 
     private const int PICKS_PER_CATEGORY = 5;
 
