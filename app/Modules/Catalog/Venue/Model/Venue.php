@@ -36,6 +36,9 @@ class Venue extends Model
         });
     }
 
+    /**
+     * @return VenueQueryBuilder
+     */
     public static function query(): VenueQueryBuilder
     {
         /** @var VenueQueryBuilder $builder */

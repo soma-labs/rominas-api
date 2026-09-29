@@ -52,6 +52,9 @@ class ShortlistEntry extends Model
         ];
     }
 
+    /**
+     * @return ShortlistEntryQueryBuilder
+     */
     public static function query(): ShortlistEntryQueryBuilder
     {
         /** @var ShortlistEntryQueryBuilder $builder */

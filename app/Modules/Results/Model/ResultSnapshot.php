@@ -46,6 +46,9 @@ class ResultSnapshot extends Model
         ];
     }
 
+    /**
+     * @return ResultSnapshotQueryBuilder
+     */
     public static function query(): ResultSnapshotQueryBuilder
     {
         /** @var ResultSnapshotQueryBuilder $builder */

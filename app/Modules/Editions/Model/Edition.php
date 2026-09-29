@@ -65,6 +65,9 @@ class Edition extends Model
         });
     }
 
+    /**
+     * @return EditionQueryBuilder
+     */
     public static function query(): EditionQueryBuilder
     {
         /** @var EditionQueryBuilder $builder */

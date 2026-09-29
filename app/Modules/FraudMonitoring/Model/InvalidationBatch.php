@@ -36,6 +36,9 @@ class InvalidationBatch extends Model
     /** @use HasFactory<InvalidationBatchFactory> */
     use HasFactory;
 
+    /**
+     * @return InvalidationBatchQueryBuilder
+     */
     public static function query(): InvalidationBatchQueryBuilder
     {
         /** @var InvalidationBatchQueryBuilder $builder */

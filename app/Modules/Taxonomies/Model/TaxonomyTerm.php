@@ -53,6 +53,9 @@ class TaxonomyTerm extends Model
         });
     }
 
+    /**
+     * @return TaxonomyTermQueryBuilder
+     */
     public static function query(): TaxonomyTermQueryBuilder
     {
         /** @var TaxonomyTermQueryBuilder $builder */

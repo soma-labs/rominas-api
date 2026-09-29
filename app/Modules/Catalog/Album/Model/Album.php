@@ -36,6 +36,9 @@ class Album extends Model
         });
     }
 
+    /**
+     * @return AlbumQueryBuilder
+     */
     public static function query(): AlbumQueryBuilder
     {
         /** @var AlbumQueryBuilder $builder */

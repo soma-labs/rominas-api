@@ -56,6 +56,9 @@ class User extends Authenticatable
         return $this->getRoleNames()->contains(config('permission.super_admin_role'));
     }
 
+    /**
+     * @return UserQueryBuilder
+     */
     public static function query(): UserQueryBuilder
     {
         /** @var UserQueryBuilder $builder */

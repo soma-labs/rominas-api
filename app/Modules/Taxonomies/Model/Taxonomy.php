@@ -38,6 +38,9 @@ class Taxonomy extends Model
         ];
     }
 
+    /**
+     * @return TaxonomyQueryBuilder
+     */
     public static function query(): TaxonomyQueryBuilder
     {
         /** @var TaxonomyQueryBuilder $builder */

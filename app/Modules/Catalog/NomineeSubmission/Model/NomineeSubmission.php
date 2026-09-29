@@ -60,6 +60,9 @@ class NomineeSubmission extends Model
         ];
     }
 
+    /**
+     * @return NomineeSubmissionQueryBuilder
+     */
     public static function query(): NomineeSubmissionQueryBuilder
     {
         /** @var NomineeSubmissionQueryBuilder $builder */

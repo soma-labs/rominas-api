@@ -43,6 +43,9 @@ class Nomination extends Model
         ];
     }
 
+    /**
+     * @return NominationQueryBuilder
+     */
     public static function query(): NominationQueryBuilder
     {
         /** @var NominationQueryBuilder $builder */

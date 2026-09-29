@@ -52,6 +52,9 @@ class Ballot extends Model
         ];
     }
 
+    /**
+     * @return BallotQueryBuilder
+     */
     public static function query(): BallotQueryBuilder
     {
         /** @var BallotQueryBuilder $builder */

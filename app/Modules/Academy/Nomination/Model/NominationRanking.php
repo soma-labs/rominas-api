@@ -46,6 +46,9 @@ class NominationRanking extends Model
         ];
     }
 
+    /**
+     * @return NominationRankingQueryBuilder
+     */
     public static function query(): NominationRankingQueryBuilder
     {
         /** @var NominationRankingQueryBuilder $builder */

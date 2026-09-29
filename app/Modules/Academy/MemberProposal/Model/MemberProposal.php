@@ -53,6 +53,9 @@ class MemberProposal extends Model
         ];
     }
 
+    /**
+     * @return MemberProposalQueryBuilder
+     */
     public static function query(): MemberProposalQueryBuilder
     {
         /** @var MemberProposalQueryBuilder $builder */

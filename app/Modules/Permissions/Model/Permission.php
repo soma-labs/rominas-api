@@ -15,6 +15,9 @@ use Spatie\Permission\Models\Permission as BasePermission;
 #[UsePolicy(PermissionPolicy::class)]
 class Permission extends BasePermission
 {
+    /**
+     * @return PermissionQueryBuilder
+     */
     public static function query(): PermissionQueryBuilder
     {
         /** @var PermissionQueryBuilder $builder */

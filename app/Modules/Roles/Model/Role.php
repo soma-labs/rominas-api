@@ -15,6 +15,9 @@ use Spatie\Permission\Models\Role as BaseRole;
 #[UsePolicy(RolePolicy::class)]
 class Role extends BaseRole
 {
+    /**
+     * @return RoleQueryBuilder
+     */
     public static function query(): RoleQueryBuilder
     {
         /** @var RoleQueryBuilder $builder */

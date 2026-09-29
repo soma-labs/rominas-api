@@ -40,6 +40,9 @@ class AuditLog extends Model
     /** @use HasFactory<AuditLogFactory> */
     use HasFactory;
 
+    /**
+     * @return AuditLogQueryBuilder
+     */
     public static function query(): AuditLogQueryBuilder
     {
         /** @var AuditLogQueryBuilder $builder */

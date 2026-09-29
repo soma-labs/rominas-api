@@ -36,6 +36,9 @@ class Artist extends Model
         });
     }
 
+    /**
+     * @return ArtistQueryBuilder
+     */
     public static function query(): ArtistQueryBuilder
     {
         /** @var ArtistQueryBuilder $builder */

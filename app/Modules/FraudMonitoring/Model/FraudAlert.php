@@ -60,6 +60,9 @@ class FraudAlert extends Model
         ];
     }
 
+    /**
+     * @return FraudAlertQueryBuilder
+     */
     public static function query(): FraudAlertQueryBuilder
     {
         /** @var FraudAlertQueryBuilder $builder */

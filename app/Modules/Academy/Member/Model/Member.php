@@ -54,6 +54,9 @@ class Member extends Authenticatable
         ];
     }
 
+    /**
+     * @return MemberQueryBuilder
+     */
     public static function query(): MemberQueryBuilder
     {
         /** @var MemberQueryBuilder $builder */

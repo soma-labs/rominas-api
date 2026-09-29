@@ -36,6 +36,9 @@ class Band extends Model
         });
     }
 
+    /**
+     * @return BandQueryBuilder
+     */
     public static function query(): BandQueryBuilder
     {
         /** @var BandQueryBuilder $builder */

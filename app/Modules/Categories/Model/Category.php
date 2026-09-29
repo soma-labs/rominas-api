@@ -53,6 +53,9 @@ class Category extends Model
         });
     }
 
+    /**
+     * @return CategoryQueryBuilder
+     */
     public static function query(): CategoryQueryBuilder
     {
         /** @var CategoryQueryBuilder $builder */

@@ -36,6 +36,9 @@ class Song extends Model
         });
     }
 
+    /**
+     * @return SongQueryBuilder
+     */
     public static function query(): SongQueryBuilder
     {
         /** @var SongQueryBuilder $builder */
