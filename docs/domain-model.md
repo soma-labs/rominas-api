@@ -34,13 +34,18 @@ erDiagram
     EDITION ||--o{ CATEGORY : "has"
     CATEGORY }o--|| NOMINEE_TYPE : "accepts (enum)"
     NOMINEE_TYPE }o--|| CATALOG : "artist|band|venue|song|album"
+
+    EDITION ||--o{ NOMINEE_SUBMISSION : "scopes"
+    NOMINEE_SUBMISSION }o--o| CATALOG : "resolves to (once reconciled)"
 ```
 
 > **Catalog entities are standalone** — there are no relationships between Artist/Band/Venue/Song/
 > Album, nor foreign keys to Categories. A category names the *type* of catalog entity it accepts via the
 > `NomineeType` enum; the actual nominee↔category links are the `(nominee_type, nominee_id)` pairs on
 > [NominationRanking](#academy), [ShortlistEntry](#shortlist), [BallotRanking](#voting) and
-> [ResultEntry](#results).
+> [ResultEntry](#results). A NominationRanking reaches its Catalog row *through* a
+> [NomineeSubmission](#nomineesubmission-free-text-reconciliation): its `nominee_id` is a copy of the
+> submission's `resolved_nominee_id`, which stays null until an admin reconciles the typed name.
 
 ---
 
@@ -226,12 +231,45 @@ each typed name is deduplicated and reconciled once by an admin.
 
 Unique `(edition_id, nominee_type, normalized_name)` — one row per distinct name per type per edition, which
 also "remembers" a resolution for the rest of the edition (a later ballot typing the same name reuses the
-resolved row and gets `nominee_id` immediately). `hasMany` NominationRanking; `resolvedNominee()` is a
-`morphTo` on `(nominee_type, resolved_nominee_id)`. Reconciliation actions: `ResolveOrCreateNomineeSubmission`
+resolved row and gets `nominee_id` immediately). Reconciliation actions: `ResolveOrCreateNomineeSubmission`
 (ballot-side dedup), `SuggestCatalogMatches` (ranked match candidates), `LinkNomineeSubmission` (→ existing
 entity + backfill rankings), `CreateNomineeFromSubmission` (→ new entity), `RejectNomineeSubmission`. Admin
 API and the shortlist interlock: [access-control.md §2k](access-control.md#2k-nominee-reconciliation-the-nomineesubmission-module);
 the full flow: [nominee-reconciliation.md](nominee-reconciliation.md).
+
+#### How it relates to the nomination models
+
+A submission sits between an academy member's ranked pick and the canonical Catalog entity. Everything
+downstream of the academy round works on Catalog rows only.
+
+```mermaid
+erDiagram
+    MEMBER ||--o{ NOMINATION : "ballots"
+    EDITION ||--o{ NOMINATION : "scopes"
+    NOMINATION ||--o{ NOMINATION_RANKING : "ranked picks"
+    CATEGORY ||--o{ NOMINATION_RANKING : "within"
+    EDITION ||--o{ NOMINEE_SUBMISSION : "scopes"
+    NOMINEE_SUBMISSION ||--o{ NOMINATION_RANKING : "rankings (typed as)"
+    USER |o--o{ NOMINEE_SUBMISSION : "reviewed_by"
+    NOMINEE_SUBMISSION }o--o| CATALOG : "resolvedNominee (morph)"
+    NOMINATION_RANKING }o--o| CATALOG : "nominee (copy, backfilled)"
+    SHORTLIST_ENTRY }o..|| CATALOG : "built from resolved rankings only"
+```
+
+- **Cardinality**: there is one submission per `(edition, nominee type, normalized name)`, and it is shared by
+  every ranking from every member that typed that name. So a submission has many rankings (`rankings()`), and
+  a ranking belongs to at most one submission (`nomineeSubmission()`, nullable FK).
+- **The `nominee_id` copy**: when a ranking is saved, it stores the submission's current
+  `resolved_nominee_id`. Linking a submission, or creating an entity from it, backfills `nominee_id` on every
+  one of its rankings in the same transaction. `resolvedNominee()` is a `morphTo` on
+  `(nominee_type, resolved_nominee_id)`.
+- **By status**:
+  - `pending`: the rankings have `nominee_id = null`, and shortlist generation refuses (422).
+  - `resolved`: the rankings point at the Catalog row and count toward points.
+  - `rejected`: `nominee_id` stays null permanently. `NominationRanking::resolved()` skips these rankings
+    in every tally, and the shortlist listing reports them as `rejected_picks`.
+- **Downstream**: [ShortlistEntry](#shortlist), [BallotRanking](#voting) and [ResultEntry](#results) only
+  ever hold canonical `(nominee_type, nominee_id)` pairs. None of them references a submission.
 
 #### How match suggestions are scored
 
@@ -277,7 +315,10 @@ erDiagram
     EDITION ||--o{ NOMINATION : "scopes"
     NOMINATION ||--o{ NOMINATION_RANKING : "ranked picks"
     CATEGORY ||--o{ NOMINATION_RANKING : "within"
-    NOMINATION_RANKING }o--|| CATALOG : "nominee (morph by NomineeType slug)"
+    NOMINATION_RANKING }o--o| NOMINEE_SUBMISSION : "typed as (free text)"
+    EDITION ||--o{ NOMINEE_SUBMISSION : "scopes"
+    NOMINEE_SUBMISSION }o--o| CATALOG : "resolved_nominee (morph, once reconciled)"
+    NOMINATION_RANKING }o--o| CATALOG : "nominee: copy of resolved_nominee_id, null while pending"
 ```
 
 **Member** — `app/Modules/Academy/Member/Model/Member.php`
@@ -324,7 +365,8 @@ Unique `(nomination_id, category_id, rank)`, `(nomination_id, category_id, nomin
 **morph map** (`AppServiceProvider`, mapping each `NomineeType` slug → its Catalog model, so nominee rows
 store the slug not a FQN); it is null until reconciliation. Members **type nominee names (free text)** —
 each name is staged as a [NomineeSubmission](#nomineesubmission-free-text-reconciliation) and the ranking
-points at it, carrying `nominee_id` = null while pending. Gating (open window) and the submit rule (every
+points at it, carrying `nominee_id` = null while pending (see
+[how it relates to the nomination models](#how-it-relates-to-the-nomination-models)). Gating (open window) and the submit rule (every
 category has exactly 5) live in the Nomination actions — see the Academy nominations flow in
 [access-control.md](access-control.md#2c-ranked-nominations-the-nomination-module).
 
