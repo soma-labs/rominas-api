@@ -35,6 +35,7 @@ class PublishEditionResultsAction
                 'edition_id' => $edition->id,
                 'academy_vote_weight' => $edition->academy_vote_weight,
                 'public_vote_weight' => $edition->public_vote_weight,
+                'algorithm' => $score->algorithm,
                 'published_at' => now(),
             ]);
 

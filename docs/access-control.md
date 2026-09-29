@@ -164,6 +164,8 @@ granted `results` — an admin cannot see complete results before they are publi
 
 Admin/custodian endpoints, under `/api/admin/editions` (Sanctum-guarded):
 
+- `GET /api/admin/results/editions` (`can:viewAny,ResultSnapshot`) — the editions whose results can be read
+  (voting closed onward, or snapshotted); the custodian's edition picker.
 - `GET /api/admin/editions/{edition}/results` (`can:viewAny,ResultSnapshot`) — the edition's complete
   results. Computed live during the review window, served from the frozen snapshot once results are
   published.

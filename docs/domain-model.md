@@ -517,6 +517,7 @@ erDiagram
 | `edition_id` | FK → Edition (`cascadeOnDelete`), **unique** — one snapshot per edition |
 | `academy_vote_weight` | the academy weight in force when results are published (captured so the snapshot is self-describing) |
 | `public_vote_weight` | the public weight in force when results are published |
+| `algorithm` | the scoring algorithm in force when results were published (`attributed` \| `share`) — decides how the entries' share/final fields read |
 | `published_at` | when the snapshot was frozen |
 
 `belongsTo` Edition; `hasMany` entries. `ResultSnapshotQueryBuilder` adds `forEdition` +

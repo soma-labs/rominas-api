@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Rominas\Editions\Model\Edition;
 use Rominas\Results\Policies\ResultPolicy;
 use Rominas\Results\QueryBuilders\ResultSnapshotQueryBuilder;
+use Rominas\Scoring\Enums\ScoringAlgorithmType;
 
 /**
  * An edition's frozen, custodian-gated results snapshot: the immutable set of {@see ResultEntry} rows
@@ -26,6 +27,7 @@ use Rominas\Results\QueryBuilders\ResultSnapshotQueryBuilder;
     'edition_id',
     'academy_vote_weight',
     'public_vote_weight',
+    'algorithm',
     'published_at',
 ])]
 #[UsePolicy(ResultPolicy::class)]
@@ -42,6 +44,7 @@ class ResultSnapshot extends Model
         return [
             'academy_vote_weight' => 'integer',
             'public_vote_weight' => 'integer',
+            'algorithm' => ScoringAlgorithmType::class,
             'published_at' => 'datetime',
         ];
     }

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Rominas\Results\Actions;
 
 use Rominas\Editions\Model\Edition;
+use Rominas\Results\DataTransferObjects\EditionResults;
+use Rominas\Results\Enums\ResultsSource;
 use Rominas\Results\Model\ResultEntry;
 use Rominas\Results\Model\ResultSnapshot;
 use Rominas\Scoring\Actions\ComputeEditionScoresAction;
@@ -16,7 +18,8 @@ use Rominas\Scoring\DataTransferObjects\NomineeScore;
  * The single read path for an edition's results: once the edition's results are published a frozen
  * {@see ResultSnapshot} exists and is rebuilt into the Scoring DTO tree; otherwise (during the
  * custodian review window) the scores are computed live from Scoring. Both paths yield the same
- * {@see EditionScore} shape, so callers render one JSON structure regardless of publication state.
+ * {@see EditionScore} shape, wrapped in {@see EditionResults} with the source and publication time, so
+ * callers render one JSON structure regardless of publication state.
  */
 class GetEditionResultsAction
 {
@@ -24,7 +27,7 @@ class GetEditionResultsAction
         private readonly ComputeEditionScoresAction $compute,
     ) {}
 
-    public function execute(Edition $edition): EditionScore
+    public function execute(Edition $edition): EditionResults
     {
         $snapshot = ResultSnapshot::query()
             ->forEdition($edition)
@@ -32,10 +35,20 @@ class GetEditionResultsAction
             ->first();
 
         if ($snapshot !== null) {
-            return $this->fromSnapshot($edition, $snapshot);
+            return new EditionResults(
+                edition: $edition,
+                score: $this->fromSnapshot($edition, $snapshot),
+                source: ResultsSource::Snapshot,
+                publishedAt: $snapshot->published_at,
+            );
         }
 
-        return $this->compute->execute($edition);
+        return new EditionResults(
+            edition: $edition,
+            score: $this->compute->execute($edition),
+            source: ResultsSource::Live,
+            publishedAt: null,
+        );
     }
 
     private function fromSnapshot(Edition $edition, ResultSnapshot $snapshot): EditionScore
@@ -71,6 +84,6 @@ class GetEditionResultsAction
             $categoryScores[] = new CategoryScore($category->id, $nominees);
         }
 
-        return new EditionScore($edition->id, $categoryScores);
+        return new EditionScore($edition->id, $categoryScores, $snapshot->algorithm);
     }
 }

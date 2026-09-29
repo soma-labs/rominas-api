@@ -51,6 +51,21 @@ class EditionQueryBuilder extends Builder
     }
 
     /**
+     * Editions whose results can be read: public voting has closed (the Scoring gate), or a frozen
+     * snapshot already exists (which also covers archived editions).
+     */
+    public function withResultsAvailable(): self
+    {
+        return $this->where(function (Builder $query): void {
+            $query->whereIn('status', [
+                EditionStatus::VotingClosed->value,
+                EditionStatus::CommitteeReview->value,
+                EditionStatus::ResultsPublished->value,
+            ])->orHas('resultSnapshot');
+        });
+    }
+
+    /**
      * @return string[]
      */
     protected function getSearchableFields(): array

@@ -207,3 +207,69 @@ it('replaces the snapshot idempotently on re-publish', function (): void {
     expect(ResultSnapshot::query()->forEdition($edition)->count())->toBe(1)
         ->and(ResultEntry::query()->count())->toBe(3);
 });
+
+it('labels live results with their source, algorithm and the edition', function (): void {
+    actingAsCustodian();
+    [$edition] = seedScorableCategory();
+
+    getJson("/api/admin/editions/{$edition->id}/results")
+        ->assertStatus(200)
+        ->assertJsonPath('data.source', 'live')
+        ->assertJsonPath('data.algorithm', 'attributed')
+        ->assertJsonPath('data.published_at', null)
+        ->assertJsonPath('data.edition.id', $edition->id)
+        ->assertJsonPath('data.edition.name', $edition->name)
+        ->assertJsonPath('data.edition.status', 'voting_closed');
+});
+
+it('serves the snapshot with its published time and the algorithm it was frozen under', function (): void {
+    actingAsCustodian();
+    [$edition] = seedScorableCategory(EditionStatus::CommitteeReview);
+
+    app(TransitionEditionAction::class)->execute($edition, EditionStatus::ResultsPublished);
+
+    // Switching the algorithm afterwards must not change how the frozen snapshot is described.
+    config(['scoring.algorithm' => 'share']);
+
+    getJson("/api/admin/editions/{$edition->id}/results")
+        ->assertStatus(200)
+        ->assertJsonPath('data.source', 'snapshot')
+        ->assertJsonPath('data.algorithm', 'attributed')
+        ->assertJsonPath('data.edition.status', 'results_published')
+        ->assertJsonPath('data.published_at', fn(?string $publishedAt): bool => $publishedAt !== null);
+});
+
+it('lists only editions whose results are readable, for a custodian', function (): void {
+    actingAsCustodian();
+    [$closed] = seedScorableCategory();
+    $open = Edition::factory()->create(['status' => EditionStatus::VotingOpen]);
+    $draft = Edition::factory()->create(['status' => EditionStatus::Draft]);
+
+    $response = getJson('/api/admin/results/editions')->assertStatus(200);
+
+    expect(collect($response->json('data'))->pluck('id')->all())
+        ->toContain($closed->id)
+        ->not->toContain($open->id)
+        ->not->toContain($draft->id);
+
+    $response->assertJsonPath('data.0.published_at', null);
+});
+
+it('includes an archived edition that has a snapshot in the results edition list', function (): void {
+    actingAsCustodian();
+    [$edition] = seedScorableCategory(EditionStatus::CommitteeReview);
+
+    app(TransitionEditionAction::class)->execute($edition, EditionStatus::ResultsPublished);
+    $edition->refresh()->forceFill(['status' => EditionStatus::Archived])->save();
+
+    $response = getJson('/api/admin/results/editions')->assertStatus(200);
+
+    expect(collect($response->json('data'))->pluck('id')->all())->toContain($edition->id);
+    expect($response->json('data.0.published_at'))->not->toBeNull();
+});
+
+it('forbids the results edition list without the results permission', function (): void {
+    Sanctum::actingAs(User::factory()->create());
+
+    getJson('/api/admin/results/editions')->assertStatus(403);
+});

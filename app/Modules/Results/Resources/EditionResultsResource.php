@@ -8,12 +8,12 @@ use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use JsonSerializable;
+use Rominas\Results\DataTransferObjects\EditionResults;
 use Rominas\Results\Support\EditionResultsPresenter;
-use Rominas\Scoring\DataTransferObjects\EditionScore;
 
 /**
- * Serializes an edition's results (a Scoring {@see EditionScore}, whether computed live or rebuilt from a
- * frozen snapshot) into the public results shape, enriched with category and nominee display names by
+ * Serializes an edition's results ({@see EditionResults}: a Scoring tree computed live or rebuilt from a
+ * frozen snapshot, plus its source and publication time) into the public results shape, enriched with category and nominee display names by
  * {@see EditionResultsPresenter}.
  */
 class EditionResultsResource extends JsonResource
@@ -24,9 +24,9 @@ class EditionResultsResource extends JsonResource
      */
     public function toArray($request): array|JsonSerializable|Arrayable
     {
-        /** @var EditionScore $score */
-        $score = $this->resource;
+        /** @var EditionResults $results */
+        $results = $this->resource;
 
-        return (new EditionResultsPresenter())->present($score);
+        return (new EditionResultsPresenter())->present($results);
     }
 }

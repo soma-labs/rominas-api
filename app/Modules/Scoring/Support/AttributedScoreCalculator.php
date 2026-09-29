@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rominas\Scoring\Support;
 
 use Rominas\Scoring\DataTransferObjects\NomineeScore;
+use Rominas\Scoring\Enums\ScoringAlgorithmType;
 
 /**
  * The client's scoring algorithm (PHAZE 3–7, 2026-09-18). Rather than blending per-category shares, it maps
@@ -37,6 +38,11 @@ final class AttributedScoreCalculator implements ScoringAlgorithm
         private readonly array $publicLadder,
         private readonly int $precision,
     ) {}
+
+    public function type(): ScoringAlgorithmType
+    {
+        return ScoringAlgorithmType::Attributed;
+    }
 
     /**
      * @param  list<array{nominee_type: \Rominas\Catalog\Enums\NomineeType, nominee_id: int, academy_points: int, public_points: int, academy_position: int}>  $tallies

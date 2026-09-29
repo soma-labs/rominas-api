@@ -6,6 +6,7 @@ namespace Rominas\Results\Support;
 
 use Illuminate\Support\Collection;
 use Rominas\Categories\Model\Category;
+use Rominas\Results\DataTransferObjects\EditionResults;
 use Rominas\Scoring\DataTransferObjects\EditionScore;
 
 /**
@@ -18,6 +19,10 @@ class EditionResultsPresenter
     /**
      * @return array{
      *     edition_id: int,
+     *     edition: array{id: int, name: string, slug: string, status: string, status_label: string},
+     *     source: string,
+     *     algorithm: string,
+     *     published_at: string|null,
      *     categories: list<array{
      *         category_id: int,
      *         category: array{id: int, name: string, slug: string}|null,
@@ -35,8 +40,9 @@ class EditionResultsPresenter
      *     }>
      * }
      */
-    public function present(EditionScore $score): array
+    public function present(EditionResults $results): array
     {
+        $score = $results->score;
         $categories = $this->resolveCategories($score);
         $nominees = $this->resolveNominees($score);
 
@@ -80,6 +86,16 @@ class EditionResultsPresenter
 
         return [
             'edition_id' => $score->editionId,
+            'edition' => [
+                'id' => $results->edition->id,
+                'name' => $results->edition->name,
+                'slug' => $results->edition->slug,
+                'status' => $results->edition->status->value,
+                'status_label' => $results->edition->status->label(),
+            ],
+            'source' => $results->source->value,
+            'algorithm' => $score->algorithm->value,
+            'published_at' => $results->publishedAt?->toIso8601String(),
             'categories' => $mappedCategories,
         ];
     }

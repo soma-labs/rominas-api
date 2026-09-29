@@ -11,6 +11,8 @@ use Rominas\Editions\Enums\EditionStatus;
 use Rominas\Editions\Model\Edition;
 use Rominas\FraudMonitoring\DataTransferObjects\InvalidateBallotsData;
 use Rominas\FraudMonitoring\Model\InvalidationBatch;
+use Rominas\Scoring\Actions\ComputeEditionScoresAction;
+use Rominas\Scoring\Enums\ScoringAlgorithmType;
 use Rominas\Users\Model\User;
 use Rominas\Voting\Model\Ballot;
 
@@ -83,7 +85,9 @@ class InvalidateBallotsAction
     private function forgetScoringCache(Edition $edition): void
     {
         foreach (self::SCORABLE_STATUSES as $status) {
-            Cache::forget("scoring:edition:{$edition->id}:{$status->value}");
+            foreach (ScoringAlgorithmType::cases() as $algorithm) {
+                Cache::forget(ComputeEditionScoresAction::cacheKey($edition, $algorithm, $status));
+            }
         }
     }
 }

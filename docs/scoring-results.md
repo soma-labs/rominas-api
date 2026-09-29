@@ -103,11 +103,15 @@ publishing.
 ## 4. Caching
 
 `ComputeEditionScoresAction` computes every category in `position` order into an `EditionScore`, cached for
-6 hours under `scoring:edition:{id}:{status}`. The inputs cannot change once voting closes, and a status
+6 hours under `scoring:edition:{id}:{status}:{algorithm}`, so switching algorithm never serves a stale tree. The inputs cannot change once voting closes, and a status
 change produces a new key. The exception is **vote cancellation**: `InvalidateBallotsAction` clears the
-edition's keys, so live results reflect a cancellation immediately. Passing `fresh: true` skips the cache.
+edition's keys (every algorithm), so live results reflect a cancellation immediately. Passing `fresh: true` skips the cache.
 
 ## 5. Custodian review
+
+`GET /api/admin/results/editions` lists the editions a custodian can open (voting closed onward, or already
+snapshotted, so archived editions stay listed). It sits under `results`, not `editions`, because a custodian
+holds only `results` and could not call the Editions index.
 
 `GET /api/admin/editions/{edition}/results` returns the whole edition's results, and
 `GET …/results/export` returns the same data as a CSV (`results-edition-{slug}.csv`; columns: category,
@@ -115,6 +119,9 @@ position, nominee type and name, both raw points, both share/score fields, final
 
 - Permission **`results`** — held by **`custodian` only**. `admin` is deliberately excluded, so no one
   outside the custodian (and `super_admin`) sees complete results before publication.
+- The payload carries `source` (`live` | `snapshot`), `algorithm`, `published_at` (snapshot only) and an
+  `edition` block (`id, name, slug, status, status_label`), so a client can label live vs. final results and
+  format the scores (whole ladder points under `attributed`, 0–1 fractions under `share`).
 - Both reads are **audited** (`audited_reads` in `config/audit.php`), which meets the rule that every access
   to final results is recorded. See [audit.md](audit.md).
 - `GetEditionResultsAction` is the single read path: it serves the **snapshot if one exists**, otherwise
@@ -128,7 +135,7 @@ When the edition transitions to **`results_published`**, the `EditionTransitione
 
 1. recompute fresh (bypassing the cache);
 2. in one transaction, delete any existing snapshot for the edition (entries cascade) and write a new
-   `ResultSnapshot` with the edition's weights and `published_at`, plus one `ResultEntry` per nominee per
+   `ResultSnapshot` with the edition's weights, the scoring `algorithm` in force and `published_at`, plus one `ResultEntry` per nominee per
    category.
 
 The action is idempotent, so re-running it is safe. If the listener ever failed, reads would fall back to

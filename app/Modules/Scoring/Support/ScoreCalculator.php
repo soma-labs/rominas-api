@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rominas\Scoring\Support;
 
 use Rominas\Scoring\DataTransferObjects\NomineeScore;
+use Rominas\Scoring\Enums\ScoringAlgorithmType;
 
 /**
  * The scoring engine, pure and DB-free. Given each nominee's summed academy and public points within a
@@ -38,6 +39,11 @@ final class ScoreCalculator implements ScoringAlgorithm
     public function __construct(
         private readonly int $precision,
     ) {}
+
+    public function type(): ScoringAlgorithmType
+    {
+        return ScoringAlgorithmType::Share;
+    }
 
     /**
      * Rank a category's nominees best-first, assigning positions 1..n.
