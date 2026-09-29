@@ -5,8 +5,15 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Route;
 use Rominas\Voting\Controllers\BallotController;
 use Rominas\Voting\Controllers\VotingController;
+use Rominas\Voting\Controllers\VotingStatusController;
 
 // Public, accountless voting. No auth middleware — the one-time link token is the authorization.
+
+// Where voting stands (upcoming / open / closed + window dates) — the landing page reads this first.
+Route::get('/status', VotingStatusController::class)
+    ->name('status')
+    ->middleware('throttle:60,1');
+
 Route::post('/request', [VotingController::class, 'request'])
     ->name('request')
     ->middleware('throttle:voting-request');

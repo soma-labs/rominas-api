@@ -14,6 +14,8 @@ sequenceDiagram
     participant API as rominas-api
     participant Q as Queue / mail
 
+    V->>API: GET /api/voting/status
+    API-->>V: state (upcoming / open / closed / none) + window dates
     V->>API: POST /api/voting/request {email}
     API->>API: open window? email_hash already has a ballot?
     API->>API: create Ballot (issued, token_hash, expires_at)
@@ -32,6 +34,22 @@ sequenceDiagram
 Every voting endpoint goes through `ResolveOpenVotingEditionAction`, which requires the active edition to be
 **`voting_open`** and now to be within **`[voting_start_at, voting_end_at]`**. Otherwise it returns 422 on
 `voting`. This mirrors the academy nomination window; see [edition-lifecycle.md](edition-lifecycle.md).
+
+The rule itself is `VotingState::of($edition, $now)` (`Enums/VotingState.php`), which the gate and the
+public status endpoint share:
+
+| State | When |
+| --- | --- |
+| `none` | no active edition |
+| `upcoming` | status `draft` / `nominations_open` / `nominations_closed`, or `voting_open` before `voting_start_at` |
+| `open` | status `voting_open` and now within `[voting_start_at, voting_end_at]` |
+| `closed` | any later status, or `voting_open` after `voting_end_at` |
+
+Status and dates are checked separately, so a `voting_open` edition can still be `upcoming` or `closed`.
+
+**Public status.** `GET /api/voting/status` (throttled 60/min, never an error) returns
+`{state, edition: {name} | null, voting_start_at, voting_end_at}` so the voting frontend can show
+"opens on …" or "closed" before anyone requests a link. It exposes nothing else about the edition.
 
 The candidates are the edition's [shortlist](academy.md#6-the-shortlist), which can no longer change once
 the edition is `voting_open`.
@@ -127,7 +145,8 @@ None of the public voting routes are in the [audit trail](audit.md); the ballot 
 
 | Concern | Where |
 | --- | --- |
-| Window gate | `Actions/ResolveOpenVotingEditionAction.php` |
+| Window gate | `Actions/ResolveOpenVotingEditionAction.php`, `Enums/VotingState.php` |
+| Public status | `Controllers/VotingStatusController.php`, `Actions/ResolveVotingStatusAction.php`, `Resources/VotingStatusResource.php` |
 | Link request | `Actions/RequestVotingLinkAction.php`, `Jobs/SendVotingLinkJob.php`, `Delivery/SMTP/SmtpVotingLinkEmailPayloadFactory.php` |
 | Token → ballot | `Actions/ResolveBallotByTokenAction.php` |
 | Submit | `Actions/SubmitBallotAction.php`, `Requests/SubmitBallotRequest.php` |

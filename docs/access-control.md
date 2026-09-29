@@ -132,6 +132,8 @@ Fully **accountless** — there is no guard, no Sanctum, no account. Possession 
 the authorization, checked in application code. All endpoints are public (no auth middleware), mounted
 under `/api/voting` (mirroring the public `academy/auth.php` group):
 
+- `GET /api/voting/status` (`throttle:60,1`) — where voting stands: `state` (`none` / `upcoming` / `open` /
+  `closed`), the active edition's name and its voting window dates. Never an error.
 - `POST /api/voting/request` (`throttle:voting-request`) — request a link by email. Always a generic 200;
   the response never reveals eligibility or prior voting. **One link, ever, per email per edition**
   (a repeat request issues nothing). A closed voting window surfaces as a 422.
