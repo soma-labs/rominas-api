@@ -139,6 +139,33 @@ it('rejects picking fewer than three nominees', function (): void {
     expect(BallotRanking::query()->count())->toBe(0);
 });
 
+it('explains the required pick count in Romanian when Accept-Language is ro', function (): void {
+    $edition = openVotingEdition();
+    $artists = Artist::factory()->count(5)->create();
+    $category = categoryWithShortlist($edition, $artists->pluck('id')->all());
+    issuedBallot($edition, 'valid-token');
+
+    postJson('/api/voting/ballot', [
+        'token' => 'valid-token',
+        'categories' => [
+            ['category_id' => $category->id, 'nominees' => [$artists[0]->id, $artists[1]->id]],
+        ],
+    ], ['Accept-Language' => 'ro'])
+        ->assertStatus(422)
+        ->assertJsonPath(
+            'errors.categories.0',
+            "La categoria „{$category->name}” trebuie să clasezi exact 3 nominalizați din lista scurtă, în ordinea preferinței, fiecare o singură dată.",
+        );
+});
+
+it('keeps the English invalid-link message when Accept-Language is absent', function (): void {
+    openVotingEdition();
+
+    getJson('/api/voting/ballot?token=nope')
+        ->assertStatus(422)
+        ->assertJsonPath('errors.token.0', 'This link is invalid, has expired or has already been used.');
+});
+
 it('rejects picking more than three nominees', function (): void {
     $edition = openVotingEdition();
     $artists = Artist::factory()->count(5)->create();

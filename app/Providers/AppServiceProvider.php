@@ -212,6 +212,10 @@ class AppServiceProvider extends ServiceProvider
 
         // Public voting-link requests each send an email — throttle per email + IP.
         RateLimiter::for('voting-request', static fn(Request $request): Limit => Limit::perMinute(5)
-            ->by((string) $request->input('email') . '|' . $request->ip()));
+            ->by((string) $request->input('email') . '|' . $request->ip())
+            // Same translated 429 as `magic-request` (ThrottleRequestsException's message isn't translated).
+            ->response(static fn(Request $request, array $headers): JsonResponse => response()->json([
+                'message' => __('Too many requests. Please wait a minute and try again.'),
+            ], 429, $headers)));
     }
 }

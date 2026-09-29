@@ -26,7 +26,7 @@ class VotingController
 
         return response()->json([
             'success' => true,
-            'message' => 'Dacă adresa este validă, vei primi un link de vot.',
+            'message' => __('If the address is valid, you will receive a voting link.'),
         ]);
     }
 }

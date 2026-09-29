@@ -28,8 +28,8 @@ class ResolveOpenVotingEditionAction
 
         throw ValidationException::withMessages([
             'voting' => $edition?->status === EditionStatus::VotingOpen
-                ? 'The voting window is closed.'
-                : 'Voting is not open.',
+                ? __('The voting window is closed.')
+                : __('Voting is not open.'),
         ]);
     }
 }

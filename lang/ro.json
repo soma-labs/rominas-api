@@ -33,5 +33,15 @@
     ":count free-text nomination still needs reconciliation before shortlists can be generated.|:count free-text nominations still need reconciliation before shortlists can be generated.": ":count nominalizare cu text liber mai trebuie reconciliată înainte ca listele scurte să poată fi generate.|:count nominalizări cu text liber mai trebuie reconciliate înainte ca listele scurte să poată fi generate.|:count de nominalizări cu text liber mai trebuie reconciliate înainte ca listele scurte să poată fi generate.",
 
     "Only a linked submission can be unlinked.": "Doar o propunere asociată poate fi disociată.",
-    "Submissions can only be unlinked before voting opens.": "Propunerile pot fi disociate doar înainte de deschiderea votului."
+    "Submissions can only be unlinked before voting opens.": "Propunerile pot fi disociate doar înainte de deschiderea votului.",
+
+    "Voting is not open.": "Votul nu este deschis.",
+    "The voting window is closed.": "Perioada de vot nu este deschisă.",
+    "This link is invalid, has expired or has already been used.": "Link invalid, expirat sau deja folosit.",
+    "Choose at least one category to vote in.": "Selectează cel puțin o categorie pentru a vota.",
+    "Category :id is not part of this edition.": "Categoria :id nu face parte din această ediție.",
+    "The category “:name” has no shortlist.": "Categoria „:name” nu are o listă scurtă de nominalizați.",
+    "In the category “:name” you must rank exactly :count shortlisted nominees, in order of preference, each only once.": "La categoria „:name” trebuie să clasezi exact :count nominalizați din lista scurtă, în ordinea preferinței, fiecare o singură dată.",
+    "Your vote has been recorded. Thank you!": "Votul tău a fost înregistrat. Îți mulțumim!",
+    "If the address is valid, you will receive a voting link.": "Dacă adresa este validă, vei primi un link de vot."
 }

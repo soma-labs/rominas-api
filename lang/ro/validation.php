@@ -9,7 +9,8 @@ declare(strict_types=1);
 |
 | Only the rules the member-facing routes actually use (see
 | SaveCategoryRankingRequest, CreateMemberProposalRequest,
-| MemberMagicLink{Request,Verify}Request). Any rule not listed here falls
+| MemberMagicLink{Request,Verify}Request, and the public voting
+| RequestVotingLinkRequest / SubmitBallotRequest). Any rule not listed here falls
 | back to lang/en/validation.php via `fallback_locale`.
 |
 */
@@ -22,12 +23,15 @@ return [
 
     'email' => 'Câmpul :attribute trebuie să fie o adresă de e-mail validă.',
 
+    'integer' => 'Câmpul :attribute trebuie să fie un număr întreg.',
+
     'max' => [
         'array' => 'Câmpul :attribute nu poate avea mai mult de :max elemente.',
         'string' => 'Câmpul :attribute nu poate avea mai mult de :max caractere.',
     ],
 
     'min' => [
+        'array' => 'Câmpul :attribute trebuie să aibă cel puțin :min elemente.',
         'string' => 'Câmpul :attribute trebuie să aibă cel puțin :min caractere.',
     ],
 
@@ -57,6 +61,10 @@ return [
         'reason' => 'motivul',
         'nominees' => 'nominalizații',
         'nominees.*' => 'nominalizatul',
+        'categories' => 'categoriile',
+        'categories.*.category_id' => 'categoria',
+        'categories.*.nominees' => 'nominalizații',
+        'categories.*.nominees.*' => 'nominalizatul',
     ],
 
 ];

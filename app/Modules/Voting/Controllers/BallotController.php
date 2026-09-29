@@ -47,7 +47,7 @@ class BallotController
 
         return response()->json([
             'success' => true,
-            'message' => 'Votul tău a fost înregistrat. Îți mulțumim!',
+            'message' => __('Your vote has been recorded. Thank you!'),
         ]);
     }
 }

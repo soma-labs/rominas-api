@@ -98,5 +98,25 @@ it('throttles repeated link requests', function (): void {
         postJson('/api/voting/request', ['email' => 'voter@example.test'])->assertStatus(200);
     }
 
-    postJson('/api/voting/request', ['email' => 'voter@example.test'])->assertStatus(429);
+    postJson('/api/voting/request', ['email' => 'voter@example.test'], ['Accept-Language' => 'ro'])
+        ->assertStatus(429)
+        ->assertJsonPath('message', 'Prea multe cereri. Așteaptă un minut și încearcă din nou.');
+});
+
+it('answers the generic link message in Romanian when Accept-Language is ro', function (): void {
+    Bus::fake();
+    votingOpenEdition();
+
+    postJson('/api/voting/request', ['email' => 'voter@example.test'], ['Accept-Language' => 'ro'])
+        ->assertStatus(200)
+        ->assertJsonPath('message', 'Dacă adresa este validă, vei primi un link de vot.');
+});
+
+it('explains in Romanian that voting is not open when Accept-Language is ro', function (): void {
+    Bus::fake();
+    Edition::factory()->status(EditionStatus::NominationsClosed)->create();
+
+    postJson('/api/voting/request', ['email' => 'voter@example.test'], ['Accept-Language' => 'ro'])
+        ->assertStatus(422)
+        ->assertJsonPath('errors.voting.0', 'Votul nu este deschis.');
 });

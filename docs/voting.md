@@ -108,7 +108,8 @@ the shortlist:
 - Each category must rank **exactly three distinct shortlisted nominees**, in order of preference
   (`PublicRankPoints::RANKS`), or all of them if the shortlist holds fewer than three.
 
-Any violation is a 422 on `categories`, with a Romanian message naming the category. Nothing is written
+Any violation is a 422 on `categories`, with a message naming the category (translated per
+`Accept-Language`, like every Voting message; see [architecture.md §7](architecture.md#7-localization)). Nothing is written
 until every category passes. Then, in **one transaction**, it stores one `BallotRanking` per pick (rank 1 =
 favourite), sets the ballot to **`submitted`** with `submitted_at`, and records `ip_hash`, the HMAC of the
 submitter's IP. The link is now spent: token resolution only accepts `issued` ballots.

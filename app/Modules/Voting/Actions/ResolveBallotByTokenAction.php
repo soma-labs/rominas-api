@@ -31,7 +31,7 @@ class ResolveBallotByTokenAction
 
         if ($ballot === null || $ballot->expires_at->isPast()) {
             throw ValidationException::withMessages([
-                'token' => 'Link invalid, expirat sau deja folosit.',
+                'token' => __('This link is invalid, has expired or has already been used.'),
             ]);
         }
 

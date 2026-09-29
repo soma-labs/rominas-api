@@ -45,7 +45,7 @@ class SubmitBallotAction
 
         if ($data->categories === []) {
             throw ValidationException::withMessages([
-                'categories' => 'Selectează cel puțin o categorie pentru a vota.',
+                'categories' => __('Choose at least one category to vote in.'),
             ]);
         }
 
@@ -96,7 +96,7 @@ class SubmitBallotAction
 
         if ($category === null) {
             throw ValidationException::withMessages([
-                'categories' => "Categoria {$vote->categoryId} nu face parte din această ediție.",
+                'categories' => __('Category :id is not part of this edition.', ['id' => $vote->categoryId]),
             ]);
         }
 
@@ -107,7 +107,7 @@ class SubmitBallotAction
 
         if ($shortlist->isEmpty()) {
             throw ValidationException::withMessages([
-                'categories' => "Categoria „{$category->name}” nu are o listă scurtă de nominalizați.",
+                'categories' => __('The category “:name” has no shortlist.', ['name' => $category->name]),
             ]);
         }
 
@@ -129,7 +129,10 @@ class SubmitBallotAction
 
         if (! $rightCount || ! $distinct || ! $onShortlist) {
             throw ValidationException::withMessages([
-                'categories' => "La categoria „{$category->name}” trebuie să clasezi exact {$required} nominalizați din lista scurtă, în ordinea preferinței, fiecare o singură dată.",
+                'categories' => __(
+                    'In the category “:name” you must rank exactly :count shortlisted nominees, in order of preference, each only once.',
+                    ['name' => $category->name, 'count' => $required],
+                ),
             ]);
         }
 
