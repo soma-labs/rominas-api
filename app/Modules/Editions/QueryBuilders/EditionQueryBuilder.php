@@ -51,6 +51,20 @@ class EditionQueryBuilder extends Builder
     }
 
     /**
+     * Editions whose public voting has opened, i.e. that have public ballots to monitor.
+     */
+    public function withPublicVotingStarted(): self
+    {
+        return $this->whereIn('status', [
+            EditionStatus::VotingOpen->value,
+            EditionStatus::VotingClosed->value,
+            EditionStatus::CommitteeReview->value,
+            EditionStatus::ResultsPublished->value,
+            EditionStatus::Archived->value,
+        ]);
+    }
+
+    /**
      * Editions whose results can be read: public voting has closed (the Scoring gate), or a frozen
      * snapshot already exists (which also covers archived editions).
      */

@@ -262,3 +262,47 @@ it('lists submitted ballots with a shared-ip fraud signal', function (): void {
         ->and($shared['invalidated'])->toBeFalse()
         ->and($lonely['ip_hash_shared_count'])->toBe(1);
 });
+
+it('filters the ballot list by ip_hash while keeping the shared count edition-wide', function (): void {
+    fraudActingAs('fraud_monitor');
+    [$edition, $category, $a, $b, $c] = fraudSeedScorableEdition();
+
+    $sharedIp = hash('sha256', '203.0.113.7');
+    fraudSeedBallot($edition, $category, [$a->id, $b->id, $c->id], $sharedIp);
+    fraudSeedBallot($edition, $category, [$a->id, $b->id, $c->id], $sharedIp);
+    fraudSeedBallot($edition, $category, [$a->id, $b->id, $c->id], hash('sha256', '198.51.100.4'));
+
+    $response = getJson("/api/admin/editions/{$edition->id}/ballots?ip_hash={$sharedIp}")->assertStatus(200);
+
+    expect($response->json('data'))->toHaveCount(2)
+        ->and(collect($response->json('data'))->pluck('ip_hash')->unique()->all())->toBe([$sharedIp])
+        ->and(collect($response->json('data'))->pluck('ip_hash_shared_count')->unique()->all())->toBe([2]);
+});
+
+it('filters the ballot list to cancelled or still-valid ballots', function (): void {
+    fraudActingAs('fraud_monitor');
+    [$edition, $category, $a, $b, $c] = fraudSeedScorableEdition();
+
+    $cancelled = fraudSeedBallot($edition, $category, [$a->id, $b->id, $c->id]);
+    $valid = fraudSeedBallot($edition, $category, [$a->id, $b->id, $c->id]);
+
+    postJson("/api/admin/editions/{$edition->id}/invalidations", [
+        'reason' => 'Scripted submission.',
+        'ballot_ids' => [$cancelled->id],
+    ])->assertStatus(201);
+
+    $onlyCancelled = getJson("/api/admin/editions/{$edition->id}/ballots?invalidated=1")->assertStatus(200);
+    $onlyValid = getJson("/api/admin/editions/{$edition->id}/ballots?invalidated=0")->assertStatus(200);
+
+    expect(collect($onlyCancelled->json('data'))->pluck('id')->all())->toBe([$cancelled->id])
+        ->and(collect($onlyValid->json('data'))->pluck('id')->all())->toBe([$valid->id]);
+});
+
+it('rejects a non-boolean invalidated filter', function (): void {
+    fraudActingAs('fraud_monitor');
+    [$edition] = fraudSeedScorableEdition();
+
+    getJson("/api/admin/editions/{$edition->id}/ballots?invalidated=maybe")
+        ->assertStatus(422)
+        ->assertJsonValidationErrorFor('invalidated');
+});

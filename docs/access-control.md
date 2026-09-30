@@ -197,7 +197,11 @@ Admin endpoints, under `/api/admin/editions` (Sanctum-guarded):
 
 - `GET /api/admin/editions/{edition}/ballots` (`can:viewAny,InvalidationBatch`) — the edition's submitted
   ballots, paginated, each with a shared-`ip_hash` fraud signal and its current invalid state. Hashes
-  only — never plaintext PII.
+  only — never plaintext PII. Optional filters: `ip_hash` (one cluster) and `invalidated` (`1` cancelled,
+  `0` still valid); the shared count stays edition-wide under a filter.
+- `GET /api/admin/fraud-monitoring/editions` (`can:viewAny,InvalidationBatch`) — the edition picker: editions
+  whose public voting has started, each with `submitted_ballots_count`, `cancelled_ballots_count`,
+  `pending_alerts_count` and `cancellation_allowed`. Exists because `fraud_monitor` lacks `editions`.
 - `POST /api/admin/editions/{edition}/invalidations` (`can:create,InvalidationBatch`) — cancel the
   selected ballots as one batch (`reason` + `ballot_ids` required). Only the edition's submitted,
   not-already-cancelled ballots are affected; a selection with none eligible is a **422**. Once the

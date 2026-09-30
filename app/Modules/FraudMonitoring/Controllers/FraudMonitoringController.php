@@ -14,6 +14,7 @@ use Rominas\FraudMonitoring\Factories\InvalidateBallotsDataFactory;
 use Rominas\FraudMonitoring\Model\InvalidationBatch;
 use Rominas\FraudMonitoring\QueryBuilders\InvalidationBatchQueryBuilder;
 use Rominas\FraudMonitoring\Requests\InvalidateBallotsRequest;
+use Rominas\FraudMonitoring\Requests\ListMonitoredBallotsRequest;
 use Rominas\FraudMonitoring\Resources\InvalidationBatchResource;
 use Rominas\FraudMonitoring\Resources\MonitoredBallotResource;
 use Rominas\Users\Model\User;
@@ -27,11 +28,15 @@ use Symfony\Component\HttpFoundation\Response;
 class FraudMonitoringController
 {
     /**
-     * The edition's submitted ballots, paginated, each with its shared-IP fraud signal and invalid state.
+     * The edition's submitted ballots, paginated, each with its shared-IP fraud signal and invalid state,
+     * optionally filtered by ip_hash and cancelled/valid.
      */
-    public function ballots(Edition $edition, ListMonitoredBallotsAction $action): AnonymousResourceCollection
-    {
-        return MonitoredBallotResource::collection($action->execute($edition));
+    public function ballots(
+        Edition $edition,
+        ListMonitoredBallotsRequest $request,
+        ListMonitoredBallotsAction $action,
+    ): AnonymousResourceCollection {
+        return MonitoredBallotResource::collection($action->execute($edition, $request->filters()));
     }
 
     /**

@@ -41,6 +41,12 @@ ballots, newest first, paginated. Each row shows:
   across the edition, not just the current page);
 - `invalidated`, `invalidation_batch_id` and `invalidation_reason`, if the ballot is already cancelled.
 
+The list takes two optional filters: `?ip_hash=` (show one IP cluster) and `?invalidated=1|0` (only
+cancelled / only still-valid). `ip_hash_shared_count` is unaffected by them.
+
+Because `fraud_monitor` does not hold `editions`, the admin picks an edition from
+`GET /api/admin/fraud-monitoring/editions` (voting-started editions with ballot and pending-alert counts).
+
 ## 3. Cancelling votes
 
 `POST /api/admin/editions/{edition}/invalidations`:

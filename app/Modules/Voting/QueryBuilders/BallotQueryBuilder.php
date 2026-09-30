@@ -29,6 +29,11 @@ class BallotQueryBuilder extends Builder
         return $this->where('token_hash', '=', $tokenHash);
     }
 
+    public function byIpHash(string $ipHash): self
+    {
+        return $this->where('ip_hash', '=', $ipHash);
+    }
+
     public function issued(): self
     {
         return $this->where('status', '=', BallotStatus::Issued->value);
