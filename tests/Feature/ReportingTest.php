@@ -271,6 +271,7 @@ it('includes the new reports in the catalogue', function (): void {
 
     getJson('/api/admin/reports')
         ->assertStatus(200)
+        ->assertJsonFragment(['key' => 'edition-summary'])
         ->assertJsonFragment(['key' => 'nominations-per-entity'])
         ->assertJsonFragment(['key' => 'public-votes-per-entity'])
         ->assertJsonFragment(['key' => 'cancelled-votes-per-day']);
@@ -422,4 +423,57 @@ it('exports a per-entity report as CSV and XLSX', function (): void {
     $xlsx = get('/api/admin/reports/nominations-per-entity/export?format=xlsx');
     $xlsx->assertStatus(200);
     expect($xlsx->headers->get('Content-Type'))->toContain('spreadsheetml.sheet');
+});
+
+// --- Edition summary ----------------------------------------------------------------------------
+
+/**
+ * The summary rows keyed by metric label, for readable assertions.
+ *
+ * @return array<string, int>
+ */
+function reportingSummaryValues(string $query = ''): array
+{
+    $rows = getJson('/api/admin/reports/edition-summary' . $query)
+        ->assertStatus(200)
+        ->assertJsonPath('data.columns', ['metric', 'value'])
+        ->json('data.rows');
+
+    return collect($rows)->pluck('value', 'metric')->all();
+}
+
+it('summarises an edition with headline totals', function (): void {
+    reportingActingAsAdmin();
+    $edition = reportingActiveEdition();
+    $category = reportingCategory($edition, 'Best Artist');
+
+    Ballot::factory()->create(['edition_id' => $edition->id]);
+    reportingSubmittedBallot($edition, $category);
+    reportingSubmittedBallot($edition, $category);
+    reportingSubmittedBallot($edition, $category, invalidated: true);
+    Nomination::factory()->submitted()->create(['edition_id' => $edition->id]);
+    Nomination::factory()->create(['edition_id' => $edition->id]);
+
+    expect(reportingSummaryValues())->toBe([
+        'Voting links issued' => 4,
+        'Ballots submitted' => 3,
+        'Valid votes' => 2,
+        'Cancelled votes' => 1,
+        'Academy nominations submitted' => 1,
+        'Academy nominations in draft' => 1,
+    ]);
+});
+
+it('narrows the summary to the requested window', function (): void {
+    reportingActingAsAdmin();
+    $edition = reportingActiveEdition();
+    $category = reportingCategory($edition, 'Best Artist');
+
+    reportingSubmittedBallot($edition, $category, submittedAt: Carbon::parse('2026-06-01 12:00:00'));
+    reportingSubmittedBallot($edition, $category, submittedAt: Carbon::parse('2026-06-05 12:00:00'));
+
+    $values = reportingSummaryValues('?from=2026-06-04&to=2026-06-05');
+
+    expect($values['Ballots submitted'])->toBe(1)
+        ->and($values['Valid votes'])->toBe(1);
 });

@@ -717,6 +717,8 @@ pointer entry rather than re-storing their detail.
   The same shape backs the tabular JSON (`ReportResource`). Every vote report honours an optional
   `from`/`to` window (`ReportParameters`); per-entity reports resolve category + entity display names in
   batched, N+1-free passes via `Support/EntityLabeler` (`NomineeType::modelClass()`). Reports:
+  - **`EditionSummaryReport`** (`edition-summary`) — headline `metric | value` totals: voting links issued,
+    ballots submitted, valid and cancelled votes, academy nominations submitted and in draft.
   - **`VotesPerCategoryPerDayReport`** (`votes-per-category-per-day`) — distinct submitted, **non-cancelled**
     ballots per category per UTC day (`COUNT(DISTINCT ballot_id)` grouped by category + `DATE(submitted_at)`).
   - **`NominationsPerEntityReport`** (`nominations-per-entity`) — count of submitted academy nomination

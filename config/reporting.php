@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Rominas\Reporting\Reports\CancelledVotesPerDayReport;
+use Rominas\Reporting\Reports\EditionSummaryReport;
 use Rominas\Reporting\Reports\NominationsPerEntityReport;
 use Rominas\Reporting\Reports\PublicVotesPerEntityReport;
 use Rominas\Reporting\Reports\VotesPerCategoryPerDayReport;
@@ -21,6 +22,7 @@ return [
     */
 
     'reports' => [
+        EditionSummaryReport::class,
         VotesPerCategoryPerDayReport::class,
         NominationsPerEntityReport::class,
         PublicVotesPerEntityReport::class,

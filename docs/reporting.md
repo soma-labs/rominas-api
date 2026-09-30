@@ -72,6 +72,7 @@ ballots and, apart from the cancellation report, excludes **cancelled** ones. Ac
 
 | Key | Columns | What it counts |
 | --- | --- | --- |
+| `edition-summary` | metric, value | Headline totals: voting links issued, ballots submitted, valid votes, cancelled votes, academy nominations submitted and in draft. The from/to window applies to each metric's own timestamp; the draft count is point-in-time and ignores it |
 | `votes-per-category-per-day` | category, date, votes | **Distinct voters** per category per day: `COUNT(DISTINCT ballot_id)`, so a voter ranking three nominees counts once |
 | `nominations-per-entity` | category, entity_type, entity, nominations | How many academy picks each entity received per category, highest first. "Nominations" and "academy votes" are the same metric |
 | `public-votes-per-entity` | category, entity_type, entity, points | **Rank-weighted** public points per entity per category, using the `PublicRankPoints` curve (10 / 8 / 6) |
