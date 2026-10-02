@@ -1,0 +1,32 @@
+# Build-context excludes for the production images (docker/*.Dockerfile).
+.git
+.gitignore
+.github
+
+# Dependencies are installed inside the image.
+vendor
+node_modules
+
+# Secrets & local state — env is injected at runtime via compose env_file.
+.env
+.env.*
+!.env.example
+
+# Local/dev tooling & caches.
+compose.yaml
+docker-compose*.yml
+tests
+.phpunit.result.cache
+phpunit.xml
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+# Dev package/service manifests would register dev-only providers (ide-helper, telescope).
+bootstrap/cache/*.php
+public/build
+
+# Editor / OS noise.
+.idea
+.vscode
+.DS_Store

@@ -1,0 +1,10 @@
+# Laravel scheduler — runs every minute as www-data.
+# Output goes to the container's stdout (PID 1) so it shows in `docker compose logs`.
+# The redirect is opened by root (cron's user field), because www-data cannot write to PID 1's
+# stdout: if www-data owned the redirect, the shell would fail to open it and skip the command
+# entirely. `su` then drops to www-data for the artisan process itself.
+# NOTE: /etc/cron.d entries take a user field and the file must end with a newline.
+# cron's default PATH is /usr/bin:/bin, but the php image installs php in /usr/local/bin.
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+* * * * * root su -s /bin/sh www-data -c 'cd /var/www/html && php artisan schedule:run' >> /proc/1/fd/1 2>&1

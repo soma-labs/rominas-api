@@ -1,0 +1,55 @@
+name: rominas-prodtest
+
+# Production stack for rominas-api: nginx + php-fpm + mysql. Run from this directory:
+#   docker compose -f docker-compose.prod.yml build|up -d
+# Compose auto-loads ./.env, so the mysql service reuses the app's DB_* directly (single source of
+# truth — no separate MYSQL_* to keep in sync) plus DB_ROOT_PASSWORD. DB_HOST in .env must be `mysql`.
+# Named -f explicitly so it never collides with Sail's dev compose.yaml in this same directory.
+
+services:
+  php-fpm:
+    build:
+      context: .
+      dockerfile: docker/php-fpm.Dockerfile
+    env_file:
+      - .env
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      # Persist logs / local files across image rebuilds.
+      - api-storage:/var/www/html/storage
+    restart: unless-stopped
+
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/nginx.Dockerfile
+    depends_on:
+      - php-fpm
+    ports:
+      # Bound to loopback only: the host's Caddy (rominas-deployment/config/api/Caddyfile)
+      # owns :443 and terminates TLS, then reverse-proxies to this on 127.0.0.1:8080.
+      - "127.0.0.1:18080:80"
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}          # must be a non-root name (mysql rejects MYSQL_USER=root)
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Not published — reachable only on the compose network as host "mysql".
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
+  api-storage:
