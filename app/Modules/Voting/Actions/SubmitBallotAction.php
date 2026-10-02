@@ -25,7 +25,9 @@ use Rominas\Voting\Support\VoterHasher;
  * voted.
  *
  * On success the ranks are persisted and the ballot is marked `submitted` (terminal, single-use) with the
- * submitter's hashed IP, all in one transaction. Points are not computed here — Scoring derives them later.
+ * submitter's hashed IP, all in one transaction. The ballot row is locked and re-checked as `issued` inside
+ * that transaction, so concurrent submits of the same token can't both write. Points are not computed here —
+ * Scoring derives them later.
  */
 class SubmitBallotAction
 {
@@ -56,7 +58,23 @@ class SubmitBallotAction
             $prepared[] = $this->validateCategoryVote($edition, $vote);
         }
 
-        return DB::transaction(function () use ($ballot, $prepared, $data): Ballot {
+        return DB::transaction(function () use ($ballot, $edition, $prepared, $data): Ballot {
+            // Re-read under a row lock: two concurrent submits of the same token both pass the unlocked
+            // resolve above, so only the first to take the lock may write; the other sees it consumed.
+            $ballot = Ballot::query()
+                ->whereKey($ballot->id)
+                ->issued()
+                ->lockForUpdate()
+                ->first();
+
+            if ($ballot === null) {
+                throw ValidationException::withMessages([
+                    'token' => __('This link is invalid, has expired or has already been used.'),
+                ]);
+            }
+
+            $ballot->setRelation('edition', $edition);
+
             foreach ($prepared as $item) {
                 $rank = 1;
 

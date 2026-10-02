@@ -8,12 +8,14 @@ use Rominas\Catalog\Enums\NomineeType;
 use Rominas\Categories\Model\Category;
 use Rominas\Editions\Enums\EditionStatus;
 use Rominas\Editions\Model\Edition;
+use Rominas\Voting\Actions\ResolveBallotByTokenAction;
 use Rominas\Voting\Enums\BallotStatus;
 use Rominas\Voting\Model\Ballot;
 use Rominas\Voting\Model\BallotRanking;
 use Rominas\Voting\Support\VoterHasher;
 
 use function Pest\Laravel\getJson;
+use function Pest\Laravel\mock;
 use function Pest\Laravel\postJson;
 use function Pest\Laravel\withServerVariables;
 
@@ -266,6 +268,28 @@ it('is single-use: a submitted ballot cannot be loaded or resubmitted', function
     postJson('/api/voting/ballot', $payload)->assertStatus(422);
 
     expect(BallotRanking::query()->count())->toBe(3);
+});
+
+it('rejects a submit that lost the race to a concurrent submit of the same token', function (): void {
+    $edition = openVotingEdition();
+    $artists = Artist::factory()->count(5)->create();
+    $category = categoryWithShortlist($edition, $artists->pluck('id')->all());
+    $ballot = issuedBallot($edition, 'valid-token');
+
+    // The resolver read the ballot as `issued`, but a concurrent request consumed it before this one
+    // reached the transaction: hand the action that stale copy while the row is already submitted.
+    $stale = Ballot::query()->findOrFail($ballot->id)->setRelation('edition', $edition);
+    mock(ResolveBallotByTokenAction::class)->shouldReceive('execute')->andReturn($stale);
+    $ballot->update(['status' => BallotStatus::Submitted, 'submitted_at' => now()]);
+
+    postJson('/api/voting/ballot', [
+        'token' => 'valid-token',
+        'categories' => [
+            ['category_id' => $category->id, 'nominees' => [$artists[0]->id, $artists[1]->id, $artists[2]->id]],
+        ],
+    ])->assertStatus(422)->assertJsonValidationErrorFor('token');
+
+    expect(BallotRanking::query()->where('ballot_id', $ballot->id)->count())->toBe(0);
 });
 
 it('rejects an unknown token', function (): void {
