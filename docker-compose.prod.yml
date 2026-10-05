@@ -47,7 +47,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    # Not published — reachable only on the compose network as host "mysql".
+    ports:
+      # Bound to loopback only, for GUI clients over an SSH tunnel. Docker's published ports
+      # bypass ufw, so never drop the 127.0.0.1 prefix. The app itself uses host "mysql".
+      - "127.0.0.1:3306:3306"
     restart: unless-stopped
 
 volumes:
