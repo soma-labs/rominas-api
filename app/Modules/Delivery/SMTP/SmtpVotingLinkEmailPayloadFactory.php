@@ -22,7 +22,7 @@ class SmtpVotingLinkEmailPayloadFactory implements PayloadFactoryInterface
 
     public function create(): DeliveryPayloadInterface
     {
-        $base = config('services.frontend.voting_url') ?? config('services.frontend.url');
+        $base = config('services.frontend.voting_url');
 
         $url = rtrim((string) $base, '/') . '/vot?token=' . $this->token;
 

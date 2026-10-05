@@ -22,7 +22,7 @@ class SmtpAcademyMagicLinkEmailPayloadFactory implements PayloadFactoryInterface
 
     public function create(): DeliveryPayloadInterface
     {
-        $base = config('services.frontend.academy_url') ?? config('services.frontend.url');
+        $base = config('services.frontend.academy_url');
 
         $url = rtrim((string) $base, '/')
             . '/autentificare?token=' . $this->token

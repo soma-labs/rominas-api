@@ -67,8 +67,7 @@ the edition is `voting_open`.
 4. otherwise generates a 48-character random token and creates a `Ballot` with `status = issued`,
    `token_hash` = SHA-256 of the token, and `expires_at` = the edition's `voting_end_at`;
 5. queues `SendVotingLinkJob` **after commit**. The job builds
-   `{services.frontend.voting_url}/vot?token=…` (falling back to `services.frontend.url`) and sends it
-   through the `Delivery` pipeline (`voting-link-email`).
+   `{services.frontend.voting_url}/vot?token=…` and sends it through the `Delivery` pipeline (`voting-link-email`).
 
 The response is always the same generic 200. It never reveals whether the address had already requested a
 link or voted.

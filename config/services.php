@@ -36,12 +36,11 @@ return [
     ],
 
     // Base URLs of the frontend SPAs — used to build magic-link / voting-link targets.
-    // `academy_url`/`voting_url` target the Academy and public-voting SPAs; each falls back
-    // to `url` when unset.
+    // `academy_url`/`voting_url` target the Academy and public-voting SPAs; the defaults are
+    // their local dev ports.
     'frontend' => [
-        'url' => env('FRONTEND_URL', 'http://localhost:3000'),
-        'academy_url' => env('FRONTEND_ACADEMY_URL'),
-        'voting_url' => env('FRONTEND_VOTING_URL'),
+        'academy_url' => env('FRONTEND_ACADEMY_URL', 'http://localhost:3001'),
+        'voting_url' => env('FRONTEND_VOTING_URL', 'http://localhost:3002'),
     ],
 
     // Brevo transactional email (Rominas\Delivery\Brevo\BrevoMailService). SMTP is the

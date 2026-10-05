@@ -22,7 +22,7 @@ class SmtpAcademyInvitationEmailPayloadFactory implements PayloadFactoryInterfac
 
     public function create(): DeliveryPayloadInterface
     {
-        $base = config('services.frontend.academy_url') ?? config('services.frontend.url');
+        $base = config('services.frontend.academy_url');
 
         $url = rtrim((string) $base, '/')
             . '/invitatie?token=' . $this->token

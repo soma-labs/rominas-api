@@ -5,7 +5,6 @@ declare(strict_types=1);
 use Rominas\Delivery\SMTP\SmtpAcademyInvitationEmailPayloadFactory;
 use Rominas\Delivery\SMTP\SmtpAcademyMagicLinkEmailPayloadFactory;
 use Rominas\Delivery\SMTP\SmtpExampleNotificationPayloadFactory;
-use Rominas\Delivery\SMTP\SmtpMagicLinkEmailPayloadFactory;
 use Rominas\Delivery\SMTP\SmtpMailService;
 use Rominas\Delivery\SMTP\SmtpVotingLinkEmailPayloadFactory;
 
@@ -30,7 +29,6 @@ return [
             'factories' => [
                 // action key => payload factory
                 'example-notification' => SmtpExampleNotificationPayloadFactory::class,
-                'magic-link-email' => SmtpMagicLinkEmailPayloadFactory::class,
                 'academy-invitation-email' => SmtpAcademyInvitationEmailPayloadFactory::class,
                 'academy-magic-link-email' => SmtpAcademyMagicLinkEmailPayloadFactory::class,
                 'voting-link-email' => SmtpVotingLinkEmailPayloadFactory::class,
@@ -44,7 +42,7 @@ return [
         // 'email' => [
         //     'service' => \Rominas\Delivery\Brevo\BrevoMailService::class,
         //     'factories' => [
-        //         'magic-link-email' => \Rominas\Delivery\Brevo\BrevoMagicLinkEmailPayloadFactory::class,
+        //         'academy-magic-link-email' => \Rominas\Delivery\Brevo\BrevoAcademyMagicLinkEmailPayloadFactory::class,
         //     ],
         // ],
     ],
