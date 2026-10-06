@@ -22,7 +22,7 @@ class DatabaseSeeder extends Seeder
 
         $admin = User::factory()->create([
             'name' => 'Super Admin',
-            'email' => 'superadmin@rominas.ro',
+            'email' => 'superadmin@romias.ro',
         ]);
 
         $admin->assignRole('super_admin');

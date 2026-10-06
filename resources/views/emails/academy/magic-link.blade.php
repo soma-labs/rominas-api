@@ -7,7 +7,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Link de autentificare Rominas</title>
+    <title>Link de autentificare Romias</title>
 </head>
 <body style="margin:0;padding:0;background:#0f0f1a;font-family:Arial,Helvetica,sans-serif;color:#1e1b4b;">
     <div style="max-width:480px;margin:0 auto;padding:32px 24px;">
@@ -15,7 +15,7 @@
             <h1 style="margin:0 0 16px;font-size:22px;">Salut{{ $name ? ', ' . $name : '' }}!</h1>
 
             <p style="margin:0 0 24px;font-size:15px;line-height:1.5;">
-                Apasă butonul de mai jos pentru a te autentifica în contul tău din Academia Rominas.
+                Apasă butonul de mai jos pentru a te autentifica în contul tău din Academia Romias.
             </p>
 
             <div style="text-align:center;margin:0 0 24px;">

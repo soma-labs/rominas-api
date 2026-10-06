@@ -39,7 +39,7 @@ class SmtpAcademyInvitationEmailPayloadFactory implements PayloadFactoryInterfac
                 name: config('mail.from.name'),
             ),
             recipients: [$this->email],
-            subject: 'Invitație în Academia Rominas',
+            subject: 'Invitație în Academia Romias',
             body: $body,
         );
     }

@@ -21,7 +21,7 @@ use function Pest\Laravel\postJson;
 function validEditionPayload(array $overrides = []): array
 {
     return array_merge([
-        'name' => 'Rominas 2026',
+        'name' => 'Romias 2026',
         'starts_at' => '2026-01-01 00:00:00',
         'nominations_start_at' => '2026-01-15 00:00:00',
         'nominations_end_at' => '2026-02-15 00:00:00',
@@ -39,14 +39,14 @@ it('lets a super_admin create a draft edition', function (): void {
         ->assertJsonPath('data.status', 'draft')
         ->assertJsonPath('data.nominations_start_at', fn($v) => $v !== null);
 
-    expect(Edition::query()->where('name', 'Rominas 2026')->exists())->toBeTrue();
+    expect(Edition::query()->where('name', 'Romias 2026')->exists())->toBeTrue();
 });
 
 it('forbids a second active edition', function (): void {
     actingAsSuperAdmin();
     Edition::factory()->create(); // draft = active
 
-    postJson('/api/admin/editions', validEditionPayload(['name' => 'Rominas 2027']))
+    postJson('/api/admin/editions', validEditionPayload(['name' => 'Romias 2027']))
         ->assertStatus(422);
 });
 
@@ -54,7 +54,7 @@ it('allows creating a new edition once the previous is archived', function (): v
     actingAsSuperAdmin();
     Edition::factory()->archived()->create();
 
-    postJson('/api/admin/editions', validEditionPayload(['name' => 'Rominas 2027']))
+    postJson('/api/admin/editions', validEditionPayload(['name' => 'Romias 2027']))
         ->assertStatus(201);
 });
 

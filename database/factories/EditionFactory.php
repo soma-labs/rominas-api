@@ -22,7 +22,7 @@ class EditionFactory extends Factory
      */
     public function definition(): array
     {
-        $name = 'Rominas ' . fake()->unique()->numberBetween(2020, 2100);
+        $name = 'Romias ' . fake()->unique()->numberBetween(2020, 2100);
         $startsAt = Carbon::parse(fake()->dateTimeBetween('-1 month', '+1 month'));
 
         return [

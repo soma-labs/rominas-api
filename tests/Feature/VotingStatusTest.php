@@ -17,7 +17,7 @@ function statusEdition(EditionStatus $status, int $startOffsetDays = -1, int $en
     $now = now();
 
     return Edition::factory()->status($status)->create([
-        'name' => 'Rominas 2026',
+        'name' => 'Romias 2026',
         'starts_at' => $now->copy()->subMonths(2),
         'nominations_start_at' => $now->copy()->subMonths(2)->addDay(),
         'nominations_end_at' => $now->copy()->addDays($startOffsetDays - 1),
@@ -47,7 +47,7 @@ it('reports open with the edition name and window when voting is open', function
     getJson('/api/voting/status')
         ->assertStatus(200)
         ->assertJsonPath('data.state', 'open')
-        ->assertJsonPath('data.edition.name', 'Rominas 2026')
+        ->assertJsonPath('data.edition.name', 'Romias 2026')
         ->assertJsonPath('data.voting_start_at', $edition->voting_start_at->toJSON())
         ->assertJsonPath('data.voting_end_at', $edition->voting_end_at->toJSON());
 });

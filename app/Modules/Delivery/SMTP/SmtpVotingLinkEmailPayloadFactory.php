@@ -36,7 +36,7 @@ class SmtpVotingLinkEmailPayloadFactory implements PayloadFactoryInterface
                 name: config('mail.from.name'),
             ),
             recipients: [$this->email],
-            subject: 'Link de vot Rominas',
+            subject: 'Link de vot Romias',
             body: $body,
         );
     }
