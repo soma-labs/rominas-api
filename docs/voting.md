@@ -12,13 +12,17 @@ Everything here lives in `app/Modules/Voting/`. The `Ballot` / `BallotRanking` f
 sequenceDiagram
     participant V as Voter (SPA)
     participant API as rominas-api
+    participant ZB as ZeroBounce
     participant Q as Queue / mail
 
     V->>API: GET /api/voting/status
     API-->>V: state (upcoming / open / closed / none) + window dates
     V->>API: POST /api/voting/request {email}
     API->>API: open window? email_hash already has a ballot?
-    API->>API: create Ballot (issued, token_hash, expires_at)
+    API->>ZB: validate the address (new addresses only)
+    ZB-->>API: status + sub_status
+    API->>API: rejected? → 422 on email, stop
+    API->>API: create Ballot (issued, token_hash, expires_at, email check)
     API->>Q: SendVotingLinkJob(email, token)
     API-->>V: 200 (always the same message)
     Q-->>V: email with …/vot?token=…
@@ -56,23 +60,60 @@ the edition is `voting_open`.
 
 ## 2. Requesting a link
 
-`POST /api/voting/request {email}` — public, throttled to 5/min per email + IP (`voting-request` limiter).
-`RequestVotingLinkAction`:
+`POST /api/voting/request {email}` — public, throttled to 5/min per email + IP and 20/min per IP
+(`voting-request` limiter). `RequestVotingLinkAction`:
 
 1. resolves the open edition (a closed window is a visible 422);
-2. computes `email_hash` = HMAC-SHA256 of the trimmed, lowercased email (`VoterHasher`);
+2. computes `email_hash` = HMAC-SHA256 of the **normalized** email (`VoterHasher`, see below);
 3. if a ballot for that `(edition, email_hash)` already exists, **does nothing**. This rule is **one link,
    ever, per email per edition**, backed by a unique index: no second link, not even after voting, and not
    even if the first email was lost;
-4. otherwise generates a 48-character random token and creates a `Ballot` with `status = issued`,
-   `token_hash` = SHA-256 of the token, and `expires_at` = the edition's `voting_end_at`;
-5. queues `SendVotingLinkJob` **after commit**. The job builds
+4. otherwise **validates the address with ZeroBounce** and stops with a 422 if it is rejected (below);
+5. generates a 48-character random token and creates a `Ballot` with `status = issued`,
+   `token_hash` = SHA-256 of the token, `expires_at` = the edition's `voting_end_at`, and the validation
+   verdict (`email_check_*`);
+6. queues `SendVotingLinkJob` **after commit**. The job builds
    `{services.frontend.voting_url}/vot?token=…` and sends it through the `Delivery` pipeline (`voting-link-email`).
 
-The response is always the same generic 200. It never reveals whether the address had already requested a
-link or voted.
+For an accepted address the response is always the same generic 200. It never reveals whether the address
+had already requested a link or voted.
 
 The plaintext token exists only in the queued job and the email; the database holds its hash.
+
+### One mailbox, one identity
+
+`VoterHasher::normalizeEmail()` decides which spellings count as the same voter. It trims and lowercases,
+drops a `+tag` from the local part on every domain (`ana+1@x.ro` = `ana@x.ro`), and for Gmail also ignores
+dots and treats `googlemail.com` as `gmail.com` (`a.na@googlemail.com` = `ana@gmail.com`). This is done
+here rather than taken from ZeroBounce, because ZeroBounce does not return the mailbox behind an alias, and
+because the hash must be the same when ZeroBounce is unreachable. The link email still goes to the address
+exactly as typed.
+
+### E-mail validation (ZeroBounce)
+
+A new address is checked through ZeroBounce's real-time API (`EmailValidation/ZeroBounce/ZeroBounceEmailValidator`).
+`ResolveEmailCheckDecisionAction` turns the returned `status` / `sub_status` into one of three decisions,
+from the table in `config/voting.php` (`email_validation.decisions`):
+
+| Decision | What happens |
+| --- | --- |
+| `accept` | the link is sent |
+| `flag` ("accepted with a note") | the link is sent; the ballot is marked so a fraud reviewer can find it ([fraud-monitoring.md](fraud-monitoring.md#2-reviewing-ballots)) |
+| `reject` | no ballot, no email; **422 on `email`** with one generic message that never says why |
+
+The table mirrors the client's decision sheet (`docs/zero-bounce-scores.csv` in the parent folder): for
+example `valid` is accepted, `catch-all`, `unknown` and role addresses are flagged, and `invalid`,
+`spamtrap` and disposable addresses are rejected. A sub-status the table does not list takes its status's
+own row; a status it does not list is flagged.
+
+- **ZeroBounce never blocks voting.** If it is unreachable, times out, or answers with an error (bad key,
+  no credits left), the link is issued anyway, the ballot's `email_check_*` stay null ("not checked") and
+  a warning is logged without the address.
+- **No API key = validation off** (`ZEROBOUNCE_API_KEY`, `config/services.php`). The default endpoint is
+  the EU one (`ZEROBOUNCE_BASE_URL`); `ZEROBOUNCE_TIMEOUT` is in seconds.
+- **Credits.** An address that already has a ballot is never sent again. A rejected address is remembered
+  for an hour by its hash (`email_validation.rejection_cache_minutes`), so repeat attempts cost nothing.
+- Not built: the typo suggestion (`did_you_mean`) and re-checking `unknown` results later.
 
 ## 3. Loading the ballot
 
@@ -123,6 +164,11 @@ The ballot itself stores ranks only. Points (10 / 8 / 6 for ranks 1–3) are der
 | Email | `email_hash` — HMAC-SHA256, keyed by `voting.pepper` | Enforces one ballot per person without keeping the address |
 | IP | `ip_hash` — same HMAC, captured at submit | Fraud signal (shared-IP detection) |
 | Link token | `token_hash` — SHA-256 | Authorizes the ballot; the token itself only ever travels by email |
+| E-mail validation verdict | `email_check_status`, `email_check_sub_status`, `email_check_decision` — ZeroBounce's codes | Fraud review of doubtful addresses; codes, not personal data |
+
+**The address is sent to ZeroBounce** (a third-party processor, EU endpoint) once, when a new address
+requests a link. Only the address is sent, never the IP. Nothing ZeroBounce returns about the person
+(name, location) is read or stored. The agreement with ZeroBounce as a processor is the client's matter.
 
 `voting.pepper` reads **`VOTING_PEPPER`**, falling back to `APP_KEY`. **Set a dedicated value in
 production and never rotate it once ballots exist.** Rotating it makes every existing `email_hash` stop
@@ -158,6 +204,7 @@ proxies, since otherwise anyone can forge the header.
 | Window gate | `Actions/ResolveOpenVotingEditionAction.php`, `Enums/VotingState.php` |
 | Public status | `Controllers/VotingStatusController.php`, `Actions/ResolveVotingStatusAction.php`, `Resources/VotingStatusResource.php` |
 | Link request | `Actions/RequestVotingLinkAction.php`, `Jobs/SendVotingLinkJob.php`, `Delivery/SMTP/SmtpVotingLinkEmailPayloadFactory.php` |
+| E-mail validation | `EmailValidation/` (module: interface + ZeroBounce client), `Actions/ResolveEmailCheckDecisionAction.php`, `Enums/EmailCheckDecision.php`, `config/voting.php`, `config/services.php` |
 | Token → ballot | `Actions/ResolveBallotByTokenAction.php` |
 | Submit | `Actions/SubmitBallotAction.php`, `Requests/SubmitBallotRequest.php` |
 | Ballot payload | `Resources/BallotResource.php` |

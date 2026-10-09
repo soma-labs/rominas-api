@@ -22,4 +22,69 @@ return [
 
     'pepper' => env('VOTING_PEPPER', env('APP_KEY', '')),
 
+    /*
+    |--------------------------------------------------------------------------
+    | E-mail validation decisions
+    |--------------------------------------------------------------------------
+    |
+    | What a voting-link request does with each ZeroBounce result, keyed by
+    | status, then sub-status ('' = no sub-status):
+    |
+    |   accept — the link is sent;
+    |   flag   — the link is sent and the ballot is marked for fraud review
+    |            ("accepted with a note");
+    |   reject — no link, the voter sees a 422 on `email`.
+    |
+    | A sub-status missing here takes its status's '' row; an unknown status
+    | is flagged. Source: docs/zero-bounce-scores.csv in the parent folder.
+    |
+    */
+
+    'email_validation' => [
+
+        'decisions' => [
+            'valid' => [
+                '' => 'accept',
+                'alias_address' => 'accept',
+                'leading_period_removed' => 'accept',
+                'alternate' => 'accept',
+                'gold' => 'accept',
+                'role_based_accept_all' => 'flag',
+                'accept_all' => 'flag',
+                'ai_agent_mailbox' => 'flag',
+            ],
+            'invalid' => [
+                '' => 'reject',
+            ],
+            'catch-all' => [
+                '' => 'flag',
+                'ai_agent_mailbox' => 'reject',
+            ],
+            'spamtrap' => [
+                '' => 'reject',
+            ],
+            'abuse' => [
+                '' => 'flag',
+            ],
+            'do_not_mail' => [
+                '' => 'flag',
+                'role_based' => 'flag',
+                'disposable' => 'reject',
+                'role_based_catch_all' => 'reject',
+                'mx_forward' => 'flag',
+                'global_suppression' => 'flag',
+                'possible_trap' => 'reject',
+                'toxic' => 'reject',
+            ],
+            'unknown' => [
+                '' => 'flag',
+            ],
+        ],
+
+        // How long a rejected address (its hash, never the address) is remembered, so repeat
+        // attempts are refused without spending another ZeroBounce credit.
+        'rejection_cache_minutes' => (int) env('VOTING_EMAIL_REJECTION_CACHE_MINUTES', 60),
+
+    ],
+
 ];

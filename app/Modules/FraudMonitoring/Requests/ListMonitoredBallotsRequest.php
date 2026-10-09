@@ -25,6 +25,7 @@ class ListMonitoredBallotsRequest extends FormRequest
         return [
             'ip_hash' => 'nullable|string|max:255',
             'invalidated' => 'nullable|boolean',
+            'email_flagged' => 'nullable|boolean',
         ];
     }
 
@@ -33,6 +34,7 @@ class ListMonitoredBallotsRequest extends FormRequest
         return new MonitoredBallotFilters(
             ipHash: $this->filled('ip_hash') ? $this->string('ip_hash')->toString() : null,
             invalidated: $this->filled('invalidated') ? $this->boolean('invalidated') : null,
+            emailFlagged: $this->filled('email_flagged') ? $this->boolean('email_flagged') : null,
         );
     }
 }

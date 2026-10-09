@@ -39,10 +39,14 @@ ballots, newest first, paginated. Each row shows:
 - `email_hash` and `ip_hash`: hashes only, never plaintext (see [voting.md](voting.md#5-personal-data-gdpr));
 - `ip_hash_shared_count`: how many submitted ballots in the **whole edition** share this IP hash (computed
   across the edition, not just the current page);
+- `email_check_status`, `email_check_sub_status` and `email_check_decision`: what ZeroBounce said about the
+  address when the link was requested, and whether it was `accepted` or `accepted_with_note`. All null
+  means the address was not checked (see [voting.md](voting.md#e-mail-validation-zerobounce));
 - `invalidated`, `invalidation_batch_id` and `invalidation_reason`, if the ballot is already cancelled.
 
-The list takes two optional filters: `?ip_hash=` (show one IP cluster) and `?invalidated=1|0` (only
-cancelled / only still-valid). `ip_hash_shared_count` is unaffected by them.
+The list takes three optional filters: `?ip_hash=` (show one IP cluster), `?invalidated=1|0` (only
+cancelled / only still-valid) and `?email_flagged=1` (only addresses accepted with a note).
+`ip_hash_shared_count` is unaffected by them.
 
 Because `fraud_monitor` does not hold `editions`, the admin picks an edition from
 `GET /api/admin/fraud-monitoring/editions` (voting-started editions with ballot and pending-alert counts).

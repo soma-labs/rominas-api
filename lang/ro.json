@@ -43,5 +43,6 @@
     "The category “:name” has no shortlist.": "Categoria „:name” nu are o listă scurtă de nominalizați.",
     "In the category “:name” you must rank exactly :count shortlisted nominees, in order of preference, each only once.": "La categoria „:name” trebuie să clasezi exact :count nominalizați din lista scurtă, în ordinea preferinței, fiecare o singură dată.",
     "Your vote has been recorded. Thank you!": "Votul tău a fost înregistrat. Îți mulțumim!",
-    "If the address is valid, you will receive a voting link.": "Dacă adresa este validă, vei primi un link de vot."
+    "If the address is valid, you will receive a voting link.": "Dacă adresa este validă, vei primi un link de vot.",
+    "This email address cannot be used to vote. Please use a different address.": "Această adresă de e-mail nu poate fi folosită pentru vot. Te rugăm să folosești o altă adresă."
 }

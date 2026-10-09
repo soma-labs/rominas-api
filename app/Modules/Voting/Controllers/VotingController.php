@@ -16,9 +16,10 @@ use function response;
 class VotingController
 {
     /**
-     * Request a one-time voting link. Always 200 — the response never reveals whether the address is
-     * eligible or has already requested/voted (a link is only actually issued for a new email while
-     * voting is open). A closed voting window surfaces as a 422 from the resolve gate.
+     * Request a one-time voting link. An accepted address always gets the same 200 — the response never
+     * reveals whether it has already requested/voted (a link is only actually issued for a new email
+     * while voting is open). A closed voting window surfaces as a 422 from the resolve gate, and an
+     * address e-mail validation rejects as a 422 on `email`.
      */
     public function request(RequestVotingLinkRequest $request, RequestVotingLinkAction $action): JsonResponse
     {

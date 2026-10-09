@@ -7,6 +7,7 @@ namespace Rominas\Voting\QueryBuilders;
 use Illuminate\Database\Eloquent\Builder;
 use Rominas\Editions\Model\Edition;
 use Rominas\Voting\Enums\BallotStatus;
+use Rominas\Voting\Enums\EmailCheckDecision;
 use Rominas\Voting\Model\Ballot;
 
 /**
@@ -50,6 +51,14 @@ class BallotQueryBuilder extends Builder
     public function valid(): self
     {
         return $this->whereNull('invalidation_batch_id');
+    }
+
+    /**
+     * Ballots whose address was accepted with a note by e-mail validation — worth a fraud reviewer's look.
+     */
+    public function emailFlagged(): self
+    {
+        return $this->where('email_check_decision', '=', EmailCheckDecision::AcceptedWithNote->value);
     }
 
     /**

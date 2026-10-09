@@ -52,4 +52,13 @@ return [
         'from_name' => env('BREVO_FROM_NAME'),
     ],
 
+    // ZeroBounce e-mail validation (Rominas\EmailValidation\ZeroBounce\ZeroBounceEmailValidator), run on
+    // public voting-link requests. No API key = validation is off and every well-formed address is
+    // accepted unchecked. The default base URL is the EU endpoint (GDPR); `timeout` is in seconds.
+    'zerobounce' => [
+        'api_key' => env('ZEROBOUNCE_API_KEY'),
+        'base_url' => env('ZEROBOUNCE_BASE_URL', 'https://api-eu.zerobounce.net/v2'),
+        'timeout' => (int) env('ZEROBOUNCE_TIMEOUT', 8),
+    ],
+
 ];

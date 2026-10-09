@@ -26,6 +26,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         $this->configureDeliveryServices();
+        $this->configureEmailValidation();
         $this->configureScoring();
         $this->configureFraudMonitoring();
         $this->configureAcademy();
@@ -130,6 +131,30 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
+     * Wire e-mail address validation to ZeroBounce (config/services.php `zerobounce`). Config is read
+     * per make, so tests can override it via `config([...])`.
+     */
+    private function configureEmailValidation(): void
+    {
+        $this->app->bind(
+            \Rominas\EmailValidation\EmailValidatorInterface::class,
+            \Rominas\EmailValidation\ZeroBounce\ZeroBounceEmailValidator::class,
+        );
+
+        $this->app->when(\Rominas\EmailValidation\ZeroBounce\ZeroBounceEmailValidator::class)
+            ->needs('$apiKey')
+            ->give(static fn(): string => (string) config('services.zerobounce.api_key'));
+
+        $this->app->when(\Rominas\EmailValidation\ZeroBounce\ZeroBounceEmailValidator::class)
+            ->needs('$baseUrl')
+            ->give(static fn(): string => (string) config('services.zerobounce.base_url'));
+
+        $this->app->when(\Rominas\EmailValidation\ZeroBounce\ZeroBounceEmailValidator::class)
+            ->needs('$timeout')
+            ->give(static fn(): int => (int) config('services.zerobounce.timeout'));
+    }
+
+    /**
      * Wire the Delivery module's transactional-email pipeline (SMTP transport).
      */
     private function configureDeliveryServices(): void
@@ -210,12 +235,22 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('otp-login', static fn(Request $request): Limit => Limit::perMinute(10)
             ->by((string) $request->input('email') . '|' . $request->ip()));
 
-        // Public voting-link requests each send an email — throttle per email + IP.
-        RateLimiter::for('voting-request', static fn(Request $request): Limit => Limit::perMinute(5)
-            ->by((string) $request->input('email') . '|' . $request->ip())
+        // Public voting-link requests each send an email — throttle per email + IP. Each new address also
+        // costs an e-mail validation credit, so one IP is capped across addresses too.
+        RateLimiter::for('voting-request', static function (Request $request): array {
             // Same translated 429 as `magic-request` (ThrottleRequestsException's message isn't translated).
-            ->response(static fn(Request $request, array $headers): JsonResponse => response()->json([
+            $tooManyRequests = static fn(Request $request, array $headers): JsonResponse => response()->json([
                 'message' => __('Too many requests. Please wait a minute and try again.'),
-            ], 429, $headers)));
+            ], 429, $headers);
+
+            return [
+                Limit::perMinute(5)
+                    ->by((string) $request->input('email') . '|' . $request->ip())
+                    ->response($tooManyRequests),
+                Limit::perMinute(20)
+                    ->by('voting-request-ip|' . $request->ip())
+                    ->response($tooManyRequests),
+            ];
+        });
     }
 }

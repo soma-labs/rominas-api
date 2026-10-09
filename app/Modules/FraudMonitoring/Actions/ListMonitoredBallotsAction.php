@@ -42,6 +42,7 @@ class ListMonitoredBallotsAction
             ->when($filters->ipHash !== null, fn($query) => $query->byIpHash((string) $filters->ipHash))
             ->when($filters->invalidated === true, fn($query) => $query->invalidated())
             ->when($filters->invalidated === false, fn($query) => $query->valid())
+            ->when($filters->emailFlagged === true, fn($query) => $query->emailFlagged())
             ->with('invalidationBatch')
             ->orderByDesc('id')
             ->paginate($perPage);

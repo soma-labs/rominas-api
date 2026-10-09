@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Rominas\Editions\Model\Edition;
 use Rominas\FraudMonitoring\Model\InvalidationBatch;
 use Rominas\Voting\Enums\BallotStatus;
+use Rominas\Voting\Enums\EmailCheckDecision;
 use Rominas\Voting\QueryBuilders\BallotQueryBuilder;
 
 /**
@@ -20,6 +21,9 @@ use Rominas\Voting\QueryBuilders\BallotQueryBuilder;
  * lifecycle. There is no account or guard: possession of the (hashed) token is the authorization. The
  * voter is pseudonymized as `email_hash` (unique per edition → one link ever), the link as `token_hash`
  * (unique, single-use). No plaintext personal data is stored. Cast votes live in child ballot_rankings.
+ *
+ * `email_check_*` record what the e-mail validation service said about the address when the link was
+ * requested and the decision taken from it; all null when the address could not be checked.
  *
  * A ballot is valid iff `invalidation_batch_id` is null; a non-null FK means it was cancelled as part of
  * an {@see InvalidationBatch} (FraudMonitoring) and no longer counts toward Scoring.
@@ -34,6 +38,9 @@ use Rominas\Voting\QueryBuilders\BallotQueryBuilder;
     'expires_at',
     'submitted_at',
     'ip_hash',
+    'email_check_status',
+    'email_check_sub_status',
+    'email_check_decision',
 ])]
 class Ballot extends Model
 {
@@ -49,6 +56,7 @@ class Ballot extends Model
             'status' => BallotStatus::class,
             'expires_at' => 'datetime',
             'submitted_at' => 'datetime',
+            'email_check_decision' => EmailCheckDecision::class,
         ];
     }
 

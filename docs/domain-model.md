@@ -461,11 +461,13 @@ erDiagram
 | `expires_at` | link expiry (set to the edition's `voting_end_at`) |
 | `submitted_at` | nullable; set when the ballot is cast |
 | `ip_hash` | nullable; HMAC of the submitter IP, captured at submit for `FraudMonitoring` |
+| `email_check_status`, `email_check_sub_status` | nullable; ZeroBounce's verdict on the address at link request |
+| `email_check_decision` | nullable `EmailCheckDecision` enum — `accepted` \| `accepted_with_note`; null = not checked |
 | `invalidation_batch_id` | nullable FK → `InvalidationBatch` (`nullOnDelete`); **non-null = cancelled** (see [FraudMonitoring](#fraudmonitoring)) |
 
 Unique `(edition_id, email_hash)` → **one link, ever, per email per edition**. `belongsTo` Edition +
 `invalidationBatch`; `hasMany` rankings. `BallotQueryBuilder` adds `forEdition` / `byEmailHash` /
-`byTokenHash` / `issued` / `submitted` / `valid` (not cancelled) / `invalidated`. A ballot counts toward
+`byTokenHash` / `issued` / `submitted` / `valid` (not cancelled) / `invalidated` / `emailFlagged`. A ballot counts toward
 Scoring iff `invalidation_batch_id` is null.
 `BallotStatus` is the lifecycle; `VoterHasher` (`Voting/Support/`) is the single pseudonymization helper.
 

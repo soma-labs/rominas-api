@@ -298,6 +298,43 @@ it('filters the ballot list to cancelled or still-valid ballots', function (): v
         ->and(collect($onlyValid->json('data'))->pluck('id')->all())->toBe([$valid->id]);
 });
 
+it('shows the e-mail validation verdict on each ballot', function (): void {
+    fraudActingAs('fraud_monitor');
+    [$edition, $category, $a, $b, $c] = fraudSeedScorableEdition();
+
+    $flagged = fraudSeedBallot($edition, $category, [$a->id, $b->id, $c->id]);
+    $flagged->update([
+        'email_check_status' => 'do_not_mail',
+        'email_check_sub_status' => 'role_based',
+        'email_check_decision' => 'accepted_with_note',
+    ]);
+    $unchecked = fraudSeedBallot($edition, $category, [$a->id, $b->id, $c->id]);
+
+    $response = getJson("/api/admin/editions/{$edition->id}/ballots")->assertStatus(200);
+
+    $rows = collect($response->json('data'))->keyBy('id');
+    expect($rows[$flagged->id]['email_check_status'])->toBe('do_not_mail')
+        ->and($rows[$flagged->id]['email_check_sub_status'])->toBe('role_based')
+        ->and($rows[$flagged->id]['email_check_decision'])->toBe('accepted_with_note')
+        ->and($rows[$unchecked->id]['email_check_status'])->toBeNull()
+        ->and($rows[$unchecked->id]['email_check_decision'])->toBeNull();
+});
+
+it('filters the ballot list to addresses accepted with a note', function (): void {
+    fraudActingAs('fraud_monitor');
+    [$edition, $category, $a, $b, $c] = fraudSeedScorableEdition();
+
+    $flagged = fraudSeedBallot($edition, $category, [$a->id, $b->id, $c->id]);
+    $flagged->update(['email_check_status' => 'catch-all', 'email_check_decision' => 'accepted_with_note']);
+    $accepted = fraudSeedBallot($edition, $category, [$a->id, $b->id, $c->id]);
+    $accepted->update(['email_check_status' => 'valid', 'email_check_decision' => 'accepted']);
+    fraudSeedBallot($edition, $category, [$a->id, $b->id, $c->id]);
+
+    $response = getJson("/api/admin/editions/{$edition->id}/ballots?email_flagged=1")->assertStatus(200);
+
+    expect(collect($response->json('data'))->pluck('id')->all())->toBe([$flagged->id]);
+});
+
 it('rejects a non-boolean invalidated filter', function (): void {
     fraudActingAs('fraud_monitor');
     [$edition] = fraudSeedScorableEdition();

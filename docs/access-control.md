@@ -134,9 +134,10 @@ under `/api/voting` (mirroring the public `academy/auth.php` group):
 
 - `GET /api/voting/status` (`throttle:60,1`) — where voting stands: `state` (`none` / `upcoming` / `open` /
   `closed`), the active edition's name and its voting window dates. Never an error.
-- `POST /api/voting/request` (`throttle:voting-request`) — request a link by email. Always a generic 200;
-  the response never reveals eligibility or prior voting. **One link, ever, per email per edition**
-  (a repeat request issues nothing). A closed voting window surfaces as a 422.
+- `POST /api/voting/request` (`throttle:voting-request`) — request a link by email. An accepted address
+  always gets a generic 200 that never reveals prior requests or voting. **One link, ever, per email per
+  edition** (a repeat request issues nothing). A closed voting window surfaces as a 422, and so does an
+  address rejected by e-mail validation (on `email`; see [voting.md](voting.md#e-mail-validation-zerobounce)).
 - `GET /api/voting/ballot?token=…` — load the ballot the token authorizes: the edition's shortlist to
   rank, grouped by category, nominees presented **alphabetically** (the academy shortlist order stays
   secret).
@@ -197,8 +198,8 @@ Admin endpoints, under `/api/admin/editions` (Sanctum-guarded):
 
 - `GET /api/admin/editions/{edition}/ballots` (`can:viewAny,InvalidationBatch`) — the edition's submitted
   ballots, paginated, each with a shared-`ip_hash` fraud signal and its current invalid state. Hashes
-  only — never plaintext PII. Optional filters: `ip_hash` (one cluster) and `invalidated` (`1` cancelled,
-  `0` still valid); the shared count stays edition-wide under a filter.
+  only — never plaintext PII. Optional filters: `ip_hash` (one cluster), `invalidated` (`1` cancelled,
+  `0` still valid) and `email_flagged` (`1` = address accepted with a note); the shared count stays edition-wide under a filter.
 - `GET /api/admin/fraud-monitoring/editions` (`can:viewAny,InvalidationBatch`) — the edition picker: editions
   whose public voting has started, each with `submitted_ballots_count`, `cancelled_ballots_count`,
   `pending_alerts_count` and `cancellation_allowed`. Exists because `fraud_monitor` lacks `editions`.
