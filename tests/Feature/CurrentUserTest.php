@@ -7,6 +7,7 @@ use Rominas\Roles\Model\Role;
 use Rominas\Users\Model\User;
 use Laravel\Sanctum\Sanctum;
 
+use function Pest\Laravel\get;
 use function Pest\Laravel\getJson;
 
 it('returns the authenticated admin with roles and permissions', function (): void {
@@ -38,4 +39,10 @@ it('exposes the effective permissions granted through the user\'s role', functio
 
 it('rejects an unauthenticated request with 401', function (): void {
     getJson('/api/admin/me')->assertStatus(401);
+});
+
+it('rejects an unauthenticated request that does not ask for JSON with 401', function (): void {
+    get('/api/admin/me')
+        ->assertStatus(401)
+        ->assertExactJson(['message' => 'Unauthenticated.']);
 });

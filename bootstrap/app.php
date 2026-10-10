@@ -31,6 +31,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Translates user-facing error messages: sets the app locale from Accept-Language.
         $middleware->api(prepend: [SetLocaleFromRequest::class]);
+
+        // API only: there is no login page to send a guest to. Without this, a request that does not
+        // ask for JSON fails with "Route [login] not defined" (500) instead of 401.
+        $middleware->redirectGuestsTo(null);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
