@@ -308,6 +308,22 @@ turn out to be the same act). **Interlock:** `Shortlist` generation refuses (422
 edition is still pending — see [edition-lifecycle](edition-lifecycle.md) and the
 [nominee reconciliation](nominee-reconciliation.md) chapter.
 
+## 2l. Notifications (the `Notifications` module)
+
+Every admin user has their own notification list; there is **no permission** for reading it. The
+`NotificationPolicy` (registered for Laravel's `DatabaseNotification` in `AuthServiceProvider`) lets any
+user list their own and mark only their own as read. Permissions decide something else here: **which
+users a notification is sent to** (e.g. a proposal notification goes to holders of `memberProposals`).
+
+Admin endpoints, under `/api/admin/notifications` (Sanctum-guarded):
+
+- `GET /api/admin/notifications` — the user's own notifications, newest first; `?unread=1` for unread only.
+- `GET /api/admin/notifications/unread-count` — `{count}`.
+- `POST /api/admin/notifications/{notification}/read` — mark one as read; `403` for another user's.
+- `POST /api/admin/notifications/read-all` — mark all of the user's unread ones as read.
+
+Marking as read is not audited. See the [notifications](notifications.md) chapter.
+
 ## 2. Admin login (the `Auth` module)
 
 `POST /api/authenticate` (`Auth\Controllers\AuthController::authenticate`, `AuthenticateRequest`):

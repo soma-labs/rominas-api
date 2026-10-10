@@ -52,6 +52,7 @@ per-entity submodules (e.g. `Catalog/Artist/…`). See [docs/architecture.md](do
 | `FraudMonitoring` | Ballot review, reason-required vote cancellation, scheduled fraud alerts | built |
 | `Reporting` | Management statistics (JSON / CSV / Excel), separate from final results | built |
 | `Audit` | Append-only audit trail of admin actions and auth / account events | built |
+| `Notifications` | E-mail notifications for admins and academy members (on demand and scheduled) + the admin's unread list | built |
 | `Delivery` | Transactional messaging (SMTP / Brevo) | built |
 | `Shared` | Cross-module query-builder concerns | built |
 | `CriticsChoice` | Critics' Choice committee submissions | planned |
