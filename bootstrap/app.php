@@ -5,6 +5,8 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Rominas\FraudMonitoring\Commands\DetectVotingFraudCommand;
+use Rominas\Notifications\Commands\SendDailyStatisticsCommand;
+use Rominas\Notifications\Commands\SendNominationDeadlineRemindersCommand;
 use Rominas\Shared\Middleware\SetLocaleFromRequest;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -17,6 +19,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withCommands([
         // Module commands live under app/Modules and are not auto-discovered — register them here.
         DetectVotingFraudCommand::class,
+        SendDailyStatisticsCommand::class,
+        SendNominationDeadlineRemindersCommand::class,
     ])
     ->withMiddleware(function (Middleware $middleware): void {
         // Records an audit-trail entry; attached to the /admin group (opt-out) and to the auth /

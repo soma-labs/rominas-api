@@ -8,12 +8,13 @@ use Illuminate\Validation\ValidationException;
 use Rominas\Academy\Member\Model\Member;
 use Rominas\Academy\MemberProposal\DataTransferObjects\MemberProposalData;
 use Rominas\Academy\MemberProposal\Enums\MemberProposalStatus;
+use Rominas\Academy\MemberProposal\Events\MemberProposalCreated;
 use Rominas\Academy\MemberProposal\Model\MemberProposal;
 
 /**
  * Records a member's proposal of a future academy member. Enforces a per-member lifetime cap on the
  * number of proposals; rejects an email that already belongs to a Member, or that already has a pending
- * proposal (avoid duplicates).
+ * proposal (avoid duplicates). Fires {@see MemberProposalCreated}.
  */
 class CreateMemberProposalAction
 {
@@ -46,7 +47,7 @@ class CreateMemberProposalAction
             ]);
         }
 
-        return MemberProposal::create([
+        $proposal = MemberProposal::create([
             'proposed_by_member_id' => $proposer->id,
             'name' => $data->name,
             'email' => $data->email,
@@ -56,5 +57,9 @@ class CreateMemberProposalAction
             'reason' => $data->reason,
             'status' => MemberProposalStatus::Pending,
         ]);
+
+        MemberProposalCreated::dispatch($proposal, $proposer);
+
+        return $proposal;
     }
 }

@@ -6,6 +6,7 @@ use Rominas\Delivery\SMTP\SmtpAcademyInvitationEmailPayloadFactory;
 use Rominas\Delivery\SMTP\SmtpAcademyMagicLinkEmailPayloadFactory;
 use Rominas\Delivery\SMTP\SmtpExampleNotificationPayloadFactory;
 use Rominas\Delivery\SMTP\SmtpMailService;
+use Rominas\Delivery\SMTP\SmtpNotificationEmailPayloadFactory;
 use Rominas\Delivery\SMTP\SmtpVotingLinkEmailPayloadFactory;
 
 return [
@@ -32,6 +33,8 @@ return [
                 'academy-invitation-email' => SmtpAcademyInvitationEmailPayloadFactory::class,
                 'academy-magic-link-email' => SmtpAcademyMagicLinkEmailPayloadFactory::class,
                 'voting-link-email' => SmtpVotingLinkEmailPayloadFactory::class,
+                // Every Notifications-module e-mail: the notification supplies subject + view.
+                'notification-email' => SmtpNotificationEmailPayloadFactory::class,
             ],
         ],
 

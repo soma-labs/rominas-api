@@ -31,6 +31,12 @@ return [
             'label' => 'Overview',
             'url' => '/',
         ],
+        // Every admin has their own notification list — no permission gate.
+        [
+            'id' => 'sidenav.notifications',
+            'label' => 'Notifications',
+            'url' => '/notifications',
+        ],
         // ------------------------------------------------------------------
         // Domain modules. The admin pages for these arrive in later phases;
         // the nav entries are gated by their real permissions so they light up

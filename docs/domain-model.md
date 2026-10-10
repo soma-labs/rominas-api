@@ -20,6 +20,7 @@ picture stays complete. Keep this file in sync whenever an entity is added or ch
 | [Results](#results) | ResultSnapshot, ResultEntry | Custodian-gated results + the snapshot frozen when results are published | [scoring-results.md](scoring-results.md) |
 | [FraudMonitoring](#fraudmonitoring) | InvalidationBatch, FraudAlert | Vote cancellation + automatic fraud detection | [fraud-monitoring.md](fraud-monitoring.md) |
 | [Audit](#audit-cross-cutting-trail) | AuditLog | Cross-cutting audit trail | [audit.md](audit.md) |
+| [Notifications](#notifications) | — (Laravel's `notifications` table) | E-mail notifications + the admin's unread list | [notifications.md](notifications.md) |
 | [Behavioural modules](#behavioural-modules-no-persistent-entities) (`Auth`, `Delivery`, `Shared`, `Menu`, `Scoring`, `Reporting`) | MagicLinkToken | Behaviour only, plus the magic-link token store | [scoring-results.md](scoring-results.md), [reporting.md](reporting.md) |
 
 ```mermaid
@@ -667,6 +668,21 @@ the `audit` key (`Context::add('audit', ['changes' => …])`) — merged into `c
 richer old→new diffs later, with no middleware change. `InvalidationBatch` / `FraudAlert` remain the domain
 source of truth for cancellations and alerts — the audit log **complements** them with a lightweight
 pointer entry rather than re-storing their detail.
+
+---
+
+## Notifications
+
+`app/Modules/Notifications/` — no model of its own. It writes Laravel's standard **`notifications`**
+table through the `Notifiable` trait on `User` and `Member`. See [notifications.md](notifications.md).
+
+| Field | Notes |
+| --- | --- |
+| `id` | UUID |
+| `type` | the `NotificationType` slug (e.g. `member_joined`), not a PHP class name |
+| `notifiable_type` / `notifiable_id` | the recipient: a `User` (the row is an item in their dashboard list) or a `Member` (the row only records that an e-mail was sent) |
+| `data` | JSON. Admin rows: `title`, `body`, `url` (a dashboard path) plus the ids involved. Member rows: `edition_id`, and `days_before` for a reminder. No e-mail addresses |
+| `read_at` | null while unread; only meaningful for a `User` |
 
 ---
 

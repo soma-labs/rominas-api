@@ -51,6 +51,20 @@ class EditionQueryBuilder extends Builder
     }
 
     /**
+     * Editions with work under way: from nominations opening until the committee finishes its review.
+     */
+    public function inProgress(): self
+    {
+        return $this->whereIn('status', [
+            EditionStatus::NominationsOpen->value,
+            EditionStatus::NominationsClosed->value,
+            EditionStatus::VotingOpen->value,
+            EditionStatus::VotingClosed->value,
+            EditionStatus::CommitteeReview->value,
+        ]);
+    }
+
+    /**
      * Editions whose public voting has opened, i.e. that have public ballots to monitor.
      */
     public function withPublicVotingStarted(): self

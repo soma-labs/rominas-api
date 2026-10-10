@@ -9,6 +9,7 @@ use Rominas\Editions\Model\Edition;
 use Rominas\FraudMonitoring\DataTransferObjects\AlertCandidate;
 use Rominas\FraudMonitoring\Detectors\FraudDetector;
 use Rominas\FraudMonitoring\Enums\FraudAlertStatus;
+use Rominas\FraudMonitoring\Events\FraudAlertsDetected;
 use Rominas\FraudMonitoring\Model\FraudAlert;
 
 /**
@@ -17,6 +18,7 @@ use Rominas\FraudMonitoring\Model\FraudAlert;
  * Alerts are deduped by `(edition_id, type, signature)`: a re-detected cluster updates its facts
  * (severity, context, ballot_count, membership, last_detected_at) but its `status` is never overwritten
  * — the human owns triage, so a dismissed/solved alert stays as the monitor set it even if it re-triggers.
+ * A run that created at least one new alert fires {@see FraudAlertsDetected}.
  */
 class DetectVotingFraudAction
 {
@@ -33,20 +35,31 @@ class DetectVotingFraudAction
     public function execute(Edition $edition): int
     {
         $touched = 0;
+        $created = 0;
 
         foreach ($this->detectors as $detector) {
             foreach ($detector->detect($edition) as $candidate) {
-                $this->persist($edition, $candidate);
+                if ($this->persist($edition, $candidate)) {
+                    $created++;
+                }
+
                 $touched++;
             }
+        }
+
+        if ($created > 0) {
+            FraudAlertsDetected::dispatch($edition, $created);
         }
 
         return $touched;
     }
 
-    private function persist(Edition $edition, AlertCandidate $candidate): void
+    /**
+     * @return bool whether a new alert was created (false when an existing one was refreshed)
+     */
+    private function persist(Edition $edition, AlertCandidate $candidate): bool
     {
-        DB::transaction(function () use ($edition, $candidate): void {
+        return DB::transaction(function () use ($edition, $candidate): bool {
             // Reuse the signature's active alert (pending, or a dismissed false positive we keep
             // suppressed), but NOT a `solved` one — a fresh wave after resolution is a new episode and
             // gets its own pending alert, leaving solved rows as history.
@@ -56,6 +69,8 @@ class DetectVotingFraudAction
                 ->where('signature', '=', $candidate->signature)
                 ->where('status', '!=', FraudAlertStatus::Solved->value)
                 ->first();
+
+            $isNew = $alert === null;
 
             if ($alert === null) {
                 $alert = new FraudAlert([
@@ -74,6 +89,8 @@ class DetectVotingFraudAction
             $alert->save();
 
             $alert->ballots()->sync($candidate->ballotIds);
+
+            return $isNew;
         });
     }
 }

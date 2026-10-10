@@ -7,6 +7,8 @@ namespace Rominas\Academy\Member\QueryBuilders;
 use Illuminate\Database\Eloquent\Builder;
 use Rominas\Academy\Member\Enums\MemberStatus;
 use Rominas\Academy\Member\Model\Member;
+use Rominas\Academy\Nomination\Model\Nomination;
+use Rominas\Editions\Model\Edition;
 use Rominas\Shared\Concerns\QueryBuilderSearchableTrait;
 use Rominas\Shared\Concerns\QueryBuilderSortableTrait;
 use Rominas\Users\Model\User;
@@ -40,6 +42,23 @@ class MemberQueryBuilder extends Builder
     public function filterByStatus(MemberStatus $status): self
     {
         return $this->where('status', '=', $status->value);
+    }
+
+    /**
+     * Members who can receive academy e-mails: invited or already active (not suspended, and not
+     * still waiting for their invitation).
+     */
+    public function invitedOrActive(): self
+    {
+        return $this->whereIn('status', [MemberStatus::Invited->value, MemberStatus::Active->value]);
+    }
+
+    public function withoutSubmittedNominationFor(Edition $edition): self
+    {
+        return $this->whereNotIn(
+            'id',
+            Nomination::query()->forEdition($edition)->submitted()->select('member_id'),
+        );
     }
 
     /**

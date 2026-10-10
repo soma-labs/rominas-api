@@ -16,6 +16,9 @@ return [
     'ignore' => [
         'api.admin.audit-logs.index',
         'api.admin.audit-logs.view',
+        // Marking one's own notifications as read is not a sensitive action.
+        'api.admin.notifications.read',
+        'api.admin.notifications.read-all',
     ],
 
     /*

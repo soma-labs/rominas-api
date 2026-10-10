@@ -5,7 +5,14 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
+use Rominas\Academy\Member\Events\MemberActivated;
+use Rominas\Academy\MemberProposal\Events\MemberProposalCreated;
 use Rominas\Editions\Events\EditionTransitioned;
+use Rominas\FraudMonitoring\Events\FraudAlertsDetected;
+use Rominas\Notifications\Listeners\NotifyAdminsOfMemberJoined;
+use Rominas\Notifications\Listeners\NotifyAdminsOfMemberProposal;
+use Rominas\Notifications\Listeners\NotifyFraudMonitorsOfNewAlerts;
+use Rominas\Notifications\Listeners\NotifyMembersOfNominationsOpened;
 use Rominas\Results\Listeners\FreezeResultsOnResultsPublished;
 
 /**
@@ -20,6 +27,16 @@ class EventServiceProvider extends ServiceProvider
     protected $listen = [
         EditionTransitioned::class => [
             FreezeResultsOnResultsPublished::class,
+            NotifyMembersOfNominationsOpened::class,
+        ],
+        MemberProposalCreated::class => [
+            NotifyAdminsOfMemberProposal::class,
+        ],
+        MemberActivated::class => [
+            NotifyAdminsOfMemberJoined::class,
+        ],
+        FraudAlertsDetected::class => [
+            NotifyFraudMonitorsOfNewAlerts::class,
         ],
     ];
 }

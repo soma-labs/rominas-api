@@ -7,6 +7,7 @@ namespace Rominas\Academy\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Rominas\Academy\Member\Enums\MemberStatus;
+use Rominas\Academy\Member\Events\MemberActivated;
 use Rominas\Academy\Member\Model\Member;
 use Rominas\Academy\Member\Resources\MemberResource;
 use Rominas\Academy\Requests\MemberMagicLinkRequestRequest;
@@ -50,11 +51,17 @@ class MemberAuthController
             return response()->json(['message' => __('The sign-in link is invalid or has expired.')], 422);
         }
 
+        $isFirstSignIn = $member->activated_at === null;
+
         $member->forceFill([
             'status' => MemberStatus::Active,
             'email_verified_at' => $member->email_verified_at ?? now(),
             'activated_at' => $member->activated_at ?? now(),
         ])->save();
+
+        if ($isFirstSignIn) {
+            MemberActivated::dispatch($member);
+        }
 
         $token = $member->createToken($member->email, ['member']);
 
