@@ -111,24 +111,45 @@ rejected write to discover either state.
 
 ### Save and resume
 
-`PUT /api/academy/nominations/categories/{category}` with `{"nominees": ["Name one", "Name two", …]}` —
-up to five **free-text names**, array order = rank. An empty array clears the category.
-`SaveCategoryRankingAction`:
+`PUT /api/academy/nominations/categories/{category}` with up to five picks, array order = rank. An empty
+array clears the category. Each pick is a name, plus a Catalog id when the member chose it from the
+suggestions (below):
+
+```json
+{ "nominees": [ { "name": "Delia", "nominee_id": 12 }, { "name": "A brand new act", "nominee_id": null } ] }
+```
+
+A bare string (`"A brand new act"`) is read as a name with no id. `SaveCategoryRankingAction`:
 
 1. checks the window, that the category belongs to the open edition, and that the ballot is still `draft`;
 2. in one transaction, deletes the category's existing picks and re-creates them;
-3. maps each typed name to a `NomineeSubmission` via `ResolveOrCreateNomineeSubmissionAction` — one shared
-   row per `(edition, nominee type, normalized name)`, so "Delia", "delia" and " Delia! " all land on the
-   same submission;
-4. stores the ranking pointing at that submission, with `nominee_id` copied from the submission — **null
-   while the name is pending**, or already filled if an admin reconciled the same name earlier.
+3. for a pick **with `nominee_id`** (chosen from the suggestions): checks that the Catalog entry exists for
+   the category's nominee type (else a 422 on `nominees.N.nominee_id`) and stores the ranking with that
+   `nominee_id` and **no submission** — it is linked at once and never reaches the admin's reconciliation
+   queue;
+4. for a pick **without `nominee_id`** (free text): maps the typed name to a `NomineeSubmission` via
+   `ResolveOrCreateNomineeSubmissionAction` — one shared row per `(edition, nominee type, normalized name)`,
+   so "Delia", "delia" and " Delia! " all land on the same submission — and stores the ranking pointing at
+   that submission, with `nominee_id` copied from it: **null while the name is pending**, or already filled
+   if an admin reconciled the same name earlier.
 
-Two names on one category that normalize to the same submission are refused ("Two of your picks refer to
-the same nominee"); exact repeats are already blocked by the Form Request's `distinct` rule.
+Two picks on one category that are the same nominee are refused ("Two of your picks refer to the same
+nominee"): the same Catalog entry twice, two typed names that normalize alike, a typed name already
+reconciled to a chosen entry, or a typed name that normalizes to a chosen entry's own name. Two different
+Catalog entries that share a name (two songs with one title) are allowed.
+
+### Suggestions while typing
+
+`GET /api/academy/nominations/categories/{category}/suggestions?search=del` →
+`{"data": [{"id": 12, "name": "Delia"}, …]}` (`SuggestNomineesForCategoryAction`). It returns up to eight
+Catalog entries of the category's nominee type whose name contains the text, names that start with it
+first, then alphabetically. `search` needs at least 3 characters (422 otherwise) and is matched literally.
+Only the Catalog is searched, never the names other members typed. Rate limit: 120 requests a minute.
 
 The response is always the **whole ballot** (`GET /api/academy/nominations` returns the same shape): every
 category of the active edition with the member's picks, each showing the `raw_name` typed, its
-`submission_status`, and the resolved `nominee` once reconciled. With no saved ballot yet, an empty draft is
+`submission_status`, and the resolved `nominee` once reconciled. A pick chosen from the suggestions has
+`raw_name` and `submission_status` null and its `nominee` filled. With no saved ballot yet, an empty draft is
 synthesized for display and not persisted.
 
 ### Submit

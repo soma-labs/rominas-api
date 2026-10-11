@@ -11,4 +11,9 @@ Route::get('/nominations', [NominationsController::class, 'show'])->name('nomina
 Route::put('/nominations/categories/{category}', [NominationsController::class, 'saveCategory'])
     ->name('nominations.categories.save');
 
+// Catalog suggestions while typing a nominee name; one request per pause in typing, hence the high limit.
+Route::get('/nominations/categories/{category}/suggestions', [NominationsController::class, 'suggestions'])
+    ->middleware('throttle:120,1')
+    ->name('nominations.categories.suggestions');
+
 Route::post('/nominations/submit', [NominationsController::class, 'submit'])->name('nominations.submit');

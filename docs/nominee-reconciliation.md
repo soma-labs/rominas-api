@@ -26,6 +26,10 @@ submission can be **unlinked** back to `pending` until voting opens (§3).
 
 ## 1. Capture and deduplication
 
+Only **typed** names are reconciled. A pick the member chose from the ballot's Catalog suggestions is linked
+to its Catalog entry when saved, has no submission, and never appears here (see
+[academy.md](academy.md#4-ranked-nominations)).
+
 When a member saves a category, `ResolveOrCreateNomineeSubmissionAction` maps each typed name to a
 submission keyed by **`(edition, nominee type, normalized name)`** (a unique index):
 

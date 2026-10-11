@@ -6,7 +6,10 @@ use Laravel\Sanctum\Sanctum;
 use Rominas\Academy\Member\Model\Member;
 use Rominas\Academy\Nomination\Enums\NominationStatus;
 use Rominas\Academy\Nomination\Model\Nomination;
+use Rominas\Catalog\Artist\Model\Artist;
+use Rominas\Catalog\Band\Model\Band;
 use Rominas\Catalog\Enums\NomineeType;
+use Rominas\Catalog\NomineeSubmission\Enums\NomineeSubmissionStatus;
 use Rominas\Catalog\NomineeSubmission\Model\NomineeSubmission;
 use Rominas\Categories\Model\Category;
 use Rominas\Editions\Enums\EditionStatus;
@@ -289,4 +292,194 @@ it('resumes a saved draft after re-authenticating', function (): void {
         ->assertStatus(200)
         ->assertJsonPath('data.categories.0.complete', true)
         ->assertJsonCount(5, 'data.categories.0.rankings');
+});
+
+it('suggests catalog entries of the category type whose name contains the typed text, names starting with it first', function (): void {
+    $category = Category::factory()->for(openEdition())->create(['nominee_type' => NomineeType::Artist]);
+    $delia = Artist::factory()->create(['name' => 'Delia']);
+    $adelina = Artist::factory()->create(['name' => 'Adelina']);
+    Artist::factory()->create(['name' => 'Smiley']);
+    Band::factory()->create(['name' => 'Delirium']);
+    actingMember();
+
+    getJson("/api/academy/nominations/categories/{$category->id}/suggestions?search=del")
+        ->assertStatus(200)
+        ->assertExactJson(['data' => [
+            ['id' => $delia->id, 'name' => 'Delia'],
+            ['id' => $adelina->id, 'name' => 'Adelina'],
+        ]]);
+});
+
+it('returns at most eight suggestions', function (): void {
+    $category = Category::factory()->for(openEdition())->create(['nominee_type' => NomineeType::Artist]);
+    foreach (range(1, 9) as $number) {
+        Artist::factory()->create(['name' => "Orchestra {$number}"]);
+    }
+    actingMember();
+
+    getJson("/api/academy/nominations/categories/{$category->id}/suggestions?search=orchestra")
+        ->assertStatus(200)
+        ->assertJsonCount(8, 'data');
+});
+
+it('matches the typed text literally, not as a wildcard', function (): void {
+    $category = Category::factory()->for(openEdition())->create(['nominee_type' => NomineeType::Artist]);
+    Artist::factory()->create(['name' => 'Delia']);
+    actingMember();
+
+    getJson("/api/academy/nominations/categories/{$category->id}/suggestions?search=" . urlencode('d%a'))
+        ->assertStatus(200)
+        ->assertExactJson(['data' => []]);
+});
+
+it('rejects a suggestion search shorter than three characters', function (): void {
+    $category = Category::factory()->for(openEdition())->create(['nominee_type' => NomineeType::Artist]);
+    actingMember();
+
+    getJson("/api/academy/nominations/categories/{$category->id}/suggestions?search=de")
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['search' => 'The search field must be at least 3 characters.']);
+});
+
+it('requires member authentication for suggestions', function (): void {
+    $category = Category::factory()->for(openEdition())->create(['nominee_type' => NomineeType::Artist]);
+
+    getJson("/api/academy/nominations/categories/{$category->id}/suggestions?search=del")->assertStatus(401);
+});
+
+it('links a pick chosen from the suggestions to its catalog entry without staging a submission', function (): void {
+    $edition = openEdition();
+    $category = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist]);
+    $delia = Artist::factory()->create(['name' => 'Delia']);
+    $member = actingMember();
+
+    putJson("/api/academy/nominations/categories/{$category->id}", [
+        'nominees' => [
+            ['name' => 'Delia', 'nominee_id' => $delia->id],
+            ['name' => 'A Brand New Act', 'nominee_id' => null],
+        ],
+    ])
+        ->assertStatus(200)
+        ->assertJsonPath('data.categories.0.rankings.0.raw_name', null)
+        ->assertJsonPath('data.categories.0.rankings.0.submission_status', null)
+        ->assertJsonPath('data.categories.0.rankings.0.nominee_id', $delia->id)
+        ->assertJsonPath('data.categories.0.rankings.0.nominee.name', 'Delia')
+        ->assertJsonPath('data.categories.0.rankings.1.raw_name', 'A Brand New Act')
+        ->assertJsonPath('data.categories.0.rankings.1.submission_status', 'pending')
+        ->assertJsonPath('data.categories.0.rankings.1.nominee_id', null);
+
+    // Only the typed name awaits reconciliation.
+    expect(NomineeSubmission::query()->where('edition_id', $edition->id)->pluck('raw_name')->all())
+        ->toBe(['A Brand New Act']);
+
+    $chosen = Nomination::query()->forMember($member)->firstOrFail()->rankings()->where('rank', 1)->firstOrFail();
+    expect($chosen->nominee_submission_id)->toBeNull();
+    expect($chosen->nominee_id)->toBe($delia->id);
+});
+
+it('counts picks chosen from the suggestions towards a complete, submittable ballot', function (): void {
+    $category = Category::factory()->for(openEdition())->create(['nominee_type' => NomineeType::Artist]);
+    $picks = Artist::factory()->count(5)->create()
+        ->map(fn(Artist $artist): array => ['name' => $artist->name, 'nominee_id' => $artist->id])
+        ->all();
+    actingMember();
+
+    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => $picks])
+        ->assertStatus(200)
+        ->assertJsonPath('data.categories.0.complete', true);
+
+    postJson('/api/academy/nominations/submit')
+        ->assertStatus(200)
+        ->assertJsonPath('data.status', 'submitted');
+});
+
+it('rejects a chosen catalog entry that does not exist for the category type', function (): void {
+    $category = Category::factory()->for(openEdition())->create(['nominee_type' => NomineeType::Artist]);
+    $band = Band::factory()->create(['name' => 'Delirium']);
+    $member = actingMember();
+
+    putJson("/api/academy/nominations/categories/{$category->id}", [
+        'nominees' => [['name' => 'Delirium', 'nominee_id' => $band->id]],
+    ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors([
+            'nominees.0.nominee_id' => 'The selected nominee no longer exists. Please choose again.',
+        ]);
+
+    expect(Nomination::query()->forMember($member)->count())->toBe(0);
+});
+
+it('rejects the same catalog entry chosen twice', function (): void {
+    $category = Category::factory()->for(openEdition())->create(['nominee_type' => NomineeType::Artist]);
+    $delia = Artist::factory()->create(['name' => 'Delia']);
+    actingMember();
+
+    putJson("/api/academy/nominations/categories/{$category->id}", [
+        'nominees' => [
+            ['name' => 'Delia', 'nominee_id' => $delia->id],
+            ['name' => 'Delia', 'nominee_id' => $delia->id],
+        ],
+    ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['nominees' => 'Two of your picks refer to the same nominee.']);
+});
+
+it('rejects a typed name that is the name of a chosen catalog entry', function (): void {
+    $edition = openEdition();
+    $category = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist]);
+    $delia = Artist::factory()->create(['name' => 'Delia']);
+    actingMember();
+
+    putJson("/api/academy/nominations/categories/{$category->id}", [
+        'nominees' => [
+            ['name' => 'delia!', 'nominee_id' => null],
+            ['name' => 'Delia', 'nominee_id' => $delia->id],
+        ],
+    ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['nominees' => 'Two of your picks refer to the same nominee.']);
+
+    // The refused save staged nothing.
+    expect(NomineeSubmission::query()->where('edition_id', $edition->id)->count())->toBe(0);
+});
+
+it('rejects a typed name already reconciled to a chosen catalog entry', function (): void {
+    $edition = openEdition();
+    $category = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist]);
+    $delia = Artist::factory()->create(['name' => 'Delia']);
+    NomineeSubmission::factory()->create([
+        'edition_id' => $edition->id,
+        'nominee_type' => NomineeType::Artist,
+        'raw_name' => 'Delia Matache',
+        'normalized_name' => 'delia-matache',
+        'status' => NomineeSubmissionStatus::Resolved,
+        'resolved_nominee_id' => $delia->id,
+    ]);
+    actingMember();
+
+    putJson("/api/academy/nominations/categories/{$category->id}", [
+        'nominees' => [
+            ['name' => 'Delia', 'nominee_id' => $delia->id],
+            ['name' => 'Delia Matache', 'nominee_id' => null],
+        ],
+    ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['nominees' => 'Two of your picks refer to the same nominee.']);
+});
+
+it('accepts two chosen catalog entries that share a name', function (): void {
+    $category = Category::factory()->for(openEdition())->create(['nominee_type' => NomineeType::Artist]);
+    $first = Artist::factory()->create(['name' => 'Aurora', 'slug' => 'aurora']);
+    $second = Artist::factory()->create(['name' => 'Aurora', 'slug' => 'aurora-2']);
+    actingMember();
+
+    putJson("/api/academy/nominations/categories/{$category->id}", [
+        'nominees' => [
+            ['name' => 'Aurora', 'nominee_id' => $first->id],
+            ['name' => 'Aurora', 'nominee_id' => $second->id],
+        ],
+    ])
+        ->assertStatus(200)
+        ->assertJsonPath('data.categories.0.rankings.0.nominee_id', $first->id)
+        ->assertJsonPath('data.categories.0.rankings.1.nominee_id', $second->id);
 });

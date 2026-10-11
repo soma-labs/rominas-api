@@ -4,15 +4,19 @@ declare(strict_types=1);
 
 namespace Rominas\Academy\Nomination\Controllers;
 
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Auth;
 use Rominas\Academy\Member\Model\Member;
 use Rominas\Academy\Nomination\Actions\SaveCategoryRankingAction;
 use Rominas\Academy\Nomination\Actions\SubmitNominationAction;
+use Rominas\Academy\Nomination\Actions\SuggestNomineesForCategoryAction;
 use Rominas\Academy\Nomination\Enums\NominationStatus;
 use Rominas\Academy\Nomination\Factories\CategoryRankingDataFactory;
 use Rominas\Academy\Nomination\Model\Nomination;
+use Rominas\Academy\Nomination\Requests\NomineeSuggestionsRequest;
 use Rominas\Academy\Nomination\Requests\SaveCategoryRankingRequest;
 use Rominas\Academy\Nomination\Resources\NominationResource;
+use Rominas\Academy\Nomination\Resources\NomineeSuggestionResource;
 use Rominas\Categories\Model\Category;
 use Rominas\Editions\Model\Edition;
 
@@ -39,6 +43,17 @@ class NominationsController
         $action->execute($member, $category, CategoryRankingDataFactory::fromRequest($request, $category));
 
         return $this->currentBallot($member);
+    }
+
+    /**
+     * Catalog entries matching what the member has typed in one of the category's inputs.
+     */
+    public function suggestions(
+        Category $category,
+        NomineeSuggestionsRequest $request,
+        SuggestNomineesForCategoryAction $action,
+    ): AnonymousResourceCollection {
+        return NomineeSuggestionResource::collection($action->execute($category, $request->searchTerm()));
     }
 
     public function submit(SubmitNominationAction $action): NominationResource
