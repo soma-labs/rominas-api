@@ -140,6 +140,14 @@ nominee"): the same Catalog entry twice, two typed names that normalize alike, a
 reconciled to a chosen entry, or a typed name that normalizes to a chosen entry's own name. Two different
 Catalog entries that share a name (two songs with one title) are allowed.
 
+**Changing a pick that was already reconciled.** Because a save rebuilds the picks from the names sent, a
+reconciled link never outlives the name it was made for. A member who replaces a reconciled name with a
+different one gets a pick on that other name's submission (pending until an admin reconciles it, which
+again blocks shortlist generation); the old submission stays resolved but no longer carries this member's
+pick. Only a change that normalizes to the same name (case, diacritics, punctuation) keeps the link. When
+a pick carries a `nominee_id`, the `name` sent with it is not used — the academy app clears the id as soon
+as the member types in that field again.
+
 ### Suggestions while typing
 
 `GET /api/academy/nominations/categories/{category}/suggestions?search=del` →
