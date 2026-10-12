@@ -101,10 +101,37 @@ from the table in `config/voting.php` (`email_validation.decisions`):
 | `flag` ("accepted with a note") | the link is sent; the ballot is marked so a fraud reviewer can find it ([fraud-monitoring.md](fraud-monitoring.md#2-reviewing-ballots)) |
 | `reject` | no ballot, no email; **422 on `email`** with one generic message that never says why |
 
-The table mirrors the client's decision sheet (`docs/zero-bounce-scores.csv` in the parent folder): for
-example `valid` is accepted, `catch-all`, `unknown` and role addresses are flagged, and `invalid`,
-`spamtrap` and disposable addresses are rejected. A sub-status the table does not list takes its status's
-own row; a status it does not list is flagged.
+Every ZeroBounce answer and what is done with it. The config table is the source of truth, so change both
+together; it mirrors the client's decision sheet (`docs/zero-bounce-scores.csv` in the parent folder). A
+sub-status the config does not list takes its status's own row ("any other" below); a status it does not
+list is flagged.
+
+| `status` | `sub_status` | Decision | What ZeroBounce means by it |
+| --- | --- | --- | --- |
+| `valid` | *(none)* / any other | accept | a real mailbox that accepts mail |
+| `valid` | `alias_address` | accept | an alias that forwards to a real mailbox |
+| `valid` | `leading_period_removed` | accept | valid once a leading dot is dropped |
+| `valid` | `alternate` | accept | a secondary address of a real mailbox |
+| `valid` | `gold` | accept | ZeroBounce's highest-confidence valid address |
+| `valid` | `accept_all` | flag | valid, but the domain accepts every address |
+| `valid` | `role_based_accept_all` | flag | a role address (`office@`, `info@`) on a domain that accepts every address |
+| `valid` | `ai_agent_mailbox` | flag | a mailbox read by an AI agent, not a person |
+| `invalid` | any | **reject** | the mailbox does not exist or cannot receive mail |
+| `catch-all` | *(none)* / any other | flag | the domain accepts every address, so the mailbox cannot be confirmed |
+| `catch-all` | `ai_agent_mailbox` | **reject** | an AI-agent mailbox on such a domain |
+| `spamtrap` | any | **reject** | an address kept to catch senders of unwanted mail |
+| `abuse` | any | flag | a person known to report mail as spam |
+| `do_not_mail` | *(none)* / any other | flag | deliverable, but ZeroBounce advises against sending |
+| `do_not_mail` | `role_based` | flag | a role address (`office@`, `info@`) |
+| `do_not_mail` | `mx_forward` | flag | the domain only forwards its mail elsewhere |
+| `do_not_mail` | `global_suppression` | flag | on a known do-not-mail list |
+| `do_not_mail` | `disposable` | **reject** | a temporary, throwaway address |
+| `do_not_mail` | `role_based_catch_all` | **reject** | a role address on a domain that accepts every address |
+| `do_not_mail` | `possible_trap` | **reject** | looks like a spam trap |
+| `do_not_mail` | `toxic` | **reject** | known for abuse, spam or bot-created accounts |
+| `unknown` | any | flag | ZeroBounce could not decide (mail server slow or offline) |
+| a status not listed here | any | flag | |
+| no answer at all | | link sent, ballot "not checked" | unreachable, timeout, bad key, no credits or no API key; see the first point below |
 
 - **ZeroBounce never blocks voting.** If it is unreachable, times out, or answers with an error (bad key,
   no credits left), the link is issued anyway, the ballot's `email_check_*` stay null ("not checked") and
