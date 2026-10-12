@@ -5,18 +5,26 @@ declare(strict_types=1);
 namespace Rominas\Results\Support;
 
 use Illuminate\Support\Collection;
+use Rominas\Categories\Enums\CategoryKind;
 use Rominas\Categories\Model\Category;
 use Rominas\Results\DataTransferObjects\EditionResults;
 use Rominas\Scoring\DataTransferObjects\EditionScore;
+use Rominas\SpecialAwards\DataTransferObjects\SpecialEntryResult;
 
 /**
- * Turns a Scoring {@see EditionScore} into a fully-resolved array for the API resource and CSV export —
- * enriching each category and nominee with its display name/slug. Lookups are batched (one query per
- * Catalog type, one for the categories) so rendering a whole edition stays free of N+1 queries.
+ * Turns an edition's {@see EditionResults} into a fully-resolved array for the API resource and CSV
+ * export — enriching each category and nominee with its display name/slug. Lookups are batched (one query
+ * per Catalog type, one for the categories) so rendering a whole edition stays free of N+1 queries.
+ *
+ * Every category carries its `kind` and both lists: a ranked category fills `nominees` and leaves
+ * `entries` empty, a special one does the opposite. Categories come out in their own order, whatever
+ * their kind.
  */
 class EditionResultsPresenter
 {
     /**
+     * @param  bool  $withVotes  false leaves the member vote counts of the special categories out (the
+     *                           public view shows who won, not by how much)
      * @return array{
      *     edition_id: int,
      *     edition: array{id: int, name: string, slug: string, status: string, status_label: string},
@@ -26,6 +34,7 @@ class EditionResultsPresenter
      *     categories: list<array{
      *         category_id: int,
      *         category: array{id: int, name: string, slug: string}|null,
+     *         kind: string,
      *         nominees: list<array{
      *             nominee_type: string,
      *             nominee_id: int,
@@ -36,21 +45,20 @@ class EditionResultsPresenter
      *             public_share: float,
      *             final_score: float,
      *             position: int
-     *         }>
+     *         }>,
+     *         entries: list<array{title: string, description: string|null, votes: int|null, position: int}>
      *     }>
      * }
      */
-    public function present(EditionResults $results): array
+    public function present(EditionResults $results, bool $withVotes = true): array
     {
         $score = $results->score;
-        $categories = $this->resolveCategories($score);
+        $categories = $this->resolveCategories($results);
         $nominees = $this->resolveNominees($score);
 
         $mappedCategories = [];
 
         foreach ($score->categories as $category) {
-            $categoryModel = $categories->get($category->categoryId);
-
             $mappedNominees = [];
 
             foreach ($category->nominees as $nominee) {
@@ -75,14 +83,39 @@ class EditionResultsPresenter
 
             $mappedCategories[] = [
                 'category_id' => $category->categoryId,
-                'category' => $categoryModel === null ? null : [
-                    'id' => $category->categoryId,
-                    'name' => $categoryModel->name,
-                    'slug' => $categoryModel->slug,
-                ],
+                'category' => $this->categoryLabel($categories->get($category->categoryId)),
+                'kind' => CategoryKind::Ranked->value,
                 'nominees' => $mappedNominees,
+                'entries' => [],
             ];
         }
+
+        foreach ($results->specialCategories as $category) {
+            $categoryModel = $categories->get($category->categoryId);
+
+            $mappedCategories[] = [
+                'category_id' => $category->categoryId,
+                'category' => $this->categoryLabel($categoryModel),
+                'kind' => ($categoryModel->kind ?? CategoryKind::ProposeOrVote)->value,
+                'nominees' => [],
+                'entries' => array_map(
+                    static fn(SpecialEntryResult $entry): array => [
+                        'title' => $entry->title,
+                        'description' => $entry->description,
+                        'votes' => $withVotes ? $entry->votes : null,
+                        'position' => $entry->position,
+                    ],
+                    $category->entries,
+                ),
+            ];
+        }
+
+        // One list in category order, whatever the kind: position first, then id as a stable tie-break.
+        usort(
+            $mappedCategories,
+            static fn(array $a, array $b): int => [$categories->get($a['category_id'])->position ?? 0, $a['category_id']]
+                <=> [$categories->get($b['category_id'])->position ?? 0, $b['category_id']],
+        );
 
         return [
             'edition_id' => $score->editionId,
@@ -101,23 +134,35 @@ class EditionResultsPresenter
     }
 
     /**
-     * @return Collection<int, object{name: string, slug: string}>
+     * @return array{id: int, name: string, slug: string}|null
      */
-    private function resolveCategories(EditionScore $score): Collection
+    private function categoryLabel(?Category $category): ?array
     {
-        $ids = array_map(static fn($category): int => $category->categoryId, $score->categories);
+        return $category === null ? null : [
+            'id' => $category->id,
+            'name' => $category->name,
+            'slug' => $category->slug,
+        ];
+    }
+
+    /**
+     * @return Collection<int, Category>
+     */
+    private function resolveCategories(EditionResults $results): Collection
+    {
+        $ids = [
+            ...array_map(static fn($category): int => $category->categoryId, $results->score->categories),
+            ...array_map(static fn($category): int => $category->categoryId, $results->specialCategories),
+        ];
 
         if ($ids === []) {
             return new Collection();
         }
 
-        /** @var Collection<int, object{name: string, slug: string}> $categories */
-        $categories = Category::query()
+        return Category::query()
             ->whereIn('id', $ids)
-            ->get(['id', 'name', 'slug'])
+            ->get(['id', 'name', 'slug', 'kind', 'position'])
             ->keyBy('id');
-
-        return $categories;
     }
 
     /**

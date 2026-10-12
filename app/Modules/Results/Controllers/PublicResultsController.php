@@ -23,6 +23,6 @@ class PublicResultsController
             404,
         );
 
-        return EditionResultsResource::make($action->execute($edition));
+        return EditionResultsResource::make($action->execute($edition))->withoutSpecialVotes();
     }
 }

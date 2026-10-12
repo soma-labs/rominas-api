@@ -16,7 +16,10 @@ use Rominas\Permissions\Model\Permission;
 use Rominas\Results\Actions\PublishEditionResultsAction;
 use Rominas\Results\Model\ResultEntry;
 use Rominas\Results\Model\ResultSnapshot;
+use Rominas\Results\Model\SpecialResultEntry;
 use Rominas\Roles\Model\Role;
+use Rominas\SpecialAwards\Entry\Model\SpecialEntry;
+use Rominas\SpecialAwards\Vote\Model\SpecialVote;
 use Rominas\Users\Model\User;
 use Rominas\Voting\Model\Ballot;
 use Rominas\Voting\Model\BallotRanking;
@@ -272,4 +275,121 @@ it('forbids the results edition list without the results permission', function (
     Sanctum::actingAs(User::factory()->create());
 
     getJson('/api/admin/results/editions')->assertStatus(403);
+});
+
+/**
+ * Add to a scorable edition a propose-or-vote category (position 1) whose approved entries hold the given
+ * number of member votes, plus a pending entry with one vote that must not count.
+ *
+ * @param  array<string, int>  $votesByTitle
+ */
+function resultsSeedSpecialCategory(Edition $edition, array $votesByTitle): Category
+{
+    $category = Category::factory()->for($edition)->proposeOrVote()->create(['position' => 1]);
+
+    foreach ($votesByTitle as $title => $votes) {
+        $entry = SpecialEntry::factory()->approved()->create([
+            'category_id' => $category->id,
+            'title' => $title,
+            'description' => null,
+        ]);
+        SpecialVote::factory()->count($votes)->create(['special_entry_id' => $entry->id]);
+    }
+
+    $pending = SpecialEntry::factory()->create(['category_id' => $category->id, 'title' => 'Still Pending']);
+    SpecialVote::factory()->create(['special_entry_id' => $pending->id]);
+
+    return $category;
+}
+
+it('lists a propose-or-vote category by member votes, a tie sharing its position', function (): void {
+    actingAsCustodian();
+    [$edition, $ranked] = seedScorableCategory();
+    $special = resultsSeedSpecialCategory($edition, ['Runner Up' => 1, 'Winner B' => 3, 'Winner A' => 3, 'Nobody' => 0]);
+
+    getJson("/api/admin/editions/{$edition->id}/results")
+        ->assertStatus(200)
+        ->assertJsonCount(2, 'data.categories')
+        ->assertJsonPath('data.categories.0.category_id', $ranked->id)
+        ->assertJsonPath('data.categories.0.kind', 'ranked')
+        ->assertJsonPath('data.categories.0.entries', [])
+        ->assertJsonPath('data.categories.1.category_id', $special->id)
+        ->assertJsonPath('data.categories.1.kind', 'propose_or_vote')
+        ->assertJsonPath('data.categories.1.nominees', [])
+        ->assertJsonPath('data.categories.1.entries', [
+            ['title' => 'Winner A', 'description' => null, 'votes' => 3, 'position' => 1],
+            ['title' => 'Winner B', 'description' => null, 'votes' => 3, 'position' => 1],
+            ['title' => 'Runner Up', 'description' => null, 'votes' => 1, 'position' => 3],
+            ['title' => 'Nobody', 'description' => null, 'votes' => 0, 'position' => 4],
+        ]);
+});
+
+it('shows the result entered for an appointed category, without votes', function (): void {
+    actingAsCustodian();
+    [$edition] = seedScorableCategory();
+    $appointed = Category::factory()->for($edition)->appointed()->create(['position' => 1]);
+    SpecialEntry::factory()->approved()->create([
+        'category_id' => $appointed->id,
+        'title' => 'Critics Pick',
+        'description' => 'Chosen by the committee.',
+        'proposed_by_member_id' => null,
+    ]);
+    $empty = Category::factory()->for($edition)->appointed()->create(['position' => 2]);
+
+    getJson("/api/admin/editions/{$edition->id}/results")
+        ->assertStatus(200)
+        ->assertJsonPath('data.categories.1.kind', 'appointed')
+        ->assertJsonPath('data.categories.1.entries', [
+            ['title' => 'Critics Pick', 'description' => 'Chosen by the committee.', 'votes' => null, 'position' => 1],
+        ])
+        ->assertJsonPath('data.categories.2.category_id', $empty->id)
+        ->assertJsonPath('data.categories.2.entries', []);
+});
+
+it('freezes the special categories in the snapshot, text included', function (): void {
+    actingAsCustodian();
+    [$edition] = seedScorableCategory(EditionStatus::CommitteeReview);
+    $special = resultsSeedSpecialCategory($edition, ['Winner' => 2, 'Second' => 1]);
+
+    app(TransitionEditionAction::class)->execute($edition, EditionStatus::ResultsPublished);
+
+    // What happens to the live rows afterwards must not reach the published results.
+    SpecialEntry::query()->forCategory($special)->where('title', 'Winner')->sole()->update(['title' => 'Renamed']);
+    SpecialVote::query()->forCategory($special)->delete();
+
+    getJson("/api/admin/editions/{$edition->id}/results")
+        ->assertStatus(200)
+        ->assertJsonPath('data.source', 'snapshot')
+        ->assertJsonPath('data.categories.1.entries.0.title', 'Winner')
+        ->assertJsonPath('data.categories.1.entries.0.votes', 2)
+        ->assertJsonPath('data.categories.1.entries.1.title', 'Second');
+
+    expect(SpecialResultEntry::query()->count())->toBe(2);
+});
+
+it('leaves the member vote counts out of the public results', function (): void {
+    [$edition] = seedScorableCategory(EditionStatus::CommitteeReview);
+    resultsSeedSpecialCategory($edition, ['Winner' => 2, 'Second' => 1]);
+
+    app(TransitionEditionAction::class)->execute($edition, EditionStatus::ResultsPublished);
+
+    getJson("/api/results/editions/{$edition->id}")
+        ->assertStatus(200)
+        ->assertJsonPath('data.categories.1.entries.0.title', 'Winner')
+        ->assertJsonPath('data.categories.1.entries.0.position', 1)
+        ->assertJsonPath('data.categories.1.entries.0.votes', null)
+        ->assertJsonPath('data.categories.1.entries.1.votes', null);
+});
+
+it('exports the special categories with their member votes', function (): void {
+    actingAsCustodian();
+    [$edition] = seedScorableCategory();
+    resultsSeedSpecialCategory($edition, ['Maria Tanase' => 2]);
+
+    $csv = get("/api/admin/editions/{$edition->id}/results/export")->assertStatus(200)->streamedContent();
+
+    expect($csv)
+        ->toContain('final_score,votes')
+        ->toContain(',1,,"Maria Tanase",,,,,,2')
+        ->not->toContain('Still Pending');
 });

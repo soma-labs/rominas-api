@@ -53,6 +53,14 @@ class CategoryQueryBuilder extends Builder
     }
 
     /**
+     * The categories that do not follow the ranked flow: propose-or-vote and appointed.
+     */
+    public function special(): self
+    {
+        return $this->where('kind', '!=', CategoryKind::Ranked->value);
+    }
+
+    /**
      * @return string[]
      */
     protected function getSearchableFields(): array

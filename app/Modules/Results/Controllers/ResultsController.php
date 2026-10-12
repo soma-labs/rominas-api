@@ -45,6 +45,7 @@ class ResultsController
                 'academy_share',
                 'public_share',
                 'final_score',
+                'votes',
             ], escape: '');
 
             foreach ($data['categories'] as $category) {
@@ -59,6 +60,24 @@ class ResultsController
                         $nominee['academy_share'],
                         $nominee['public_share'],
                         $nominee['final_score'],
+                        '',
+                    ], escape: '');
+                }
+
+                // A special category has no Catalog nominee and no points: its entry's title goes in the
+                // name column and the member votes in the last one (empty for an appointed result).
+                foreach ($category['entries'] as $entry) {
+                    fputcsv($handle, [
+                        $category['category']['name'] ?? '',
+                        $entry['position'],
+                        '',
+                        $entry['title'],
+                        '',
+                        '',
+                        '',
+                        '',
+                        '',
+                        $entry['votes'] ?? '',
                     ], escape: '');
                 }
             }

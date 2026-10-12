@@ -80,4 +80,14 @@ class ResultSnapshot extends Model
     {
         return $this->hasMany(ResultEntry::class);
     }
+
+    /**
+     * The frozen results of the edition's special categories.
+     *
+     * @return HasMany<SpecialResultEntry, $this>
+     */
+    public function specialEntries(): HasMany
+    {
+        return $this->hasMany(SpecialResultEntry::class);
+    }
 }
