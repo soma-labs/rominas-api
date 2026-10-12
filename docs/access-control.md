@@ -77,8 +77,8 @@ endpoint operates on the caller's own ballot for the single active edition; ther
   even when the window is closed).
 - `PUT /api/academy/nominations/categories/{category}` — save/replace up to 5 ranked nominee ids for
   one category (array order = rank). The save/resume unit; creates the draft on first save.
-- `POST /api/academy/nominations/submit` — finalize; requires **every** category to hold exactly 5
-  picks, then locks the ballot (`submitted`, terminal for the window).
+- `POST /api/academy/nominations/submit` — finalize; requires at least one pick in at least
+  one category, then locks the ballot (`submitted`, terminal for the window).
 
 **Deadline gate** (`ResolveOpenNominationEditionAction`): save/submit are allowed only while the
 active edition's `status == nominations_open` **and** now ∈ `[nominations_start_at,

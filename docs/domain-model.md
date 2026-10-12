@@ -370,8 +370,8 @@ Unique `(nomination_id, category_id, rank)`, `(nomination_id, category_id, nomin
 store the slug not a FQN); it is null until reconciliation. Members **type nominee names (free text)** —
 each name is staged as a [NomineeSubmission](#nomineesubmission-free-text-reconciliation) and the ranking
 points at it, carrying `nominee_id` = null while pending (see
-[how it relates to the nomination models](#how-it-relates-to-the-nomination-models)). Gating (open window) and the submit rule (every
-category has exactly 5) live in the Nomination actions — see the Academy nominations flow in
+[how it relates to the nomination models](#how-it-relates-to-the-nomination-models)). Gating (open window) and the submit rule (at least
+one pick in at least one category) live in the Nomination actions — see the Academy nominations flow in
 [access-control.md](access-control.md#2c-ranked-nominations-the-nomination-module).
 
 **MemberProposal** — `app/Modules/Academy/MemberProposal/Model/MemberProposal.php` — a standing

@@ -9,8 +9,7 @@
     "Your nominations have already been submitted.": "Nominalizările tale au fost deja trimise.",
     "Two of your picks refer to the same nominee.": "Două dintre alegerile tale se referă la același nominalizat.",
     "The selected nominee no longer exists. Please choose again.": "Nominalizatul ales nu mai există. Te rugăm să alegi din nou.",
-    "You have not saved any nominations yet.": "Nu ai salvat încă nicio nominalizare.",
-    "Every category must have exactly 5 ranked nominees. Incomplete: :categories.": "Fiecare categorie trebuie să aibă exact 5 nominalizați clasați. Incomplete: :categories.",
+    "Add at least one nominee before submitting.": "Adaugă cel puțin un nominalizat înainte de a trimite.",
     "There is no active edition.": "Nu există nicio ediție activă.",
 
     "You have reached the maximum of :max proposals.": "Ai atins numărul maxim de :max propuneri.",

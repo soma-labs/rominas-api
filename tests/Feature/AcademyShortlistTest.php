@@ -93,6 +93,20 @@ it('produces a shorter shortlist when fewer than 5 distinct nominees exist', fun
         ->assertJsonCount(3, 'data');
 });
 
+it('shortlists the only nominee of a ballot that names one, at first-place points', function (): void {
+    actingAsSuperAdmin();
+    [$edition, $category] = shortlistEditionAndCategory();
+
+    $artist = Artist::factory()->create();
+    seedShortlistBallot($edition, $category, [$artist->id]);
+
+    postJson("/api/admin/editions/{$edition->id}/categories/{$category->id}/shortlist")
+        ->assertStatus(200)
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.nominee_id', $artist->id)
+        ->assertJsonPath('data.0.points', 10);
+});
+
 it('replaces the existing entries when a category is regenerated', function (): void {
     actingAsSuperAdmin();
     [$edition, $category] = shortlistEditionAndCategory();

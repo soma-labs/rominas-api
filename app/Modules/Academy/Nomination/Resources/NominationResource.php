@@ -15,7 +15,8 @@ use Rominas\Categories\Model\Category;
 
 /**
  * The member's whole ballot: status + every category of the edition with the member's current ranked
- * picks (empty where none), so the SPA can render progress and resume. Also carries the edition's
+ * picks (empty where none), so the SPA can render progress and resume. `can_submit` says the ballot
+ * holds at least one pick, which is all a submission needs. Also carries the edition's
  * `nominations_start_at` / `nominations_end_at` so the SPA can gate the form on the window itself,
  * without needing a rejected write to discover it's closed (see `ResolveOpenNominationEditionAction`
  * for the write-side gate this mirrors for display only). Expects the wrapped Nomination to have
@@ -45,14 +46,10 @@ class NominationResource extends JsonResource
                 'id' => $category->id,
                 'name' => $category->name,
                 'nominee_type' => $category->nominee_type->value,
-                'complete' => $rankings->count() === 5,
+                'has_nominees' => $rankings->isNotEmpty(),
                 'rankings' => NominationRankingResource::collection($rankings),
             ];
         })->values();
-
-        $isComplete = $categories->isNotEmpty() && $categories->every(
-            fn(Category $category): bool => ($byCategory->get($category->id)?->count() ?? 0) === 5,
-        );
 
         return [
             'edition_id' => $nomination->edition_id,
@@ -61,7 +58,7 @@ class NominationResource extends JsonResource
             'status' => $nomination->status->value,
             'status_label' => $nomination->status->label(),
             'submitted_at' => $nomination->submitted_at,
-            'is_complete' => $isComplete,
+            'can_submit' => $nomination->rankings->isNotEmpty(),
             'categories' => $categoriesPayload,
         ];
     }

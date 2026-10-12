@@ -62,7 +62,7 @@ it('returns the ballot with every category and no persisted row when resuming', 
     getJson('/api/academy/nominations')
         ->assertStatus(200)
         ->assertJsonPath('data.status', 'draft')
-        ->assertJsonPath('data.is_complete', false)
+        ->assertJsonPath('data.can_submit', false)
         ->assertJsonPath('data.nominations_start_at', $edition->nominations_start_at->toJSON())
         ->assertJsonPath('data.nominations_end_at', $edition->nominations_end_at->toJSON())
         ->assertJsonCount(2, 'data.categories');
@@ -79,7 +79,7 @@ it('saves a typed-in category ranking, staging each name as a pending submission
     putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => $names])
         ->assertStatus(200)
         ->assertJsonPath('data.status', 'draft')
-        ->assertJsonPath('data.categories.0.complete', true)
+        ->assertJsonPath('data.categories.0.has_nominees', true)
         ->assertJsonPath('data.categories.0.rankings.0.raw_name', $names[0])
         ->assertJsonPath('data.categories.0.rankings.0.submission_status', 'pending')
         ->assertJsonPath('data.categories.0.rankings.0.nominee_id', null)
@@ -210,7 +210,7 @@ it('rejects saving when the clock is outside the nomination window', function ()
         ->assertStatus(422);
 });
 
-it('fails submission when a category is incomplete', function (): void {
+it('submits a ballot that leaves other categories empty', function (): void {
     $edition = openEdition();
     $categoryA = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist]);
     Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist]);
@@ -218,26 +218,57 @@ it('fails submission when a category is incomplete', function (): void {
 
     putJson("/api/academy/nominations/categories/{$categoryA->id}", ['nominees' => nomineeNames()])->assertStatus(200);
 
-    postJson('/api/academy/nominations/submit')->assertStatus(422);
-
-    expect(Nomination::query()->forMember($member)->firstOrFail()->status)->toBe(NominationStatus::Draft);
-});
-
-it('submits when every category has exactly five nominees', function (): void {
-    $edition = openEdition();
-    $category = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist]);
-    $member = actingMember();
-
-    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => nomineeNames()])->assertStatus(200);
-
     postJson('/api/academy/nominations/submit')
         ->assertStatus(200)
-        ->assertJsonPath('data.status', 'submitted')
-        ->assertJsonPath('data.is_complete', true);
+        ->assertJsonPath('data.status', 'submitted');
 
     $nomination = Nomination::query()->forMember($member)->firstOrFail();
     expect($nomination->status)->toBe(NominationStatus::Submitted);
     expect($nomination->submitted_at)->not->toBeNull();
+});
+
+it('submits a ballot holding a single nominee', function (): void {
+    $category = Category::factory()->for(openEdition())->create(['nominee_type' => NomineeType::Artist]);
+    actingMember();
+
+    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => nomineeNames(1)])
+        ->assertStatus(200)
+        ->assertJsonPath('data.can_submit', true)
+        ->assertJsonPath('data.categories.0.has_nominees', true);
+
+    postJson('/api/academy/nominations/submit')
+        ->assertStatus(200)
+        ->assertJsonPath('data.status', 'submitted');
+});
+
+it('fails submission when nothing has been saved', function (): void {
+    Category::factory()->for(openEdition())->create(['nominee_type' => NomineeType::Artist]);
+    actingMember();
+
+    getJson('/api/academy/nominations')
+        ->assertStatus(200)
+        ->assertJsonPath('data.can_submit', false)
+        ->assertJsonPath('data.categories.0.has_nominees', false);
+
+    postJson('/api/academy/nominations/submit')
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('nominations');
+});
+
+it('fails submission when the only saved category was cleared again', function (): void {
+    $category = Category::factory()->for(openEdition())->create(['nominee_type' => NomineeType::Artist]);
+    $member = actingMember();
+
+    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => nomineeNames()])->assertStatus(200);
+    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => []])
+        ->assertStatus(200)
+        ->assertJsonPath('data.can_submit', false);
+
+    postJson('/api/academy/nominations/submit')
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('nominations');
+
+    expect(Nomination::query()->forMember($member)->firstOrFail()->status)->toBe(NominationStatus::Draft);
 });
 
 it('locks the ballot after submission', function (): void {
@@ -290,7 +321,7 @@ it('resumes a saved draft after re-authenticating', function (): void {
 
     getJson('/api/academy/nominations')
         ->assertStatus(200)
-        ->assertJsonPath('data.categories.0.complete', true)
+        ->assertJsonPath('data.categories.0.has_nominees', true)
         ->assertJsonCount(5, 'data.categories.0.rankings');
 });
 
@@ -377,7 +408,7 @@ it('links a pick chosen from the suggestions to its catalog entry without stagin
     expect($chosen->nominee_id)->toBe($delia->id);
 });
 
-it('counts picks chosen from the suggestions towards a complete, submittable ballot', function (): void {
+it('counts picks chosen from the suggestions towards a submittable ballot', function (): void {
     $category = Category::factory()->for(openEdition())->create(['nominee_type' => NomineeType::Artist]);
     $picks = Artist::factory()->count(5)->create()
         ->map(fn(Artist $artist): array => ['name' => $artist->name, 'nominee_id' => $artist->id])
@@ -386,7 +417,7 @@ it('counts picks chosen from the suggestions towards a complete, submittable bal
 
     putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => $picks])
         ->assertStatus(200)
-        ->assertJsonPath('data.categories.0.complete', true);
+        ->assertJsonPath('data.categories.0.has_nominees', true);
 
     postJson('/api/academy/nominations/submit')
         ->assertStatus(200)

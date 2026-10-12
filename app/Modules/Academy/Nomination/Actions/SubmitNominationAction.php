@@ -8,17 +8,14 @@ use Illuminate\Validation\ValidationException;
 use Rominas\Academy\Member\Model\Member;
 use Rominas\Academy\Nomination\Enums\NominationStatus;
 use Rominas\Academy\Nomination\Model\Nomination;
-use Rominas\Categories\Model\Category;
 
 /**
- * Finalizes a member's ballot. Guards: nominations must be open and the ballot still a draft. Every
- * category of the open edition must carry exactly 5 ranked nominees, else a 422 lists the categories
- * still incomplete. On success the ballot is locked (`submitted`).
+ * Finalizes a member's ballot. Guards: nominations must be open and the ballot still a draft. The ballot
+ * must hold at least one nominee in at least one category — the other categories may stay empty and a
+ * category may hold fewer than 5 — else a 422. On success the ballot is locked (`submitted`).
  */
 class SubmitNominationAction
 {
-    private const int REQUIRED_PER_CATEGORY = 5;
-
     public function __construct(
         private readonly ResolveOpenNominationEditionAction $resolveOpenEdition,
     ) {}
@@ -29,35 +26,16 @@ class SubmitNominationAction
 
         $nomination = Nomination::query()->forMember($member)->forEdition($edition)->first();
 
-        if ($nomination === null) {
+        // No ballot yet, or a draft left without picks (saving an empty list clears a category).
+        if ($nomination === null || ! $nomination->rankings()->exists()) {
             throw ValidationException::withMessages([
-                'nominations' => __('You have not saved any nominations yet.'),
+                'nominations' => __('Add at least one nominee before submitting.'),
             ]);
         }
 
         if ($nomination->status === NominationStatus::Submitted) {
             throw ValidationException::withMessages([
                 'nominations' => __('Your nominations have already been submitted.'),
-            ]);
-        }
-
-        $counts = $nomination->rankings()
-            ->selectRaw('category_id, count(*) as total')
-            ->groupBy('category_id')
-            ->pluck('total', 'category_id');
-
-        $incomplete = Category::query()
-            ->filterByEditionId($edition->id)
-            ->get()
-            ->filter(fn(Category $category): bool => (int) $counts->get($category->id, 0) !== self::REQUIRED_PER_CATEGORY)
-            ->pluck('name')
-            ->values();
-
-        if ($incomplete->isNotEmpty()) {
-            throw ValidationException::withMessages([
-                'nominations' => __('Every category must have exactly 5 ranked nominees. Incomplete: :categories.', [
-                    'categories' => $incomplete->implode(', '),
-                ]),
             ]);
         }
 

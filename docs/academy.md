@@ -157,9 +157,15 @@ synthesized for display and not persisted.
 ### Submit
 
 `POST /api/academy/nominations/submit` → `SubmitNominationAction`: the window must be open and the ballot a
-draft, and **every category of the edition must hold exactly five picks**. Otherwise the 422 names the
-incomplete categories. On success the ballot becomes `submitted` with `submitted_at` set — terminal, no
-further edits.
+draft, and the ballot must hold **at least one pick in at least one category** — other categories may stay
+empty, and a category may hold fewer than five. A ballot with no picks gets a 422. On success the ballot
+becomes `submitted` with `submitted_at` set — terminal, no further edits.
+
+In the ballot response, `can_submit` says this rule is met and each category's `has_nominees` says it holds
+a pick.
+
+A pick's points come from its position among the picks the member did make: the only nominee of a category
+is rank 1 (10 points), and a category nobody fills ends up with no shortlist.
 
 Only **submitted** ballots count anywhere downstream (shortlist, scoring, reporting). Drafts left at the
 deadline are ignored.
