@@ -152,7 +152,28 @@ snapshot either. To change published results, the snapshot has to be regenerated
 an edition without one returns **404**. Results therefore become public exactly when they are published,
 never before.
 
-## 8. Files
+## 8. Special categories
+
+Sections 2–4 are about **ranked** categories; Scoring never sees the others. The special ones
+([domain-model.md → SpecialAwards](domain-model.md#specialawards)) are tallied by
+`SpecialAwards/Actions/ComputeSpecialResultsAction` and travel next to the scores in `EditionResults`:
+
+- **`propose_or_vote`** — the approved entries ordered by member votes, most first. A proposal counts as
+  its proposer's vote. **Entries with the same number of votes share a position** (two at 5 votes are both
+  1st, the next is 3rd): a tie is shown, never broken by the code. Pending, rejected and merged entries do
+  not appear; a merged entry's votes are already on its target.
+- **`appointed`** — the one entry an admin entered, position 1, `votes` null.
+
+They follow the same gates as the rest: read live once public voting has closed (the Scoring gate runs
+first), frozen into `special_result_entries` with the text copied when the results are published, and
+served from the snapshot afterwards. The tally is cheap and not cached.
+
+In the payload each category has a `kind`; a special one fills `entries` (`title`, `description`, `votes`,
+`position`) and leaves `nominees` empty. Categories come out in their own `position` order, whatever the
+kind. The CSV export has a last column `votes`: a special entry's title goes in the nominee-name column
+and its points columns stay empty. The **public** results (§7) leave the vote counts out (`votes` is null).
+
+## 9. Files
 
 | Concern | Where |
 | --- | --- |

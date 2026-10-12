@@ -1,7 +1,7 @@
 # Academy & nominations
 
 The academy is the expert half of the Rominas vote. Its members are invited by staff, sign in without a
-password, nominate five ranked nominees in **every** category, and can propose future members. Once
+password, nominate up to five ranked nominees per ranked category, and can propose future members. Once
 nominations close, admins turn the submitted ballots into a five-nominee **shortlist** per category, which
 is what the public then votes on.
 
@@ -14,6 +14,10 @@ Everything here lives in `app/Modules/Academy/`, split into submodules:
 | `MemberProposal/` | Members proposing future members; admin review |
 | `Shortlist/` | Generating and adjusting the per-category shortlist for public voting |
 | module root | `MemberAuthController` (magic-link login) and `SendAcademyInvitationsAction` |
+
+This chapter covers the **ranked** categories only. In the special ones members propose an entry or vote
+for one instead, in the same window but apart from the ballot — see
+[domain-model.md → SpecialAwards](domain-model.md#specialawards).
 
 Fields and relationships are in [domain-model.md](domain-model.md#academy); the endpoint and permission
 reference is in [access-control.md](access-control.md) §2b–2e. Free-text nominee names are reconciled by a

@@ -22,10 +22,11 @@ ecosystem architecture decisions, locked choices and open questions see the ecos
 | [Notifications](notifications.md) | E-mail notifications for admins and academy members and the dashboard's unread list: the six types, who receives them, the two channels, the scheduled commands, and the read API. |
 | [Audit trail](audit.md) | The append-only `AuditLog`: the `RecordAuditTrail` middleware, route-name coverage rules (opt-out `/admin`, opt-in elsewhere), actor/subject resolution, redaction + email hashing, the `Context` enrichment hook, the read API, and a checklist for new routes. |
 
-## Planned chapters
-
-- **Critics' Choice** — the `CriticsChoice` module (the `critic` guard and committee submissions) is not
-  built yet; it gets a chapter when it is.
+The special awards (categories where members propose or vote, or whose result an admin enters) have no
+chapter of their own: see [domain-model.md → SpecialAwards](domain-model.md#specialawards),
+[access-control.md §2m](access-control.md#2m-special-awards-the-specialawards-module) and
+[scoring-results.md §8](scoring-results.md#8-special-categories). The Romanian Critics' Choice Award is one
+of them (an appointed category); the separate `CriticsChoice` module once planned is not being built.
 
 ## Conventions
 

@@ -13,11 +13,12 @@ picture stays complete. Keep this file in sync whenever an entity is added or ch
 | [Access control](#access-control--users-roles-permissions) (`Users`, `Roles`, `Permissions`) | User, Role, Permission | Admin accounts & authorization | [access-control.md](access-control.md) |
 | [Taxonomies](#taxonomies) | Taxonomy, TaxonomyTerm | Classification vocabulary | — |
 | [Editions](#editions) | Edition | Yearly award edition + lifecycle | [edition-lifecycle.md](edition-lifecycle.md) |
-| [Categories](#categories) | Category | Award categories, scoped to an edition | — |
+| [Categories](#categories) | Category | Award categories, scoped to an edition, each of a kind (ranked, propose-or-vote, appointed) | — |
 | [Catalog](#catalog) | Artist, Band, Venue, Song, Album, NomineeSubmission | Nominatable entities + free-text reconciliation | [nominee-reconciliation.md](nominee-reconciliation.md) |
 | [Academy](#academy) | Member, Nomination, NominationRanking, MemberProposal, ShortlistEntry | Participant accounts, ranked nominations, member proposals, shortlist | [academy.md](academy.md) |
+| [SpecialAwards](#specialawards) | SpecialEntry, SpecialVote | The categories that are not ranked: members propose or vote, or an admin enters the result | — |
 | [Voting](#voting) | Ballot, BallotRanking | Accountless public voting | [voting.md](voting.md) |
-| [Results](#results) | ResultSnapshot, ResultEntry | Custodian-gated results + the snapshot frozen when results are published | [scoring-results.md](scoring-results.md) |
+| [Results](#results) | ResultSnapshot, ResultEntry, SpecialResultEntry | Custodian-gated results + the snapshot frozen when results are published | [scoring-results.md](scoring-results.md) |
 | [FraudMonitoring](#fraudmonitoring) | InvalidationBatch, FraudAlert | Vote cancellation + automatic fraud detection | [fraud-monitoring.md](fraud-monitoring.md) |
 | [Audit](#audit-cross-cutting-trail) | AuditLog | Cross-cutting audit trail | [audit.md](audit.md) |
 | [Notifications](#notifications) | — (Laravel's `notifications` table) | E-mail notifications + the admin's unread list | [notifications.md](notifications.md) |
@@ -163,8 +164,8 @@ All six datetimes are **strictly ordered**: `starts_at < nominations_start_at < 
 
 ## Categories
 
-Award categories (e.g. *Best Album*), scoped to an edition and **typed**: each declares which
-catalog entity type it accepts.
+Award categories (e.g. *Best Album*), scoped to an edition. Each has a **kind** that says how it is
+decided; a ranked category is also **typed**: it declares which catalog entity type it accepts.
 
 **Category** — `app/Modules/Categories/Model/Category.php`
 
@@ -172,7 +173,8 @@ catalog entity type it accepts.
 | --- | --- |
 | `edition_id` | FK → Edition (`cascadeOnDelete`) |
 | `name`, `slug` | unique **per edition** (`(edition_id, name)` / `(edition_id, slug)`); slug auto-generated |
-| `nominee_type` | `NomineeType` enum — the catalog entity type this category competes |
+| `kind` | `CategoryKind` enum, default `ranked` — how the category is decided (below) |
+| `nominee_type` | `NomineeType` enum — the catalog entity type this category competes. **Nullable: only a ranked category has one** |
 | `position` | int — display ordering |
 | `description` | nullable |
 
@@ -183,9 +185,25 @@ model (morph-map style) and `label()` gives a display name.
 **Relationships** — `Category` → one `Edition` (`edition()`). The `nominee_type` links a category to
 a catalog **model class** (not a row) via `NomineeType::modelClass()`.
 
+**Enum** — `CategoryKind` (`Categories/Enums/CategoryKind.php`):
+
+| Kind | Members | Public vote | Result |
+| --- | --- | --- | --- |
+| `ranked` | rank up to 5 nominees on the ballot | rank 3 from the shortlist | scored (see [scoring-results.md](scoring-results.md)) |
+| `propose_or_vote` | propose one free-text entry **or** vote for one approved entry | none | most member votes |
+| `appointed` | never see it | none | entered by an admin |
+
+Everything in the ranked flow handles ranked categories only: the member ballot lists them alone, the
+ranking and suggestion routes 404 for another kind, shortlist generation and adjustment refuse another
+kind (bulk generation skips it), and Scoring scores ranked categories only. The other two kinds are the
+[SpecialAwards](#specialawards) module's. `CategoryQueryBuilder` has `ranked()`, `special()` (not ranked)
+and `ofKind()`; the admin index takes a `kind` filter. `Category::rankedNomineeType()` returns the
+non-null type for code that has already established the category is ranked.
+
 **Rules** — `edition_id` is required on create and **immutable on update** (`CategoryDataFactory`
-has separate `fromCreateRequest`/`fromUpdateRequest`); `nominee_type` validated with
-`Rule::enum(NomineeType::class)`. Points-per-rank / scoring config is **not** on Category — it
+has separate `fromCreateRequest`/`fromUpdateRequest`); so is `kind` (a `kind` sent on update is ignored).
+`nominee_type` is validated with `Rule::enum(NomineeType::class)`: **required for a ranked category,
+prohibited for the others**. Points-per-rank / scoring config is **not** on Category — it
 belongs to the planned `Scoring` module.
 
 ---
@@ -433,6 +451,84 @@ admin endpoints and `shortlists` permission are in [access-control.md](access-co
 
 ---
 
+## SpecialAwards
+
+The categories that do not follow the ranked flow (`app/Modules/SpecialAwards/`), e.g. *Lifetime
+Achievement Award*, *ROMIAS's WOW* (both `propose_or_vote`) and the *Romanian Critics' Choice Award*
+(`appointed`). Their entries are **free text**: a title and an optional description, with no Catalog link.
+
+```mermaid
+erDiagram
+    CATEGORY ||--o{ SPECIAL_ENTRY : "has"
+    MEMBER ||--o{ SPECIAL_ENTRY : "proposes"
+    SPECIAL_ENTRY ||--o{ SPECIAL_VOTE : "receives"
+    MEMBER ||--o{ SPECIAL_VOTE : "casts (one per category)"
+    SPECIAL_ENTRY }o--o| SPECIAL_ENTRY : "merged into"
+```
+
+**SpecialEntry** — `SpecialAwards/Entry/Model/SpecialEntry.php`
+
+| Field | Notes |
+| --- | --- |
+| `category_id` | FK → Category (`cascadeOnDelete`) |
+| `title`, `description` | free text; `description` nullable |
+| `normalized_title` | the title through `NomineeNameNormalizer`, set on save; the duplicate check compares it |
+| `status` | `SpecialEntryStatus`: `pending` \| `approved` \| `rejected` \| `merged` |
+| `proposed_by_member_id` | FK → Member, nullable. **Null = entered by an admin** (the result of an appointed category) |
+| `merged_into_entry_id` | self FK, set when a duplicate is folded into another entry |
+| `reviewed_by_user_id`, `reviewed_at`, `review_note` | the review; the note is required on rejection and the proposer reads it |
+
+**SpecialVote** — `SpecialAwards/Vote/Model/SpecialVote.php` — `category_id`, `member_id`,
+`special_entry_id`. **Unique on `(category_id, member_id)`**: a member holds one vote per category, and a
+proposal carries its proposer's vote. That single key is what makes "propose or vote, never both" hold.
+
+### A member's one action per category
+
+Members act inside the nomination window (the same gate as the ballot, `ResolveOpenNominationEditionAction`),
+independently of the ranked ballot: submitting the ballot does not lock the special awards.
+
+- **Propose** — creates a `pending` entry plus the proposer's vote. Refused if the member already has a
+  vote in the category, or if an approved entry with the same normalized title exists (they can vote for it).
+- **Vote** — for an `approved` entry of the category. A member who voted for another entry **moves** the
+  vote; one who proposed must withdraw first.
+- **Withdraw a proposal** — while pending, the entry and the vote are deleted; once approved the entry
+  stays for the others and only the proposer's vote is removed.
+- **Withdraw a vote** — frees the member to vote again or to propose.
+
+`GET /api/academy/special-awards` returns every `propose_or_vote` category with its approved entries
+(alphabetically), the member's `action` (`proposed` \| `voted` \| null), the `entry_id` their vote is on,
+and their own latest `proposal` with its review outcome. It never returns a vote count, another member's
+pending proposal, a proposer's name, or an appointed category. Every write answers with that whole view.
+The four writes are audited (`config/audit.php`).
+
+### Review and duplicates
+
+An admin with the `specialAwards` permission reviews an edition's entries
+(`/api/admin/editions/{edition}/special-entries…`): **approve**, **reject** (note required; the proposer's
+vote is deleted, so they can act again), **correct the text**, or **merge**.
+
+Merging is how duplicates are handled. `?with_similar=1` on the single-entry read lists the approved
+entries of the category whose title is close to this one, scored by `NameSimilarity` — the same matching
+the Catalog reconciliation suggestions use. Merging moves every vote on the duplicate to the target and
+marks it `merged`; the target must be an approved entry of the same category. It works for a pending
+proposal and for an entry approved before the duplicate was noticed. Because a member holds one vote per
+category, moved votes cannot collide. Approving is refused while an approved entry with the same
+normalized title exists.
+
+The review endpoints carry **no vote counts**: how members voted is part of the results and stays
+custodian-only until publication.
+
+### Appointed result
+
+`PUT /api/admin/editions/{edition}/categories/{category}/appointed-result` enters or replaces the one
+entry of an `appointed` category (approved, no proposer); `DELETE` clears it. The admin who enters it
+necessarily knows it before publication.
+
+Nothing in this module can be changed once the edition is `results_published` or `archived`
+(`SpecialAwardsReviewGuard`). How the entries become results is in [Results](#results).
+
+---
+
 ## Voting
 
 Accountless public voting. A member of the public requests a one-time link by email, ranks the
@@ -544,6 +640,20 @@ Unique `(result_snapshot_id, category_id, nominee_type, nominee_id)` and
 `(result_snapshot_id, category_id, position)`. `nominee()` is a `morphTo` via the app-wide morph map.
 The snapshot is frozen by the `FreezeResultsOnResultsPublished` listener on the `EditionTransitioned`
 event (→ `results_published`); see [edition-lifecycle.md](edition-lifecycle.md).
+
+**SpecialResultEntry** — `app/Modules/Results/Model/SpecialResultEntry.php` — one entry's frozen standing
+in a [special category](#specialawards).
+
+| Field | Notes |
+| --- | --- |
+| `result_snapshot_id` | FK → ResultSnapshot (`cascadeOnDelete`) |
+| `category_id` | FK → Category (`cascadeOnDelete`) |
+| `title`, `description` | **copied** from the entry, so the snapshot does not follow later edits |
+| `votes` | member votes; **null** for an appointed category |
+| `position` | 1 = winner. **Not unique per category**: entries tied on votes share a position |
+
+In the results payload every category carries its `kind`: a ranked one fills `nominees` and leaves
+`entries` empty, a special one does the opposite.
 
 ---
 
@@ -760,6 +870,6 @@ table through the `Notifiable` trait on `User` and `Member`. See [notifications.
 
 Tracked in the ecosystem [`CLAUDE.md`](../../CLAUDE.md); each gets its own section here once built.
 
-| Module | Planned entities / concern |
-| --- | --- |
-| `CriticsChoice` | `Critic` (separate authenticatable + guard), committee submissions |
+None at the moment. The once-planned `CriticsChoice` module (a `Critic` account with its own guard and
+committee submissions) was replaced by an **appointed category**: the critics' result arrives from outside
+and an admin enters it — see [SpecialAwards](#specialawards).

@@ -325,6 +325,41 @@ Admin endpoints, under `/api/admin/notifications` (Sanctum-guarded):
 
 Marking as read is not audited. See the [notifications](notifications.md) chapter.
 
+## 2m. Special awards (the `SpecialAwards` module)
+
+The categories that are not ranked — see [domain-model.md → SpecialAwards](domain-model.md#specialawards).
+
+Member endpoints (`auth:member`, the member's own proposal and vote only; writes need the nomination
+window to be open and are **audited**):
+
+- `GET    /api/academy/special-awards` — the `propose_or_vote` categories of the active edition, their
+  approved entries, and what the member did in each. No vote counts.
+- `POST   /api/academy/special-awards/categories/{category}/proposal` (`title`, optional `description`).
+- `DELETE /api/academy/special-awards/categories/{category}/proposal`.
+- `PUT    /api/academy/special-awards/categories/{category}/vote` (`entry_id`).
+- `DELETE /api/academy/special-awards/categories/{category}/vote`.
+
+A category of another kind is a `404` on these routes; a member who already acted in the category gets a
+`422` on `category`.
+
+Admin endpoints, nested under an edition (Sanctum-guarded). Authorization is the **`specialAwards`**
+permission, checked against the `SpecialEntry` class and granted to `admin`:
+
+- `GET   /api/admin/editions/{edition}/special-entries` (`can:viewAny,SpecialEntry`) — filterable by
+  `?status=pending|approved|rejected|merged` and `?categoryId=`.
+- `GET   …/special-entries/{specialEntry}` (`can:view`) — `?with_similar=1` adds the approved entries of the
+  same category with a similar title.
+- `PATCH …/special-entries/{specialEntry}` (`can:update`) — correct `title` / `description`.
+- `POST  …/special-entries/{specialEntry}/approve` (`can:update`).
+- `POST  …/special-entries/{specialEntry}/reject` (`can:update`) — `note` **required**.
+- `POST  …/special-entries/{specialEntry}/merge` (`can:update`) — `{target_entry_id}`; moves the votes.
+- `PUT` / `DELETE /api/admin/editions/{edition}/categories/{category}/appointed-result`
+  (`can:create,SpecialEntry`) — enter, replace or clear the result of an `appointed` category.
+
+These responses never include vote counts — the tallies are part of the results (§2g, `results`
+permission, custodian only). Every change is refused (422 on `status`) once the edition's results are
+published.
+
 ## 2. Admin login (the `Auth` module)
 
 `POST /api/authenticate` (`Auth\Controllers\AuthController::authenticate`, `AuthenticateRequest`):
@@ -352,9 +387,10 @@ with the fraud monitor (the `fraudMonitoring` permission; see §2h). **`fraud_mo
 role whose sole right is that same vote review/cancellation.
 
 **Permissions** (`PermissionSeeder`) are resource-named: `editions`, `categories`, `members`,
-`memberProposals`, `shortlists`, `results`, `fraudMonitoring`, `reporting`, `nomineeSubmissions`, `audit`,
+`memberProposals`, `shortlists`, `results`, `fraudMonitoring`, `reporting`, `nomineeSubmissions`,
+`specialAwards`, `audit`,
 `artists`, `bands`, `venues`, `songs`, `albums`, `taxonomies`, `taxonomyTerms` (plus `roles`, `permissions`).
-The `admin` role is granted the domain set (including `reporting` and `nomineeSubmissions`) **except
+The `admin` role is granted the domain set (including `reporting`, `nomineeSubmissions` and `specialAwards`) **except
 `results`, `fraudMonitoring` and `audit`**; `custodian`
 is granted `results` + `fraudMonitoring`; `fraud_monitor` is granted `fraudMonitoring`; `audit` is granted
 to **no role**, so only `super_admin` reads the audit trail (it bypasses — §5; see §2i). User/role/permission
@@ -420,7 +456,7 @@ control (e.g. per-role user management) when needed.
 
 ## Planned populations
 
-- **Critic** — a separate authenticatable model + `critic` Sanctum guard, reusing the same
-  guard-agnostic magic-link mechanism (§2b) by passing `'critic'`. Built with the `CriticsChoice` module.
+- **Critic** — no longer planned. The critics' committee does not sign in: its result is entered by an
+  admin as an appointed category (§2m). The magic-link mechanism (§2b) stays guard-agnostic all the same.
 
 (The **public voter** population is now **built** — see §2f.)
