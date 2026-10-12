@@ -20,8 +20,3 @@ Route::put('/special-awards/categories/{category}/vote', [MemberSpecialAwardsCon
 
 Route::delete('/special-awards/categories/{category}/vote', [MemberSpecialAwardsController::class, 'withdrawVote'])
     ->name('special-awards.vote.withdraw');
-
-// Approved entries while typing a proposal's title; one request per pause in typing, hence the high limit.
-Route::get('/special-awards/categories/{category}/suggestions', [MemberSpecialAwardsController::class, 'suggestions'])
-    ->middleware('throttle:120,1')
-    ->name('special-awards.suggestions');

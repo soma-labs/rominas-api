@@ -283,22 +283,18 @@ it('hides a category that is not propose-or-vote from the member routes', functi
 
     postJson("/api/academy/special-awards/categories/{$category->id}/proposal", ['title' => 'Mine'])->assertStatus(404);
     putJson("/api/academy/special-awards/categories/{$category->id}/vote", ['entry_id' => 1])->assertStatus(404);
-    getJson("/api/academy/special-awards/categories/{$category->id}/suggestions?search=abc")->assertStatus(404);
 })->with(['ranked', 'appointed']);
 
-it('suggests approved entries whose title contains the typed text', function (): void {
+it('lists the approved entries alphabetically', function (): void {
     [, $category] = specialOpenEditionAndCategory();
-    $containing = specialApprovedEntry($category, 'Ana Maria');
-    $starting = specialApprovedEntry($category, 'Maria Tanase');
+    specialApprovedEntry($category, 'Maria Tanase');
     specialApprovedEntry($category, 'Gica Petrescu');
-    SpecialEntry::factory()->create(['category_id' => $category->id, 'title' => 'Maria Pending']);
     specialActingMember();
 
-    getJson("/api/academy/special-awards/categories/{$category->id}/suggestions?search=mari")
+    getJson('/api/academy/special-awards')
         ->assertStatus(200)
-        ->assertJsonCount(2, 'data')
-        ->assertJsonPath('data.0.id', $starting->id)
-        ->assertJsonPath('data.1.id', $containing->id);
+        ->assertJsonPath('data.categories.0.entries.0.title', 'Gica Petrescu')
+        ->assertJsonPath('data.categories.0.entries.1.title', 'Maria Tanase');
 });
 
 it('requires member authentication', function (): void {

@@ -4,20 +4,15 @@ declare(strict_types=1);
 
 namespace Rominas\SpecialAwards\Controllers;
 
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Auth;
 use Rominas\Academy\Member\Model\Member;
-use Rominas\Academy\Nomination\Requests\NomineeSuggestionsRequest;
-use Rominas\Categories\Enums\CategoryKind;
 use Rominas\Categories\Model\Category;
 use Rominas\Editions\Model\Edition;
 use Rominas\SpecialAwards\Actions\GetMemberSpecialAwardsAction;
 use Rominas\SpecialAwards\Entry\Actions\ProposeSpecialEntryAction;
-use Rominas\SpecialAwards\Entry\Actions\SuggestSpecialEntriesAction;
 use Rominas\SpecialAwards\Entry\Actions\WithdrawSpecialEntryAction;
 use Rominas\SpecialAwards\Entry\Factories\SpecialEntryDataFactory;
 use Rominas\SpecialAwards\Entry\Requests\SaveSpecialEntryRequest;
-use Rominas\SpecialAwards\Entry\Resources\MemberSpecialEntryResource;
 use Rominas\SpecialAwards\Resources\MemberSpecialAwardsResource;
 use Rominas\SpecialAwards\Vote\Actions\VoteForSpecialEntryAction;
 use Rominas\SpecialAwards\Vote\Actions\WithdrawSpecialVoteAction;
@@ -82,21 +77,6 @@ class MemberSpecialAwardsController
         $action->execute($member, $category);
 
         return $this->currentView($member);
-    }
-
-    /**
-     * Approved entries matching what the member has typed in the proposal's title.
-     */
-    public function suggestions(
-        Category $category,
-        NomineeSuggestionsRequest $request,
-        SuggestSpecialEntriesAction $action,
-    ): AnonymousResourceCollection {
-        if ($category->kind !== CategoryKind::ProposeOrVote) {
-            abort(404);
-        }
-
-        return MemberSpecialEntryResource::collection($action->execute($category, $request->searchTerm()));
     }
 
     private function member(): Member
