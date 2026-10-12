@@ -65,11 +65,14 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // `max_files` is a number of files, not an age: each daily channel keeps its newest
+        // LOG_MAX_FILES files and deletes older ones only when it writes on a new day. A channel
+        // that seldom writes (zerobounce, delivery) therefore keeps its files much longer.
         'daily' => [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
-            'max_files' => env('LOG_DAILY_DAYS', 14),
+            'max_files' => env('LOG_MAX_FILES', 14),
             'replace_placeholders' => true,
         ],
 
@@ -79,7 +82,7 @@ return [
             'driver' => 'daily',
             'path' => storage_path('logs/zerobounce/zerobounce.log'),
             'level' => env('LOG_LEVEL', 'debug'),
-            'max_files' => env('LOG_DAILY_DAYS', 14),
+            'max_files' => env('LOG_MAX_FILES', 14),
             'replace_placeholders' => true,
         ],
 
@@ -89,7 +92,7 @@ return [
             'driver' => 'daily',
             'path' => storage_path('logs/delivery/delivery.log'),
             'level' => env('LOG_LEVEL', 'debug'),
-            'max_files' => env('LOG_DAILY_DAYS', 14),
+            'max_files' => env('LOG_MAX_FILES', 14),
             'replace_placeholders' => true,
         ],
 

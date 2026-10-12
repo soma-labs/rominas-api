@@ -698,8 +698,10 @@ table through the `Notifiable` trait on `User` and `Member`. See [notifications.
   (SMTP active; Brevo ported as an opt-in alternative). An `action → PayloadFactory → service`
   pipeline driven by `config/delivery.php`; no stored models. A failed send is logged in its own daily
   file (`storage/logs/delivery/delivery-<date>.log`, the `delivery` log channel) with its params; a link
-  token is written as `[hidden]` (the factory marks it `#[SensitiveParameter]`). Failed jobs are deleted
-  after as many days as the log files are kept (`LOG_DAILY_DAYS`, 14).
+  token is written as `[hidden]` (the factory marks it `#[SensitiveParameter]`). Each daily log channel
+  keeps its newest `LOG_MAX_FILES` files (14): a count, not an age, and old files are removed only when
+  the channel writes on a new day, so a channel that seldom writes keeps them longer. Failed jobs are
+  deleted by the scheduler once they are `LOG_MAX_FILES` days old.
 - **`Shared`** (`app/Modules/Shared/Concerns/`) — cross-module query-builder concerns
   (`QueryBuilderSearchableTrait`, `QueryBuilderSortableTrait`).
 - **`Menu`** (`app/Modules/Menu/`) — the admin dashboard's sidebar menu, filtered to the permissions of
