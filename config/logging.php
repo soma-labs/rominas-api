@@ -73,6 +73,16 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // ZeroBounce failures (unreachable, bad key, no credits) — each one means a voting link was
+        // issued without the address being checked. Written by ZeroBounceEmailValidator.
+        'zerobounce' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/zerobounce/zerobounce.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'max_files' => env('LOG_DAILY_DAYS', 14),
+            'replace_placeholders' => true,
+        ],
+
         'monthly' => [
             'driver' => 'monthly',
             'path' => storage_path('logs/laravel.log'),

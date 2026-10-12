@@ -13,7 +13,8 @@ use Rominas\EmailValidation\EmailValidatorInterface;
 /**
  * Validates one address through ZeroBounce's real-time API (`GET {base_url}/validate`). Only the address
  * is sent — no IP. Every failure (no API key, network error, timeout, an error answer such as a bad key
- * or no credits left) returns null and is logged without the address, so the caller can carry on.
+ * or no credits left) returns null and is logged without the address on the `zerobounce` channel, so the
+ * caller can carry on.
  */
 class ZeroBounceEmailValidator implements EmailValidatorInterface
 {
@@ -39,7 +40,7 @@ class ZeroBounceEmailValidator implements EmailValidatorInterface
                     'timeout' => $this->timeout,
                 ]);
         } catch (ConnectionException $exception) {
-            Log::warning('ZeroBounce could not be reached; the address was not validated.', [
+            Log::channel('zerobounce')->warning('ZeroBounce could not be reached; the address was not validated.', [
                 'reason' => $exception->getMessage(),
             ]);
 
@@ -49,7 +50,7 @@ class ZeroBounceEmailValidator implements EmailValidatorInterface
         $status = $response->json('status');
 
         if ($response->failed() || ! is_string($status) || $status === '') {
-            Log::warning('ZeroBounce answered with an error; the address was not validated.', [
+            Log::channel('zerobounce')->warning('ZeroBounce answered with an error; the address was not validated.', [
                 'http_status' => $response->status(),
                 'error' => $response->json('error'),
             ]);

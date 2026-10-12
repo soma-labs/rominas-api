@@ -108,7 +108,8 @@ own row; a status it does not list is flagged.
 
 - **ZeroBounce never blocks voting.** If it is unreachable, times out, or answers with an error (bad key,
   no credits left), the link is issued anyway, the ballot's `email_check_*` stay null ("not checked") and
-  a warning is logged without the address.
+  a warning is logged without the address, in its own daily file (`storage/logs/zerobounce/zerobounce-<date>.log`,
+  the `zerobounce` log channel).
 - **No API key = validation off** (`ZEROBOUNCE_API_KEY`, `config/services.php`). The default endpoint is
   the EU one (`ZEROBOUNCE_BASE_URL`); `ZEROBOUNCE_TIMEOUT` is in seconds.
 - **Credits.** An address that already has a ballot is never sent again. A rejected address is remembered
