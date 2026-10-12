@@ -71,7 +71,7 @@ class BallotResource extends JsonResource
             $categories[] = [
                 'id' => $category->id,
                 'name' => $category->name,
-                'nominee_type' => $category->nominee_type->value,
+                'nominee_type' => $category->rankedNomineeType()->value,
                 'nominees' => $nominees,
             ];
         }

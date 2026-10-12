@@ -78,7 +78,7 @@ class SaveCategoryRankingAction
                 if ($nomineeId !== null) {
                     $chosenNames[$this->chosenEntryName($category, $nomineeId, $index)] = true;
                 } else {
-                    $submission = $this->resolveSubmission->execute($edition, $category->nominee_type, $pick->name);
+                    $submission = $this->resolveSubmission->execute($edition, $category->rankedNomineeType(), $pick->name);
                     $nomineeId = $submission->resolved_nominee_id;
                     $typedNames[$submission->normalized_name] = true;
 
@@ -101,7 +101,7 @@ class SaveCategoryRankingAction
                     'category_id' => $category->id,
                     'rank' => $index + 1,
                     'nominee_submission_id' => $submission?->id,
-                    'nominee_type' => $category->nominee_type,
+                    'nominee_type' => $category->rankedNomineeType(),
                     'nominee_id' => $nomineeId,
                 ]);
             }
@@ -124,7 +124,7 @@ class SaveCategoryRankingAction
      */
     private function chosenEntryName(Category $category, int $nomineeId, int $index): string
     {
-        $modelClass = $category->nominee_type->modelClass();
+        $modelClass = $category->rankedNomineeType()->modelClass();
 
         $name = $modelClass::query()->whereKey($nomineeId)->toBase()->value('name');
 

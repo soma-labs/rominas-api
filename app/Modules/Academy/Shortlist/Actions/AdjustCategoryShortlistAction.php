@@ -28,6 +28,7 @@ class AdjustCategoryShortlistAction
 {
     public function __construct(
         private readonly AcademyPointTally $tally,
+        private readonly GenerateCategoryShortlistAction $generateCategory,
     ) {}
 
     /**
@@ -43,6 +44,8 @@ class AdjustCategoryShortlistAction
                 'category' => __('The category does not belong to this edition.'),
             ]);
         }
+
+        $this->generateCategory->assertRanked($category);
 
         if (count($nomineeIds) > RankPoints::RANKS) {
             throw ValidationException::withMessages([
@@ -67,7 +70,7 @@ class AdjustCategoryShortlistAction
                 $entries->push(ShortlistEntry::query()->create([
                     'edition_id' => $edition->id,
                     'category_id' => $category->id,
-                    'nominee_type' => $category->nominee_type,
+                    'nominee_type' => $category->rankedNomineeType(),
                     'nominee_id' => $nomineeId,
                     'points' => $points[$nomineeId] ?? 0,
                     'position' => $position++,
@@ -100,7 +103,7 @@ class AdjustCategoryShortlistAction
     private function assertNomineesExist(Category $category, array $nomineeIds): void
     {
         /** @var class-string<\Illuminate\Database\Eloquent\Model> $modelClass */
-        $modelClass = $category->nominee_type->modelClass();
+        $modelClass = $category->rankedNomineeType()->modelClass();
 
         $existing = $modelClass::query()
             ->whereIn('id', $nomineeIds)

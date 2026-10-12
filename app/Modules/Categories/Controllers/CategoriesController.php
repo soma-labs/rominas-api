@@ -10,6 +10,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Rominas\Categories\Actions\CreateCategoryAction;
 use Rominas\Categories\Actions\DeleteCategoryAction;
 use Rominas\Categories\Actions\UpdateCategoryAction;
+use Rominas\Categories\Enums\CategoryKind;
 use Rominas\Categories\Factories\CategoryDataFactory;
 use Rominas\Categories\Model\Category;
 use Rominas\Categories\QueryBuilders\CategoryQueryBuilder;
@@ -31,6 +32,12 @@ class CategoriesController
 
         if ($request->has('editionId')) {
             $query = $query->filterByEditionId((int) $request->query('editionId'));
+        }
+
+        $kind = $request->enum('kind', CategoryKind::class);
+
+        if ($kind !== null) {
+            $query = $query->ofKind($kind);
         }
 
         return CategoryResource::collection(

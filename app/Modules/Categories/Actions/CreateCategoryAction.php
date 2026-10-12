@@ -14,6 +14,7 @@ class CreateCategoryAction
         return Category::create([
             'edition_id' => $data->edition_id,
             'name' => $data->name,
+            'kind' => $data->kind,
             'nominee_type' => $data->nominee_type,
             'position' => $data->position,
             'description' => $data->description,

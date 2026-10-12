@@ -32,7 +32,8 @@ class UpdateCategoryRequest extends FormRequest
                     ->where('edition_id', $category->edition_id)
                     ->ignore($category),
             ],
-            'nominee_type' => ['required', Rule::enum(NomineeType::class)],
+            // Only a ranked category accepts a Catalog entity type.
+            'nominee_type' => $category->isRanked() ? ['required', Rule::enum(NomineeType::class)] : ['prohibited'],
             'position' => 'sometimes|integer',
             'description' => 'sometimes|nullable|string',
         ];

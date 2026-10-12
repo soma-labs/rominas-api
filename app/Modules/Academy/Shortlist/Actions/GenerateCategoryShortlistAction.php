@@ -41,6 +41,8 @@ class GenerateCategoryShortlistAction
             ]);
         }
 
+        $this->assertRanked($category);
+
         $totals = $this->tallyPoints($edition, $category);
 
         return DB::transaction(function () use ($edition, $category, $totals): Collection {
@@ -65,6 +67,20 @@ class GenerateCategoryShortlistAction
 
             return $entries;
         });
+    }
+
+    /**
+     * Only a ranked category goes to the public vote, so only a ranked category has a shortlist.
+     *
+     * @throws ValidationException
+     */
+    public function assertRanked(Category $category): void
+    {
+        if (! $category->isRanked()) {
+            throw ValidationException::withMessages([
+                'category' => __('This category has no shortlist.'),
+            ]);
+        }
     }
 
     /**

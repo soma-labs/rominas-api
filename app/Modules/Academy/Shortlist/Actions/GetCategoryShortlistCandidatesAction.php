@@ -18,6 +18,7 @@ class GetCategoryShortlistCandidatesAction
 {
     public function __construct(
         private readonly AcademyPointTally $tally,
+        private readonly GenerateCategoryShortlistAction $generateCategory,
     ) {}
 
     /**
@@ -31,6 +32,8 @@ class GetCategoryShortlistCandidatesAction
             ]);
         }
 
+        $this->generateCategory->assertRanked($category);
+
         $points = $this->tally->perNominee($edition, $category);
 
         if ($points === []) {
@@ -38,7 +41,7 @@ class GetCategoryShortlistCandidatesAction
         }
 
         /** @var class-string<\Illuminate\Database\Eloquent\Model> $modelClass */
-        $modelClass = $category->nominee_type->modelClass();
+        $modelClass = $category->rankedNomineeType()->modelClass();
 
         /** @var \Illuminate\Support\Collection<int, object{name: string, slug: string}> $nominees */
         $nominees = $modelClass::query()
@@ -52,7 +55,7 @@ class GetCategoryShortlistCandidatesAction
             $nominee = $nominees->get($id);
 
             $rows[] = [
-                'nominee_type' => $category->nominee_type->value,
+                'nominee_type' => $category->rankedNomineeType()->value,
                 'nominee_id' => $id,
                 'name' => $nominee->name ?? '',
                 'slug' => $nominee->slug ?? '',

@@ -326,3 +326,35 @@ it('forbids a user without the shortlists permission', function (): void {
     postJson("/api/admin/editions/{$edition->id}/categories/{$category->id}/shortlist")->assertStatus(403);
     getJson("/api/admin/editions/{$edition->id}/shortlist")->assertStatus(403);
 });
+
+it('skips the categories that are not ranked when bulk-generating', function (): void {
+    actingAsSuperAdmin();
+    [$edition, $ranked] = shortlistEditionAndCategory();
+    Category::factory()->for($edition)->proposeOrVote()->create();
+    Category::factory()->for($edition)->appointed()->create();
+
+    $artist = Artist::factory()->create();
+    seedShortlistBallot($edition, $ranked, [$artist->id]);
+
+    postJson("/api/admin/editions/{$edition->id}/shortlist")
+        ->assertStatus(200)
+        ->assertJsonCount(1, 'data');
+});
+
+it('refuses a shortlist for a category that is not ranked', function (): void {
+    actingAsSuperAdmin();
+    [$edition] = shortlistEditionAndCategory();
+    $special = Category::factory()->for($edition)->proposeOrVote()->create();
+
+    postJson("/api/admin/editions/{$edition->id}/categories/{$special->id}/shortlist")
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('category');
+
+    getJson("/api/admin/editions/{$edition->id}/categories/{$special->id}/shortlist/candidates")
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('category');
+
+    putJson("/api/admin/editions/{$edition->id}/categories/{$special->id}/shortlist", ['nominees' => [1]])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('category');
+});

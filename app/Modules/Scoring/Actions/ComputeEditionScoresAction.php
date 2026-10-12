@@ -13,7 +13,7 @@ use Rominas\Scoring\Enums\ScoringAlgorithmType;
 use Rominas\Scoring\Support\ScoringAlgorithm;
 
 /**
- * Computes an entire edition's results — every category, in order — on demand.
+ * Computes an entire edition's results — every ranked category, in order — on demand.
  *
  * The inputs are frozen the moment public voting closes (no new nominations or ballots in the scorable
  * states), so the result is cached per edition and status; a status change (e.g. results being published) yields
@@ -38,7 +38,9 @@ class ComputeEditionScoresAction
         }
 
         return Cache::remember($key, now()->addHours(6), function () use ($edition): EditionScore {
-            $categories = $edition->categories()
+            $categories = Category::query()
+                ->filterByEditionId($edition->id)
+                ->ranked()
                 ->get()
                 ->sortBy('position')
                 ->values();

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rominas\Results\Actions;
 
+use Rominas\Categories\Model\Category;
 use Rominas\Editions\Model\Edition;
 use Rominas\Results\DataTransferObjects\EditionResults;
 use Rominas\Results\Enums\ResultsSource;
@@ -55,7 +56,9 @@ class GetEditionResultsAction
     {
         $entriesByCategory = $snapshot->entries->groupBy('category_id');
 
-        $categories = $edition->categories()
+        $categories = Category::query()
+            ->filterByEditionId($edition->id)
+            ->ranked()
             ->get()
             ->sortBy('position')
             ->values();

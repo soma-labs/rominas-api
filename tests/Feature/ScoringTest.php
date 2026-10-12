@@ -206,3 +206,14 @@ it('scores via the client attributed ladders (the default algorithm)', function 
         ->and($nominees[2]->nomineeId)->toBe($c->id)
         ->and($nominees[2]->finalScore)->toBe(175.0);
 });
+
+it('scores only the ranked categories', function (): void {
+    [$edition, $ranked] = scorableEditionAndCategory();
+    Category::factory()->for($edition)->proposeOrVote()->create();
+    Category::factory()->for($edition)->appointed()->create();
+
+    $result = app(ComputeEditionScoresAction::class)->execute($edition);
+
+    expect($result->categories)->toHaveCount(1)
+        ->and($result->categories[0]->categoryId)->toBe($ranked->id);
+});

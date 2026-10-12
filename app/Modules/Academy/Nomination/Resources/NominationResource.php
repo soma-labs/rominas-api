@@ -14,7 +14,7 @@ use Rominas\Academy\Nomination\Model\NominationRanking;
 use Rominas\Categories\Model\Category;
 
 /**
- * The member's whole ballot: status + every category of the edition with the member's current ranked
+ * The member's whole ballot: status + every ranked category of the edition with the member's current ranked
  * picks (empty where none), so the SPA can render progress and resume. `can_submit` says the ballot
  * holds at least one pick, which is all a submission needs. Also carries the edition's
  * `nominations_start_at` / `nominations_end_at` so the SPA can gate the form on the window itself,
@@ -37,7 +37,8 @@ class NominationResource extends JsonResource
         $byCategory = $nomination->rankings->groupBy('category_id');
 
         /** @var Collection<int, Category> $categories */
-        $categories = $nomination->edition->categories;
+        $categories = $nomination->edition->categories
+            ->filter(static fn(Category $category): bool => $category->isRanked());
 
         $categoriesPayload = $categories->map(function (Category $category) use ($byCategory): array {
             $rankings = ($byCategory->get($category->id) ?? collect())->sortBy('rank')->values();
@@ -45,7 +46,7 @@ class NominationResource extends JsonResource
             return [
                 'id' => $category->id,
                 'name' => $category->name,
-                'nominee_type' => $category->nominee_type->value,
+                'nominee_type' => $category->rankedNomineeType()->value,
                 'has_nominees' => $rankings->isNotEmpty(),
                 'rankings' => NominationRankingResource::collection($rankings),
             ];

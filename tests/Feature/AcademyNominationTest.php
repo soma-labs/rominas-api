@@ -514,3 +514,34 @@ it('accepts two chosen catalog entries that share a name', function (): void {
         ->assertJsonPath('data.categories.0.rankings.0.nominee_id', $first->id)
         ->assertJsonPath('data.categories.0.rankings.1.nominee_id', $second->id);
 });
+
+it('leaves the categories that are not ranked off the ballot', function (): void {
+    $edition = openEdition();
+    $ranked = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist]);
+    Category::factory()->for($edition)->proposeOrVote()->create();
+    Category::factory()->for($edition)->appointed()->create();
+    actingMember();
+
+    getJson('/api/academy/nominations')
+        ->assertStatus(200)
+        ->assertJsonCount(1, 'data.categories')
+        ->assertJsonPath('data.categories.0.id', $ranked->id);
+});
+
+it('does not accept a ranking for a category that is not ranked', function (): void {
+    $category = Category::factory()->for(openEdition())->proposeOrVote()->create();
+    actingMember();
+
+    putJson("/api/academy/nominations/categories/{$category->id}", ['nominees' => [['name' => 'Someone']]])
+        ->assertStatus(404);
+
+    expect(Nomination::query()->count())->toBe(0);
+});
+
+it('offers no catalog suggestions for a category that is not ranked', function (): void {
+    $category = Category::factory()->for(openEdition())->proposeOrVote()->create();
+    actingMember();
+
+    getJson("/api/academy/nominations/categories/{$category->id}/suggestions?search=some")
+        ->assertStatus(404);
+});

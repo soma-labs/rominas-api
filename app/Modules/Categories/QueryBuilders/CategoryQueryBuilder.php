@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rominas\Categories\QueryBuilders;
 
 use Illuminate\Database\Eloquent\Builder;
+use Rominas\Categories\Enums\CategoryKind;
 use Rominas\Categories\Model\Category;
 use Rominas\Shared\Concerns\QueryBuilderSearchableTrait;
 use Rominas\Shared\Concerns\QueryBuilderSortableTrait;
@@ -39,6 +40,16 @@ class CategoryQueryBuilder extends Builder
     public function filterByEditionId(int $editionId): self
     {
         return $this->where('edition_id', '=', $editionId);
+    }
+
+    public function ofKind(CategoryKind $kind): self
+    {
+        return $this->where('kind', '=', $kind->value);
+    }
+
+    public function ranked(): self
+    {
+        return $this->ofKind(CategoryKind::Ranked);
     }
 
     /**

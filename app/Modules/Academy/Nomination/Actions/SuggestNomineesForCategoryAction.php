@@ -21,7 +21,7 @@ class SuggestNomineesForCategoryAction
      */
     public function execute(Category $category, string $search): array
     {
-        $modelClass = $category->nominee_type->modelClass();
+        $modelClass = $category->rankedNomineeType()->modelClass();
 
         // The typed text is matched literally: `%` and `_` are not wildcards here.
         $term = addcslashes($search, '\\%_');

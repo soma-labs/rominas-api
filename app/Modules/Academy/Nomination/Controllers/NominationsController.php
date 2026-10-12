@@ -38,6 +38,8 @@ class NominationsController
         SaveCategoryRankingRequest $request,
         SaveCategoryRankingAction $action,
     ): NominationResource {
+        $this->abortUnlessRanked($category);
+
         $member = $this->member();
 
         $action->execute($member, $category, CategoryRankingDataFactory::fromRequest($request, $category));
@@ -53,6 +55,8 @@ class NominationsController
         NomineeSuggestionsRequest $request,
         SuggestNomineesForCategoryAction $action,
     ): AnonymousResourceCollection {
+        $this->abortUnlessRanked($category);
+
         return NomineeSuggestionResource::collection($action->execute($category, $request->searchTerm()));
     }
 
@@ -63,6 +67,16 @@ class NominationsController
         $action->execute($member);
 
         return $this->currentBallot($member);
+    }
+
+    /**
+     * Only a ranked category is on the ballot; to a member the others do not exist here.
+     */
+    private function abortUnlessRanked(Category $category): void
+    {
+        if (! $category->isRanked()) {
+            abort(404);
+        }
     }
 
     private function member(): Member

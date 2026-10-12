@@ -7,6 +7,7 @@ namespace Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 use Rominas\Catalog\Enums\NomineeType;
+use Rominas\Categories\Enums\CategoryKind;
 use Rominas\Categories\Model\Category;
 use Rominas\Editions\Model\Edition;
 
@@ -32,5 +33,21 @@ class CategoryFactory extends Factory
             'position' => 0,
             'description' => fake()->optional()->sentence(),
         ];
+    }
+
+    public function proposeOrVote(): static
+    {
+        return $this->state(fn(): array => [
+            'kind' => CategoryKind::ProposeOrVote,
+            'nominee_type' => null,
+        ]);
+    }
+
+    public function appointed(): static
+    {
+        return $this->state(fn(): array => [
+            'kind' => CategoryKind::Appointed,
+            'nominee_type' => null,
+        ]);
     }
 }
