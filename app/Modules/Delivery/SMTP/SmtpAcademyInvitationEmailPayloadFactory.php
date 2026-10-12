@@ -8,6 +8,7 @@ use Illuminate\Support\Str;
 use Rominas\Delivery\DeliveryPayloadInterface;
 use Rominas\Delivery\EmailContact;
 use Rominas\Delivery\PayloadFactoryInterface;
+use SensitiveParameter;
 
 /**
  * Renders the academy-member invitation email. The link carries the raw magic-link token + email to
@@ -17,6 +18,7 @@ class SmtpAcademyInvitationEmailPayloadFactory implements PayloadFactoryInterfac
 {
     public function __construct(
         private readonly string $email,
+        #[SensitiveParameter]
         private readonly string $token,
     ) {}
 

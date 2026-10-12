@@ -9,6 +9,8 @@ use Rominas\Delivery\PayloadFactoryInterface;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
+use ReflectionClass;
+use SensitiveParameter;
 
 readonly class DeliveryAction
 {
@@ -32,6 +34,8 @@ readonly class DeliveryAction
                 continue;
             }
 
+            $payloadFactoryClass = null;
+
             try {
                 $deliveryService = app()->make($deliveryMethodConfig['service']);
 
@@ -49,9 +53,8 @@ readonly class DeliveryAction
                 Log::channel('delivery')->error('Error delivering message', [
                     'method' => $deliveryMethodName,
                     'action' => $action,
-                    // Left out: the params hold the recipient's address and the working link token.
-                    // 'params' => $payloadFactoryParams,
-                    'error' => $this->withoutEmailAddresses($e->getMessage()),
+                    'params' => $this->loggableParams($payloadFactoryClass, $payloadFactoryParams),
+                    'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]);
 
@@ -72,10 +75,34 @@ readonly class DeliveryAction
     }
 
     /**
-     * Mail servers and SQL errors quote the address they refused; the log must not keep it.
+     * The params as they may be written to the log: every argument the payload factory's constructor
+     * marks with #[SensitiveParameter] (a link token) is replaced. Without a known factory nothing says
+     * which argument is a token, so none of them is logged.
+     *
+     * @param  class-string|null  $payloadFactoryClass
+     * @param  array<int|string, mixed>  $payloadFactoryParams
+     * @return array<int|string, mixed>|string
      */
-    private function withoutEmailAddresses(string $message): string
+    private function loggableParams(?string $payloadFactoryClass, array $payloadFactoryParams): array|string
     {
-        return preg_replace('/[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/iu', '[email]', $message) ?? '[unreadable message]';
+        if ($payloadFactoryClass === null) {
+            return '[not logged: no payload factory]';
+        }
+
+        $constructor = (new ReflectionClass($payloadFactoryClass))->getConstructor();
+
+        foreach ($constructor?->getParameters() ?? [] as $parameter) {
+            if ($parameter->getAttributes(SensitiveParameter::class) === []) {
+                continue;
+            }
+
+            foreach ([$parameter->getPosition(), $parameter->getName()] as $key) {
+                if (array_key_exists($key, $payloadFactoryParams)) {
+                    $payloadFactoryParams[$key] = '[hidden]';
+                }
+            }
+        }
+
+        return $payloadFactoryParams;
     }
 }

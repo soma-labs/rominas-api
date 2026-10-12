@@ -8,6 +8,9 @@ use Rominas\Delivery\DeliveryPayloadInterface;
 use Rominas\Delivery\DeliveryServiceInterface;
 use Rominas\Delivery\Exceptions\DeliveryFailedException;
 use Rominas\Delivery\PayloadFactoryInterface;
+use Rominas\Delivery\SMTP\SmtpAcademyInvitationEmailPayloadFactory;
+use Rominas\Delivery\SMTP\SmtpAcademyMagicLinkEmailPayloadFactory;
+use Rominas\Delivery\SMTP\SmtpVotingLinkEmailPayloadFactory;
 use Tests\TestCase;
 
 // Boot the framework (for the app() container) without a database.
@@ -41,17 +44,6 @@ final class FailingDeliveryService implements DeliveryServiceInterface
     public function send(DeliveryPayloadInterface $payload): void
     {
         throw new RuntimeException('SMTP auth failed');
-    }
-}
-
-/**
- * Fails the way a mail server does when it refuses a recipient: the address is quoted in the message.
- */
-final class RecipientRejectingDeliveryService implements DeliveryServiceInterface
-{
-    public function send(DeliveryPayloadInterface $payload): void
-    {
-        throw new RuntimeException('550 5.1.1 <to@example.test>: Recipient address rejected');
     }
 }
 
@@ -100,7 +92,7 @@ it('attempts every requested method before failing', function (): void {
     expect($working->sent)->toBe(1);
 });
 
-it('logs a failed delivery on the delivery channel without the params or the address', function (): void {
+it('logs no params when the action has no payload factory', function (): void {
     $loggedContext = null;
 
     Log::shouldReceive('channel')->once()->with('delivery')->andReturnSelf();
@@ -111,14 +103,35 @@ it('logs a failed delivery on the delivery channel without the params or the add
     });
 
     $action = new DeliveryAction([
-        'email' => ['service' => RecipientRejectingDeliveryService::class, 'factories' => ['welcome' => StubPayloadFactory::class]],
+        'email' => ['service' => RecordingDeliveryService::class, 'factories' => []],
     ]);
 
-    expect(fn(): array => $action->execute('welcome', ['email'], 'to@example.test'))
+    expect(fn(): array => $action->execute('link', ['email'], 'to@example.test', 'secret-link-token'))
         ->toThrow(DeliveryFailedException::class);
 
-    expect($loggedContext)
-        ->toHaveKeys(['method', 'action', 'error', 'trace'])
-        ->not->toHaveKey('params')
-        ->and($loggedContext['error'])->toBe('550 5.1.1 <[email]>: Recipient address rejected');
+    expect($loggedContext['params'])->toBe('[not logged: no payload factory]');
 });
+
+it('logs a failed link e-mail on the delivery channel with the token hidden', function (string $payloadFactoryClass): void {
+    $loggedContext = null;
+
+    Log::shouldReceive('channel')->once()->with('delivery')->andReturnSelf();
+    Log::shouldReceive('error')->once()->withArgs(function (string $message, array $context) use (&$loggedContext): bool {
+        $loggedContext = $context;
+
+        return true;
+    });
+
+    $action = new DeliveryAction([
+        'email' => ['service' => FailingDeliveryService::class, 'factories' => ['link' => $payloadFactoryClass]],
+    ]);
+
+    expect(fn(): array => $action->execute('link', ['email'], 'to@example.test', 'secret-link-token'))
+        ->toThrow(DeliveryFailedException::class);
+
+    expect($loggedContext['params'])->toBe(['to@example.test', '[hidden]']);
+})->with([
+    SmtpAcademyMagicLinkEmailPayloadFactory::class,
+    SmtpAcademyInvitationEmailPayloadFactory::class,
+    SmtpVotingLinkEmailPayloadFactory::class,
+]);

@@ -7,6 +7,7 @@ namespace Rominas\Delivery\SMTP;
 use Rominas\Delivery\DeliveryPayloadInterface;
 use Rominas\Delivery\EmailContact;
 use Rominas\Delivery\PayloadFactoryInterface;
+use SensitiveParameter;
 
 /**
  * Renders the public voting-link email. The link carries only the single-use token to the voting SPA's
@@ -17,6 +18,7 @@ class SmtpVotingLinkEmailPayloadFactory implements PayloadFactoryInterface
 {
     public function __construct(
         private readonly string $email,
+        #[SensitiveParameter]
         private readonly string $token,
     ) {}
 

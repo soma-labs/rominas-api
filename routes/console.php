@@ -15,3 +15,9 @@ Schedule::command('notifications:daily-statistics')
 Schedule::command('notifications:nomination-reminders')
     ->dailyAt((string) config('notifications.nomination_reminder_time'))
     ->timezone((string) config('notifications.timezone'));
+
+// Failed jobs hold the recipient's address (and, for a voting link, the token): keep them as long as
+// the log files (LOG_DAILY_DAYS), then delete.
+Schedule::command('queue:prune-failed', [
+    '--hours' => 24 * (int) config('logging.channels.daily.max_files'),
+])->daily();

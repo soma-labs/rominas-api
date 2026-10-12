@@ -697,8 +697,9 @@ table through the `Notifiable` trait on `User` and `Member`. See [notifications.
 - **`Delivery`** (`app/Modules/Delivery/`) — transactional email behind a transport seam
   (SMTP active; Brevo ported as an opt-in alternative). An `action → PayloadFactory → service`
   pipeline driven by `config/delivery.php`; no stored models. A failed send is logged in its own daily
-  file (`storage/logs/delivery/delivery-<date>.log`, the `delivery` log channel), without the params and
-  with any address in the error text replaced by `[email]`.
+  file (`storage/logs/delivery/delivery-<date>.log`, the `delivery` log channel) with its params; a link
+  token is written as `[hidden]` (the factory marks it `#[SensitiveParameter]`). Failed jobs are deleted
+  after as many days as the log files are kept (`LOG_DAILY_DAYS`, 14).
 - **`Shared`** (`app/Modules/Shared/Concerns/`) — cross-module query-builder concerns
   (`QueryBuilderSearchableTrait`, `QueryBuilderSortableTrait`).
 - **`Menu`** (`app/Modules/Menu/`) — the admin dashboard's sidebar menu, filtered to the permissions of
