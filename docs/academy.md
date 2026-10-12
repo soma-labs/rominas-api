@@ -46,6 +46,8 @@ roster update (`PATCH /api/admin/members/{member}`), which is how a member is su
 | `suspended` | An admin sets it via the roster update | **No** — verify returns 422 |
 
 Admins manage the roster under `/api/admin/members` (the `members` permission, held by `admin`).
+A member has three optional contact details — `position`, `company`, `phone`. Only these admin
+endpoints return them (`AdminMemberResource`); the member-facing `/api/academy/me` does not.
 
 ## 2. Magic-link sign-in
 
@@ -167,7 +169,7 @@ deadline are ignored.
 Members can propose future academy members at any time; the pool is not tied to an edition.
 
 - **Member side** (`auth:member`, own proposals only): `POST /api/academy/proposals` (`name`, `email`
-  required; `position`, `company`, `phone`, `reason` optional), `GET` to list, and
+  required; `position`, `company`, `phone` optional), `GET` to list, and
   `DELETE /api/academy/proposals/{proposal}` to withdraw a **pending** one (audited).
 - **Limits** (`CreateMemberProposalAction`): a **lifetime cap** per member of
   `config('academy.max_proposals_per_member')`, default 5 — every proposal ever made counts, whatever its
@@ -175,9 +177,9 @@ Members can propose future academy members at any time; the pool is not tied to 
   proposal.
 - **Admin review** (`memberProposals` permission, held by `admin`): list (`?status=`), view, then
   `approve` or `reject`, each with an optional `note`. Only pending proposals can be reviewed.
-  **Approving creates an `awaiting_invitation` Member** from the proposal's name and email (reusing
-  `CreateMemberAction`) and links it on `member_id`. That member then goes through the normal invitation
-  flow (§3).
+  **Approving creates an `awaiting_invitation` Member** from the proposal's name, email and contact
+  details (reusing `CreateMemberAction`) and links it on `member_id`. That member then goes through the
+  normal invitation flow (§3).
 
 ## 6. The shortlist
 

@@ -25,7 +25,6 @@ class CreateMemberProposalRequest extends FormRequest
             'position' => 'sometimes|nullable|string',
             'company' => 'sometimes|nullable|string',
             'phone' => 'sometimes|nullable|string',
-            'reason' => 'sometimes|nullable|string',
         ];
     }
 }

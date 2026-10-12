@@ -23,6 +23,9 @@ class MemberFactory extends Factory
         return [
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
+            'position' => fake()->optional()->jobTitle(),
+            'company' => fake()->optional()->company(),
+            'phone' => fake()->optional()->phoneNumber(),
             'status' => MemberStatus::Active,
             'email_verified_at' => now(),
             'invited_at' => now(),

@@ -17,7 +17,7 @@ use Rominas\Academy\Member\Model\Member;
 use Rominas\Academy\Member\QueryBuilders\MemberQueryBuilder;
 use Rominas\Academy\Member\Requests\CreateMemberRequest;
 use Rominas\Academy\Member\Requests\UpdateMemberRequest;
-use Rominas\Academy\Member\Resources\MemberResource;
+use Rominas\Academy\Member\Resources\AdminMemberResource;
 use Rominas\Auth\MagicLink\Jobs\SendMagicLinkJob;
 use Rominas\Users\Model\User;
 
@@ -33,7 +33,7 @@ class MembersController
         /** @var User $user */
         $user = $request->user();
 
-        return MemberResource::collection(
+        return AdminMemberResource::collection(
             Member::query()
                 ->visibleToUser($user)
                 ->search($request->query('search'))
@@ -45,23 +45,23 @@ class MembersController
         );
     }
 
-    public function show(Member $member): MemberResource
+    public function show(Member $member): AdminMemberResource
     {
-        return new MemberResource($member);
+        return new AdminMemberResource($member);
     }
 
     public function create(CreateMemberRequest $request, CreateMemberAction $action): JsonResponse
     {
         $member = $action->execute(MemberDataFactory::fromCreateRequest($request));
 
-        return (new MemberResource($member))->response()->setStatusCode(201);
+        return (new AdminMemberResource($member))->response()->setStatusCode(201);
     }
 
-    public function update(Member $member, UpdateMemberRequest $request, UpdateMemberAction $action): MemberResource
+    public function update(Member $member, UpdateMemberRequest $request, UpdateMemberAction $action): AdminMemberResource
     {
         $member = $action->execute($member, MemberDataFactory::fromUpdateRequest($request, $member));
 
-        return new MemberResource($member);
+        return new AdminMemberResource($member);
     }
 
     public function delete(Member $member, DeleteMemberAction $action): JsonResponse

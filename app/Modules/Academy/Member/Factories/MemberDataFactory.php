@@ -19,6 +19,9 @@ class MemberDataFactory
         return new MemberData(
             name: $validated['name'],
             email: $validated['email'],
+            position: $validated['position'] ?? null,
+            company: $validated['company'] ?? null,
+            phone: $validated['phone'] ?? null,
             status: MemberStatus::AwaitingInvitation,
         );
     }
@@ -30,6 +33,10 @@ class MemberDataFactory
         return new MemberData(
             name: $validated['name'],
             email: $validated['email'],
+            // A contact field left out of the request keeps its value; one sent as null is cleared.
+            position: array_key_exists('position', $validated) ? $validated['position'] : $member->position,
+            company: array_key_exists('company', $validated) ? $validated['company'] : $member->company,
+            phone: array_key_exists('phone', $validated) ? $validated['phone'] : $member->phone,
             status: isset($validated['status'])
                 ? MemberStatus::from($validated['status'])
                 : $member->status,

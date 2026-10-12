@@ -29,7 +29,6 @@ use Rominas\Users\Model\User;
     'position',
     'company',
     'phone',
-    'reason',
     'status',
     'member_id',
     'reviewed_by_user_id',

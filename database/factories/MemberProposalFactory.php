@@ -28,7 +28,6 @@ class MemberProposalFactory extends Factory
             'position' => fake()->optional()->jobTitle(),
             'company' => fake()->optional()->company(),
             'phone' => fake()->optional()->phoneNumber(),
-            'reason' => fake()->optional()->sentence(),
             'status' => MemberProposalStatus::Pending,
         ];
     }

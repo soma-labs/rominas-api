@@ -22,6 +22,9 @@ class CreateMemberRequest extends FormRequest
         return [
             'name' => 'required|string',
             'email' => 'required|email|unique:' . Member::class . ',email',
+            'position' => 'sometimes|nullable|string|max:255',
+            'company' => 'sometimes|nullable|string|max:255',
+            'phone' => 'sometimes|nullable|string|max:255',
         ];
     }
 }

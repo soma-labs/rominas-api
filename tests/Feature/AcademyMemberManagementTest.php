@@ -25,6 +25,48 @@ it('lets an admin create a member awaiting invitation', function (): void {
     expect(Member::query()->where('email', 'ana@example.test')->exists())->toBeTrue();
 });
 
+it('stores the optional contact details of a new member', function (): void {
+    actingAsSuperAdmin();
+
+    postJson('/api/admin/members', [
+        'name' => 'Ana Popescu',
+        'email' => 'ana@example.test',
+        'position' => 'Producer',
+        'company' => 'Studio Nord',
+        'phone' => '+40 720 000 000',
+    ])->assertStatus(201)
+        ->assertJsonPath('data.position', 'Producer')
+        ->assertJsonPath('data.company', 'Studio Nord')
+        ->assertJsonPath('data.phone', '+40 720 000 000');
+
+    $member = Member::query()->where('email', 'ana@example.test')->firstOrFail();
+    expect($member->position)->toBe('Producer');
+    expect($member->company)->toBe('Studio Nord');
+    expect($member->phone)->toBe('+40 720 000 000');
+});
+
+it('leaves the contact details empty when a new member has none', function (): void {
+    actingAsSuperAdmin();
+
+    postJson('/api/admin/members', [
+        'name' => 'Ana Popescu',
+        'email' => 'ana@example.test',
+    ])->assertStatus(201)
+        ->assertJsonPath('data.position', null)
+        ->assertJsonPath('data.company', null)
+        ->assertJsonPath('data.phone', null);
+});
+
+it('rejects a contact detail longer than 255 characters', function (string $field): void {
+    actingAsSuperAdmin();
+
+    postJson('/api/admin/members', [
+        'name' => 'Ana Popescu',
+        'email' => 'ana@example.test',
+        $field => str_repeat('a', 256),
+    ])->assertStatus(422)->assertJsonValidationErrorFor($field);
+})->with(['position', 'company', 'phone']);
+
 it('lets an admin list members', function (): void {
     actingAsSuperAdmin();
     Member::factory()->count(3)->create();
@@ -43,6 +85,30 @@ it('lets an admin update a member', function (): void {
         'email' => $member->email,
     ])->assertStatus(200)
         ->assertJsonPath('data.name', 'New Name');
+});
+
+it('lets an admin change and clear a member\'s contact details', function (): void {
+    actingAsSuperAdmin();
+    $member = Member::factory()->create([
+        'position' => 'Producer',
+        'company' => 'Studio Nord',
+        'phone' => '+40 720 000 000',
+    ]);
+
+    patchJson('/api/admin/members/' . $member->id, [
+        'name' => $member->name,
+        'email' => $member->email,
+        'position' => 'Manager',
+        'phone' => null,
+    ])->assertStatus(200)
+        ->assertJsonPath('data.position', 'Manager')
+        ->assertJsonPath('data.company', 'Studio Nord')
+        ->assertJsonPath('data.phone', null);
+
+    $member->refresh();
+    expect($member->position)->toBe('Manager');
+    expect($member->company)->toBe('Studio Nord');
+    expect($member->phone)->toBeNull();
 });
 
 it('lets an admin suspend a member via a status update', function (): void {

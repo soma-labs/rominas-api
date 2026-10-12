@@ -14,6 +14,9 @@ class UpdateMemberAction
         $member->update([
             'name' => $data->name,
             'email' => $data->email,
+            'position' => $data->position,
+            'company' => $data->company,
+            'phone' => $data->phone,
             'status' => $data->status,
         ]);
 

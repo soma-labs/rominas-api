@@ -30,7 +30,6 @@ it('lets a member propose a future member with contact details', function (): vo
         'position' => 'Producer',
         'company' => 'Studio Nord',
         'phone' => '+40 720 000 000',
-        'reason' => 'Respected producer.',
     ])->assertStatus(201)
         ->assertJsonPath('data.status', 'pending')
         ->assertJsonPath('data.email', 'ioana@example.test')
@@ -127,6 +126,9 @@ it('creates a member awaiting invitation when an admin approves a proposal', fun
     $proposal = MemberProposal::factory()->create([
         'name' => 'Approved Person',
         'email' => 'approved@example.test',
+        'position' => 'Producer',
+        'company' => 'Studio Nord',
+        'phone' => '+40 720 000 000',
     ]);
 
     postJson("/api/admin/member-proposals/{$proposal->id}/approve", ['note' => 'Looks great'])
@@ -136,6 +138,9 @@ it('creates a member awaiting invitation when an admin approves a proposal', fun
     $member = Member::query()->where('email', 'approved@example.test')->first();
     expect($member)->not->toBeNull();
     expect($member->status)->toBe(MemberStatus::AwaitingInvitation);
+    expect($member->position)->toBe('Producer');
+    expect($member->company)->toBe('Studio Nord');
+    expect($member->phone)->toBe('+40 720 000 000');
 
     $proposal->refresh();
     expect($proposal->status)->toBe(MemberProposalStatus::Approved);

@@ -31,6 +31,9 @@ class UpdateMemberRequest extends FormRequest
                 'email',
                 Rule::unique($member->getTable(), 'email')->ignore($member),
             ],
+            'position' => 'sometimes|nullable|string|max:255',
+            'company' => 'sometimes|nullable|string|max:255',
+            'phone' => 'sometimes|nullable|string|max:255',
             'status' => ['sometimes', Rule::enum(MemberStatus::class)],
         ];
     }

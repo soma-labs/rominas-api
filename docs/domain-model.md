@@ -330,6 +330,7 @@ erDiagram
 | --- | --- |
 | `name` | required |
 | `email` | unique |
+| `position`, `company`, `phone` | nullable — contact details (*functie* / *firma* / *nr. telefon*); returned only to admins (`AdminMemberResource`), copied from the proposal when one is approved |
 | `status` | `MemberStatus` enum — `awaiting_invitation` (default) \| `invited` \| `active` \| `suspended` |
 | `email_verified_at` | nullable; set on first magic-link login |
 | `invited_at` | nullable; set when an invitation is sent |
@@ -381,7 +382,6 @@ proposal, made by a member, to add a future academy member. Not edition-scoped (
 | `proposed_by_member_id` | FK → Member (`cascadeOnDelete`) — the proposer |
 | `name`, `email` | the proposed person (required) |
 | `position`, `company`, `phone` | nullable — the proposed person's contact/identity details (*functie* / *firma* / *nr. telefon*) |
-| `reason` | nullable — the proposer's justification |
 | `status` | `MemberProposalStatus` enum — `pending` \| `approved` \| `rejected` |
 | `member_id` | nullable FK → Member — the `awaiting_invitation` Member created on approval |
 | `reviewed_by_user_id` | nullable FK → User — the admin who reviewed |

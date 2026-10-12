@@ -54,7 +54,6 @@ class CreateMemberProposalAction
             'position' => $data->position,
             'company' => $data->company,
             'phone' => $data->phone,
-            'reason' => $data->reason,
             'status' => MemberProposalStatus::Pending,
         ]);
 

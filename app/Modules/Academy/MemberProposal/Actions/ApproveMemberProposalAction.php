@@ -43,6 +43,9 @@ class ApproveMemberProposalAction
             $member = $this->createMember->execute(new MemberData(
                 name: $proposal->name,
                 email: $proposal->email,
+                position: $proposal->position,
+                company: $proposal->company,
+                phone: $proposal->phone,
                 status: MemberStatus::AwaitingInvitation,
             ));
 

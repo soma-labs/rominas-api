@@ -148,6 +148,21 @@ it('returns the authenticated member from /me', function (): void {
         ->assertJsonPath('data.email', $member->email);
 });
 
+it('keeps the contact details out of /me', function (): void {
+    $member = Member::factory()->active()->create([
+        'position' => 'Producer',
+        'company' => 'Studio Nord',
+        'phone' => '+40 720 000 000',
+    ]);
+    Sanctum::actingAs($member, ['member'], 'member');
+
+    getJson('/api/academy/me')
+        ->assertStatus(200)
+        ->assertJsonMissingPath('data.position')
+        ->assertJsonMissingPath('data.company')
+        ->assertJsonMissingPath('data.phone');
+});
+
 it('logs out by revoking the current member token', function (): void {
     $member = Member::factory()->active()->create();
     $token = $member->createToken('login', ['member'])->plainTextToken;

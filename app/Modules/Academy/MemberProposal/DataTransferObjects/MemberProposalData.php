@@ -12,6 +12,5 @@ class MemberProposalData
         public ?string $position = null,
         public ?string $company = null,
         public ?string $phone = null,
-        public ?string $reason = null,
     ) {}
 }

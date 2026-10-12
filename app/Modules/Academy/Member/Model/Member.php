@@ -26,6 +26,9 @@ use Rominas\Academy\Member\QueryBuilders\MemberQueryBuilder;
 #[Fillable([
     'name',
     'email',
+    'position',
+    'company',
+    'phone',
     'status',
     'invited_at',
     'activated_at',

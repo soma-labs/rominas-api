@@ -28,7 +28,6 @@ class MemberProposalResource extends JsonResource
             'position' => $proposal->position,
             'company' => $proposal->company,
             'phone' => $proposal->phone,
-            'reason' => $proposal->reason,
             'status' => $proposal->status->value,
             'status_label' => $proposal->status->label(),
             'member_id' => $proposal->member_id,

@@ -19,7 +19,6 @@ class MemberProposalDataFactory
             position: $validated['position'] ?? null,
             company: $validated['company'] ?? null,
             phone: $validated['phone'] ?? null,
-            reason: $validated['reason'] ?? null,
         );
     }
 }
