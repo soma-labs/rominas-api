@@ -93,7 +93,7 @@ Members propose future academy members; admins review. A standing pool (not edit
 open anytime. `app/Modules/Academy/MemberProposal/`:
 
 - **Member-facing** (guard `member`, implicit ownership): `POST /api/academy/proposals` (required `name`
-  + `email`; optional `position`, `company`, `phone`, `reason`), `GET /api/academy/proposals` (own only),
+  + `email`; optional `position`, `company`, `phone`), `GET /api/academy/proposals` (own only),
   `DELETE /api/academy/proposals/{proposal}` (withdraw own pending). Creating rejects an email that is
   already a member or already has a pending proposal, and is capped at a **per-member lifetime limit**
   (`config('academy.max_proposals_per_member')`, default 5 — every proposal the member has ever made
@@ -101,7 +101,8 @@ open anytime. `app/Modules/Academy/MemberProposal/`:
 - **Admin-facing** (`auth:sanctum` + the `memberProposals` permission via `MemberProposalPolicy`):
   `GET /api/admin/member-proposals` (filter `?status=`), `GET /{memberProposal}`,
   `POST /{memberProposal}/approve`, `POST /{memberProposal}/reject` (both accept an optional `note`).
-  **Approve creates an `awaiting_invitation` Member** from the proposal (reusing `CreateMemberAction`)
+  **Approve creates an `awaiting_invitation` Member** from the proposal — name, email and the three
+  contact details — (reusing `CreateMemberAction`)
   and links it (`member_id`); an admin then invites it manually like any other member (§2b).
 
 ## 2e. Nominee shortlist (the `Shortlist` module)
