@@ -41,6 +41,11 @@ return [
         'api.academy.auth.magic.verify',
         'api.academy.logout',
         'api.academy.proposals.withdraw',
+        // A member's actions in the special categories: they decide those awards.
+        'api.academy.special-awards.proposal.create',
+        'api.academy.special-awards.proposal.withdraw',
+        'api.academy.special-awards.vote.cast',
+        'api.academy.special-awards.vote.withdraw',
     ],
 
     /*

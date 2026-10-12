@@ -44,5 +44,21 @@
     "In the category “:name” you must rank exactly :count shortlisted nominees, in order of preference, each only once.": "La categoria „:name” trebuie să clasezi exact :count nominalizați din lista scurtă, în ordinea preferinței, fiecare o singură dată.",
     "Your vote has been recorded. Thank you!": "Votul tău a fost înregistrat. Îți mulțumim!",
     "If the address is valid, you will receive a voting link.": "Dacă adresa este validă, vei primi un link de vot.",
-    "This email address cannot be used to vote. Please use a different address.": "Această adresă de e-mail nu poate fi folosită pentru vot. Te rugăm să folosești o altă adresă."
+    "This email address cannot be used to vote. Please use a different address.": "Această adresă de e-mail nu poate fi folosită pentru vot. Te rugăm să folosești o altă adresă.",
+
+    "This category has no shortlist.": "Această categorie nu are o listă scurtă de nominalizați.",
+    "This entry already exists. You can vote for it instead.": "Această propunere există deja. Poți vota pentru ea.",
+    "You have already proposed or voted in this category.": "Ai propus sau ai votat deja la această categorie.",
+    "You have no proposal to withdraw in this category.": "Nu ai nicio propunere de retras la această categorie.",
+    "This entry cannot be voted for. Please choose again.": "Această propunere nu poate fi votată. Te rugăm să alegi din nou.",
+    "You have proposed an entry in this category, so you cannot vote in it.": "Ai făcut o propunere la această categorie, așa că nu poți vota la ea.",
+    "You have no vote to withdraw in this category.": "Nu ai niciun vot de retras la această categorie.",
+    "The results of this edition are published, so its special entries can no longer be changed.": "Rezultatele acestei ediții sunt publicate, așa că propunerile ei speciale nu mai pot fi modificate.",
+    "Only a pending entry can be approved.": "Doar o propunere în așteptare poate fi aprobată.",
+    "Only a pending entry can be rejected.": "Doar o propunere în așteptare poate fi respinsă.",
+    "An approved entry with this title already exists. Merge this one into it instead.": "Există deja o propunere aprobată cu acest titlu. Unește-o pe aceasta cu ea.",
+    "Only a pending or approved entry can be merged.": "Doar o propunere în așteptare sau aprobată poate fi unită cu alta.",
+    "An entry can only be merged into another approved entry of the same category.": "O propunere poate fi unită doar cu o altă propunere aprobată din aceeași categorie.",
+    "Only a pending or approved entry can be edited.": "Doar o propunere în așteptare sau aprobată poate fi modificată.",
+    "Only an appointed category takes a result entered by hand.": "Doar o categorie cu rezultat desemnat primește un rezultat introdus manual."
 }

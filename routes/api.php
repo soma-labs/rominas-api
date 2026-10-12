@@ -30,6 +30,10 @@ Route::middleware('auth:member')->prefix('/academy')->name('api.academy.')
 Route::middleware(['auth:member', 'audit'])->prefix('/academy')->name('api.academy.')
     ->group(__DIR__ . '/api/academy/proposals.php');
 
+// Audited: a member's proposals and votes in the special categories (opt-in by route name).
+Route::middleware(['auth:member', 'audit'])->prefix('/academy')->name('api.academy.')
+    ->group(__DIR__ . '/api/academy/special-awards.php');
+
 // ---------------------------------------------------------------------------
 // Public voting API (accountless — a one-time link token authorizes the voter, no auth middleware).
 // ---------------------------------------------------------------------------
@@ -61,6 +65,7 @@ Route::middleware(['auth:sanctum', 'audit'])->prefix('/admin')->name('api.admin.
     Route::prefix('/editions')->name('editions.')->group(__DIR__ . '/api/admin/fraud-monitoring.php');
     Route::prefix('/fraud-monitoring')->name('fraud-monitoring.')->group(__DIR__ . '/api/admin/fraud-monitoring-editions.php');
     Route::prefix('/editions')->name('editions.')->group(__DIR__ . '/api/admin/nominee-submissions.php');
+    Route::prefix('/editions')->name('editions.')->group(__DIR__ . '/api/admin/special-awards.php');
     Route::prefix('/categories')->name('categories.')->group(__DIR__ . '/api/admin/categories.php');
     Route::prefix('/members')->name('members.')->group(__DIR__ . '/api/admin/members.php');
     Route::prefix('/member-proposals')->name('member-proposals.')->group(__DIR__ . '/api/admin/member-proposals.php');
