@@ -83,6 +83,16 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Failed sends (SMTP refused, timed out, no payload factory) — each one is an e-mail that did
+        // not go out. Written by DeliveryAction, without the recipient's address or the link token.
+        'delivery' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/delivery/delivery.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'max_files' => env('LOG_DAILY_DAYS', 14),
+            'replace_placeholders' => true,
+        ],
+
         'monthly' => [
             'driver' => 'monthly',
             'path' => storage_path('logs/laravel.log'),

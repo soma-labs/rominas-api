@@ -46,11 +46,12 @@ readonly class DeliveryAction
 
                 $deliveryStatuses[$deliveryMethodName] = 'success';
             } catch (Exception $e) {
-                Log::error('Error delivering message', [
+                Log::channel('delivery')->error('Error delivering message', [
                     'method' => $deliveryMethodName,
                     'action' => $action,
-                    'params' => $payloadFactoryParams,
-                    'error' => $e->getMessage(),
+                    // Left out: the params hold the recipient's address and the working link token.
+                    // 'params' => $payloadFactoryParams,
+                    'error' => $this->withoutEmailAddresses($e->getMessage()),
                     'trace' => $e->getTraceAsString(),
                 ]);
 
@@ -68,5 +69,13 @@ readonly class DeliveryAction
         }
 
         return $deliveryStatuses;
+    }
+
+    /**
+     * Mail servers and SQL errors quote the address they refused; the log must not keep it.
+     */
+    private function withoutEmailAddresses(string $message): string
+    {
+        return preg_replace('/[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/iu', '[email]', $message) ?? '[unreadable message]';
     }
 }
