@@ -6,6 +6,7 @@ namespace Rominas\SpecialAwards\Entry\QueryBuilders;
 
 use Illuminate\Database\Eloquent\Builder;
 use Rominas\Academy\Member\Model\Member;
+use Rominas\Categories\Enums\CategoryKind;
 use Rominas\Categories\Model\Category;
 use Rominas\Editions\Model\Edition;
 use Rominas\Shared\Concerns\QueryBuilderSearchableTrait;
@@ -43,6 +44,11 @@ class SpecialEntryQueryBuilder extends Builder
     public function forEdition(Edition $edition): self
     {
         return $this->whereHas('category', fn(Builder $query) => $query->where('edition_id', '=', $edition->id));
+    }
+
+    public function forCategoryKind(CategoryKind $kind): self
+    {
+        return $this->whereHas('category', fn(Builder $query) => $query->where('kind', '=', $kind->value));
     }
 
     public function forCategory(Category $category): self

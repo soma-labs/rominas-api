@@ -79,6 +79,24 @@ it('lists an edition\'s entries for review, filtered by status, without any vote
         ->assertJsonMissingPath('data.0.votes_count');
 });
 
+it('lists only the entries of one kind of category when asked', function (): void {
+    specialReviewActingAsAdmin();
+    [$edition, $category] = specialReviewEditionAndCategory();
+    $proposal = specialReviewPendingProposal($category, 'A Proposal');
+    $appointed = Category::factory()->for($edition)->appointed()->create();
+    $result = SpecialEntry::factory()->approved()->create(['category_id' => $appointed->id, 'proposed_by_member_id' => null]);
+
+    getJson("/api/admin/editions/{$edition->id}/special-entries?kind=propose_or_vote")
+        ->assertStatus(200)
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $proposal->id);
+
+    getJson("/api/admin/editions/{$edition->id}/special-entries?kind=appointed")
+        ->assertStatus(200)
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $result->id);
+});
+
 it('approves a pending proposal, which keeps its proposer\'s vote', function (): void {
     $admin = specialReviewActingAsAdmin();
     [$edition, $category] = specialReviewEditionAndCategory();

@@ -346,7 +346,8 @@ Admin endpoints, nested under an edition (Sanctum-guarded). Authorization is the
 permission, checked against the `SpecialEntry` class and granted to `admin`:
 
 - `GET   /api/admin/editions/{edition}/special-entries` (`can:viewAny,SpecialEntry`) — filterable by
-  `?status=pending|approved|rejected|merged` and `?categoryId=`.
+  `?status=pending|approved|rejected|merged`, `?categoryId=` and `?kind=propose_or_vote|appointed` (the
+  category's kind).
 - `GET   …/special-entries/{specialEntry}` (`can:view`) — `?with_similar=1` adds the approved entries of the
   same category with a similar title.
 - `PATCH …/special-entries/{specialEntry}` (`can:update`) — correct the `title`.

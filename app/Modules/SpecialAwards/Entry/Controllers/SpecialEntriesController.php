@@ -7,6 +7,7 @@ namespace Rominas\SpecialAwards\Entry\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Rominas\Categories\Enums\CategoryKind;
 use Rominas\Categories\Model\Category;
 use Rominas\Editions\Model\Edition;
 use Rominas\SpecialAwards\Entry\Actions\ApproveSpecialEntryAction;
@@ -45,6 +46,10 @@ class SpecialEntriesController
 
         if ($request->filled('status')) {
             $query = $query->filterByStatus(SpecialEntryStatus::from((string) $request->query('status')));
+        }
+
+        if ($request->filled('kind')) {
+            $query = $query->forCategoryKind(CategoryKind::from((string) $request->query('kind')));
         }
 
         if ($request->filled('categoryId')) {
