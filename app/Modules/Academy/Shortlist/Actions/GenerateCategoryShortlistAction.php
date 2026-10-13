@@ -7,6 +7,7 @@ namespace Rominas\Academy\Shortlist\Actions;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Rominas\Academy\Nomination\Model\Nomination;
 use Rominas\Academy\Nomination\Model\NominationRanking;
 use Rominas\Academy\Nomination\QueryBuilders\NominationQueryBuilder;
 use Rominas\Academy\Shortlist\Model\ShortlistEntry;
@@ -42,6 +43,7 @@ class GenerateCategoryShortlistAction
         }
 
         $this->assertRanked($category);
+        $this->assertHasSubmittedBallots($edition);
 
         $totals = $this->tallyPoints($edition, $category);
 
@@ -108,6 +110,34 @@ class GenerateCategoryShortlistAction
                 ),
             ]);
         }
+    }
+
+    /**
+     * Only submitted ballots are tallied, so an edition without one would generate nothing at all. That
+     * is refused, and the saved drafts are named, instead of answering with an empty shortlist. A single
+     * category no submitted ballot names is not an error: it simply ends up with no shortlist.
+     *
+     * @throws ValidationException
+     */
+    public function assertHasSubmittedBallots(Edition $edition): void
+    {
+        if (Nomination::query()->forEdition($edition)->submitted()->exists()) {
+            return;
+        }
+
+        $message = __('No academy ballot has been submitted, so there is nothing to shortlist.');
+        $drafts = Nomination::query()->forEdition($edition)->count();
+
+        if ($drafts > 0) {
+            $message .= ' ' . trans_choice(
+                ':count ballot is saved as a draft and does not count.'
+                    . '|:count ballots are saved as drafts and do not count.',
+                $drafts,
+                ['count' => $drafts],
+            );
+        }
+
+        throw ValidationException::withMessages(['nominations' => $message]);
     }
 
     /**

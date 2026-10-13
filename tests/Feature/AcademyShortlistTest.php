@@ -358,3 +358,49 @@ it('refuses a shortlist for a category that is not ranked', function (): void {
         ->assertStatus(422)
         ->assertJsonValidationErrors('category');
 });
+
+it('refuses bulk generation when no ballot is submitted, naming the saved drafts', function (): void {
+    actingAsSuperAdmin();
+    [$edition, $category] = shortlistEditionAndCategory();
+
+    $artist = Artist::factory()->create();
+    seedShortlistBallot($edition, $category, [$artist->id], submitted: false);
+
+    postJson("/api/admin/editions/{$edition->id}/shortlist")
+        ->assertStatus(422)
+        ->assertJsonValidationErrors([
+            'nominations' => '1 ballot is saved as a draft and does not count.',
+        ]);
+
+    expect(ShortlistEntry::query()->forEdition($edition)->count())->toBe(0);
+});
+
+it('refuses generating one category when no ballot is submitted', function (): void {
+    actingAsSuperAdmin();
+    [$edition, $category] = shortlistEditionAndCategory();
+
+    postJson("/api/admin/editions/{$edition->id}/categories/{$category->id}/shortlist")
+        ->assertStatus(422)
+        ->assertJsonValidationErrors([
+            'nominations' => 'No academy ballot has been submitted, so there is nothing to shortlist.',
+        ]);
+});
+
+it('leaves a category empty, without failing, when no submitted ballot names a nominee in it', function (): void {
+    actingAsSuperAdmin();
+    [$edition, $filled] = shortlistEditionAndCategory();
+    $empty = Category::factory()->create(['edition_id' => $edition->id, 'nominee_type' => NomineeType::Artist]);
+
+    $artist = Artist::factory()->create();
+    seedShortlistBallot($edition, $filled, [$artist->id]);
+
+    postJson("/api/admin/editions/{$edition->id}/shortlist")
+        ->assertStatus(200)
+        ->assertJsonCount(1, 'data');
+
+    postJson("/api/admin/editions/{$edition->id}/categories/{$empty->id}/shortlist")
+        ->assertStatus(200)
+        ->assertJsonCount(0, 'data');
+
+    expect(ShortlistEntry::query()->forEdition($edition)->forCategory($empty)->count())->toBe(0);
+});

@@ -223,7 +223,11 @@ and **replaces** any existing entries for the category. It is refused (422) unle
 
 - the edition is **`nominations_closed`** — nominations are frozen and voting has not opened; and
 - **no nominee submission for the edition is still `pending`** — otherwise an unreconciled name would be
-  silently dropped from the tally.
+  silently dropped from the tally; and
+- **at least one ballot of the edition is submitted** — saved drafts do not count, and the message says
+  how many there are.
+
+A category that no submitted ballot names is not an error: it comes back empty and has no shortlist.
 
 Generation is an explicit admin action; nothing runs automatically on the status change.
 

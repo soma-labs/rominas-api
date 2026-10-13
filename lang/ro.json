@@ -32,6 +32,9 @@
 
     ":count free-text nomination still needs reconciliation before shortlists can be generated.|:count free-text nominations still need reconciliation before shortlists can be generated.": ":count nominalizare cu text liber mai trebuie reconciliată înainte ca listele scurte să poată fi generate.|:count nominalizări cu text liber mai trebuie reconciliate înainte ca listele scurte să poată fi generate.|:count de nominalizări cu text liber mai trebuie reconciliate înainte ca listele scurte să poată fi generate.",
 
+    "No academy ballot has been submitted, so there is nothing to shortlist.": "Niciun buletin al academiei nu a fost trimis, deci nu există nimic de pus pe lista scurtă.",
+    ":count ballot is saved as a draft and does not count.|:count ballots are saved as drafts and do not count.": ":count buletin este salvat ca ciornă și nu se ia în calcul.|:count buletine sunt salvate ca ciorne și nu se iau în calcul.|:count de buletine sunt salvate ca ciorne și nu se iau în calcul.",
+
     "Only a linked submission can be unlinked.": "Doar o propunere asociată poate fi disociată.",
     "Submissions can only be unlinked before voting opens.": "Propunerile pot fi disociate doar înainte de deschiderea votului.",
 
