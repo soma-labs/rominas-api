@@ -29,7 +29,6 @@ class SpecialEntryResource extends JsonResource
             'id' => $entry->id,
             'category_id' => $entry->category_id,
             'title' => $entry->title,
-            'description' => $entry->description,
             'status' => $entry->status->value,
             'status_label' => $entry->status->label(),
             'proposed_by' => $this->whenLoaded('proposedBy', fn(): ?array => $entry->proposedBy === null ? null : [

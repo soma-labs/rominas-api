@@ -27,7 +27,6 @@ class MemberSpecialEntryResource extends JsonResource
         return [
             'id' => $entry->id,
             'title' => $entry->title,
-            'description' => $entry->description,
         ];
     }
 }

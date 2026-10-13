@@ -168,7 +168,7 @@ They follow the same gates as the rest: read live once public voting has closed 
 first), frozen into `special_result_entries` with the text copied when the results are published, and
 served from the snapshot afterwards. The tally is cheap and not cached.
 
-In the payload each category has a `kind`; a special one fills `entries` (`title`, `description`, `votes`,
+In the payload each category has a `kind`; a special one fills `entries` (`title`, `votes`,
 `position`) and leaves `nominees` empty. Categories come out in their own `position` order, whatever the
 kind. The CSV export has a last column `votes`: a special entry's title goes in the nominee-name column
 and its points columns stay empty. The **public** results (§7) leave the vote counts out (`votes` is null).

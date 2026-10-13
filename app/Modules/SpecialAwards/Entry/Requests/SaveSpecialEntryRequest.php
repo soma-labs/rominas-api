@@ -24,7 +24,6 @@ class SaveSpecialEntryRequest extends FormRequest
     {
         return [
             'title' => 'required|string|max:255',
-            'description' => 'sometimes|nullable|string|max:2000',
         ];
     }
 }

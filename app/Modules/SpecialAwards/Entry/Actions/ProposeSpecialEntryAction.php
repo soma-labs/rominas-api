@@ -55,7 +55,6 @@ class ProposeSpecialEntryAction
                 $entry = SpecialEntry::create([
                     'category_id' => $category->id,
                     'title' => $data->title,
-                    'description' => $data->description,
                     'status' => SpecialEntryStatus::Pending,
                     'proposed_by_member_id' => $member->id,
                 ]);

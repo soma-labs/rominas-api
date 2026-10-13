@@ -67,7 +67,6 @@ class PublishEditionResultsAction
                         'result_snapshot_id' => $snapshot->id,
                         'category_id' => $category->categoryId,
                         'title' => $entry->title,
-                        'description' => $entry->description,
                         'votes' => $entry->votes,
                         'position' => $entry->position,
                     ]);

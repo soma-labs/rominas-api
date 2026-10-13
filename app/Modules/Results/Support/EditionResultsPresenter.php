@@ -46,7 +46,7 @@ class EditionResultsPresenter
      *             final_score: float,
      *             position: int
      *         }>,
-     *         entries: list<array{title: string, description: string|null, votes: int|null, position: int}>
+     *         entries: list<array{title: string, votes: int|null, position: int}>
      *     }>
      * }
      */
@@ -101,7 +101,6 @@ class EditionResultsPresenter
                 'entries' => array_map(
                     static fn(SpecialEntryResult $entry): array => [
                         'title' => $entry->title,
-                        'description' => $entry->description,
                         'votes' => $withVotes ? $entry->votes : null,
                         'position' => $entry->position,
                     ],

@@ -8,6 +8,5 @@ class SpecialEntryData
 {
     public function __construct(
         public string $title,
-        public ?string $description = null,
     ) {}
 }

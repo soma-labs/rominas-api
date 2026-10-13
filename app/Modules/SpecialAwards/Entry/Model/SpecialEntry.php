@@ -32,7 +32,6 @@ use Rominas\Users\Model\User;
 #[Fillable([
     'category_id',
     'title',
-    'description',
     'status',
     'proposed_by_member_id',
     'merged_into_entry_id',

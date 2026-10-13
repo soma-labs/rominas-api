@@ -68,7 +68,7 @@ it('shows a member the propose-or-vote categories with their approved entries on
                 'edition_id',
                 'nominations_start_at',
                 'nominations_end_at',
-                'categories' => [['id', 'name', 'description', 'action', 'entry_id', 'proposal', 'entries' => [['id', 'title', 'description']]]],
+                'categories' => [['id', 'name', 'description', 'action', 'entry_id', 'proposal', 'entries' => [['id', 'title']]]],
             ],
         ])
         ->assertJsonPath('data.categories.0.entries.0.id', $approved->id);
@@ -80,7 +80,6 @@ it('records a proposal as a pending entry carrying the proposer\'s vote', functi
 
     postJson("/api/academy/special-awards/categories/{$category->id}/proposal", [
         'title' => 'Maria Tanase',
-        'description' => 'A lifetime of song.',
     ])
         ->assertStatus(200)
         ->assertJsonPath('data.categories.0.action', 'proposed')

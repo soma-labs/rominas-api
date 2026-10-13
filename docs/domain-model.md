@@ -455,7 +455,7 @@ admin endpoints and `shortlists` permission are in [access-control.md](access-co
 
 The categories that do not follow the ranked flow (`app/Modules/SpecialAwards/`), e.g. *Lifetime
 Achievement Award*, *ROMIAS's WOW* (both `propose_or_vote`) and the *Romanian Critics' Choice Award*
-(`appointed`). Their entries are **free text**: a title and an optional description, with no Catalog link.
+(`appointed`). Their entries are **free text**: a title only, with no Catalog link.
 
 ```mermaid
 erDiagram
@@ -471,7 +471,7 @@ erDiagram
 | Field | Notes |
 | --- | --- |
 | `category_id` | FK → Category (`cascadeOnDelete`) |
-| `title`, `description` | free text; `description` nullable |
+| `title` | free text |
 | `normalized_title` | the title through `NomineeNameNormalizer`, set on save; the duplicate check compares it |
 | `status` | `SpecialEntryStatus`: `pending` \| `approved` \| `rejected` \| `merged` |
 | `proposed_by_member_id` | FK → Member, nullable. **Null = entered by an admin** (the result of an appointed category) |
@@ -648,7 +648,7 @@ in a [special category](#specialawards).
 | --- | --- |
 | `result_snapshot_id` | FK → ResultSnapshot (`cascadeOnDelete`) |
 | `category_id` | FK → Category (`cascadeOnDelete`) |
-| `title`, `description` | **copied** from the entry, so the snapshot does not follow later edits |
+| `title` | **copied** from the entry, so the snapshot does not follow later edits |
 | `votes` | member votes; **null** for an appointed category |
 | `position` | 1 = winner. **Not unique per category**: entries tied on votes share a position |
 

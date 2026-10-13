@@ -216,7 +216,7 @@ it('enters, replaces and clears the result of an appointed category', function (
     $url = "/api/admin/editions/{$edition->id}/categories/{$category->id}/appointed-result";
 
     putJson($url, ['title' => 'First Pick'])->assertStatus(201)->assertJsonPath('data.status', 'approved');
-    putJson($url, ['title' => 'Final Pick', 'description' => 'Chosen by the critics.'])
+    putJson($url, ['title' => 'Final Pick'])
         ->assertStatus(200)
         ->assertJsonPath('data.title', 'Final Pick');
 

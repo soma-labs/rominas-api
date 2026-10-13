@@ -36,7 +36,6 @@ class SetAppointedResultAction
 
             $entry->forceFill([
                 'title' => $data->title,
-                'description' => $data->description,
                 'status' => SpecialEntryStatus::Approved,
                 'reviewed_by_user_id' => $user->id,
                 'reviewed_at' => now(),

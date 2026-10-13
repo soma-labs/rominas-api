@@ -72,7 +72,6 @@ class MemberSpecialAwardsResource extends JsonResource
         return [
             'id' => $proposal->id,
             'title' => $proposal->title,
-            'description' => $proposal->description,
             'status' => $proposal->status->value,
             'status_label' => $proposal->status->label(),
             'review_note' => $proposal->review_note,

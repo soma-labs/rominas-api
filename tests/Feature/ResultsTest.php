@@ -291,7 +291,6 @@ function resultsSeedSpecialCategory(Edition $edition, array $votesByTitle): Cate
         $entry = SpecialEntry::factory()->approved()->create([
             'category_id' => $category->id,
             'title' => $title,
-            'description' => null,
         ]);
         SpecialVote::factory()->count($votes)->create(['special_entry_id' => $entry->id]);
     }
@@ -317,10 +316,10 @@ it('lists a propose-or-vote category by member votes, a tie sharing its position
         ->assertJsonPath('data.categories.1.kind', 'propose_or_vote')
         ->assertJsonPath('data.categories.1.nominees', [])
         ->assertJsonPath('data.categories.1.entries', [
-            ['title' => 'Winner A', 'description' => null, 'votes' => 3, 'position' => 1],
-            ['title' => 'Winner B', 'description' => null, 'votes' => 3, 'position' => 1],
-            ['title' => 'Runner Up', 'description' => null, 'votes' => 1, 'position' => 3],
-            ['title' => 'Nobody', 'description' => null, 'votes' => 0, 'position' => 4],
+            ['title' => 'Winner A', 'votes' => 3, 'position' => 1],
+            ['title' => 'Winner B', 'votes' => 3, 'position' => 1],
+            ['title' => 'Runner Up', 'votes' => 1, 'position' => 3],
+            ['title' => 'Nobody', 'votes' => 0, 'position' => 4],
         ]);
 });
 
@@ -331,7 +330,6 @@ it('shows the result entered for an appointed category, without votes', function
     SpecialEntry::factory()->approved()->create([
         'category_id' => $appointed->id,
         'title' => 'Critics Pick',
-        'description' => 'Chosen by the committee.',
         'proposed_by_member_id' => null,
     ]);
     $empty = Category::factory()->for($edition)->appointed()->create(['position' => 2]);
@@ -340,7 +338,7 @@ it('shows the result entered for an appointed category, without votes', function
         ->assertStatus(200)
         ->assertJsonPath('data.categories.1.kind', 'appointed')
         ->assertJsonPath('data.categories.1.entries', [
-            ['title' => 'Critics Pick', 'description' => 'Chosen by the committee.', 'votes' => null, 'position' => 1],
+            ['title' => 'Critics Pick', 'votes' => null, 'position' => 1],
         ])
         ->assertJsonPath('data.categories.2.category_id', $empty->id)
         ->assertJsonPath('data.categories.2.entries', []);

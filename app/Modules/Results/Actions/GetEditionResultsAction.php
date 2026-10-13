@@ -125,7 +125,6 @@ class GetEditionResultsAction
             $entries = $rows
                 ->map(static fn(SpecialResultEntry $entry): SpecialEntryResult => new SpecialEntryResult(
                     title: $entry->title,
-                    description: $entry->description,
                     votes: $entry->votes,
                     position: $entry->position,
                 ))

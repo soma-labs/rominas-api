@@ -25,7 +25,6 @@ class SpecialEntryFactory extends Factory
         return [
             'category_id' => Category::factory()->proposeOrVote(),
             'title' => fake()->unique()->name(),
-            'description' => fake()->optional()->sentence(),
             'status' => SpecialEntryStatus::Pending,
             'proposed_by_member_id' => Member::factory()->active(),
         ];

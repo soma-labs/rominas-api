@@ -25,7 +25,6 @@ class SpecialResultEntryFactory extends Factory
             'result_snapshot_id' => ResultSnapshot::factory(),
             'category_id' => Category::factory()->proposeOrVote(),
             'title' => fake()->name(),
-            'description' => fake()->optional()->sentence(),
             'votes' => fake()->numberBetween(0, 25),
             'position' => 1,
         ];

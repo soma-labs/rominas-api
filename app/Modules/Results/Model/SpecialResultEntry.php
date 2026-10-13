@@ -22,7 +22,6 @@ use Rominas\Categories\Model\Category;
     'result_snapshot_id',
     'category_id',
     'title',
-    'description',
     'votes',
     'position',
 ])]

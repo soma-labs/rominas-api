@@ -70,7 +70,6 @@ class ComputeSpecialResultsAction
             ->take(1)
             ->map(static fn(SpecialEntry $entry): SpecialEntryResult => new SpecialEntryResult(
                 title: $entry->title,
-                description: $entry->description,
                 votes: null,
                 position: 1,
             ))
@@ -103,7 +102,6 @@ class ComputeSpecialResultsAction
 
             $results[] = new SpecialEntryResult(
                 title: $entry->title,
-                description: $entry->description,
                 votes: $votes,
                 position: $position,
             );

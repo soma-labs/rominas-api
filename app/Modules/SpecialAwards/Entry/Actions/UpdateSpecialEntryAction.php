@@ -11,7 +11,7 @@ use Rominas\SpecialAwards\Entry\Model\SpecialEntry;
 use Rominas\SpecialAwards\Support\SpecialAwardsReviewGuard;
 
 /**
- * An admin corrects the text of a pending or approved entry (a typo, a clearer description). The votes
+ * An admin corrects the text of a pending or approved entry (a typo, a clearer wording). The votes
  * stay where they are.
  */
 class UpdateSpecialEntryAction
@@ -27,7 +27,6 @@ class UpdateSpecialEntryAction
         }
 
         $entry->title = $data->title;
-        $entry->description = $data->description;
         $entry->save();
 
         return $entry;

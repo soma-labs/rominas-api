@@ -334,7 +334,7 @@ window to be open and are **audited**):
 
 - `GET    /api/academy/special-awards` — the `propose_or_vote` categories of the active edition, their
   approved entries, and what the member did in each. No vote counts.
-- `POST   /api/academy/special-awards/categories/{category}/proposal` (`title`, optional `description`).
+- `POST   /api/academy/special-awards/categories/{category}/proposal` (`title`).
 - `DELETE /api/academy/special-awards/categories/{category}/proposal`.
 - `PUT    /api/academy/special-awards/categories/{category}/vote` (`entry_id`).
 - `DELETE /api/academy/special-awards/categories/{category}/vote`.
@@ -349,7 +349,7 @@ permission, checked against the `SpecialEntry` class and granted to `admin`:
   `?status=pending|approved|rejected|merged` and `?categoryId=`.
 - `GET   …/special-entries/{specialEntry}` (`can:view`) — `?with_similar=1` adds the approved entries of the
   same category with a similar title.
-- `PATCH …/special-entries/{specialEntry}` (`can:update`) — correct `title` / `description`.
+- `PATCH …/special-entries/{specialEntry}` (`can:update`) — correct the `title`.
 - `POST  …/special-entries/{specialEntry}/approve` (`can:update`).
 - `POST  …/special-entries/{specialEntry}/reject` (`can:update`) — `note` **required**.
 - `POST  …/special-entries/{specialEntry}/merge` (`can:update`) — `{target_entry_id}`; moves the votes.
