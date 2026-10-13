@@ -342,7 +342,7 @@ describe('nomination deadline reminders', function (): void {
 
         expect($sent->payloads)->toHaveCount(1)
             ->and($sent->payloads[0]->recipients)->toBe(['ana@example.test'])
-            ->and($sent->payloads[0]->subject)->toBe('Mâine se încheie nominalizările Romias 2026')
+            ->and($sent->payloads[0]->subject)->toBe('Mâine se încheie nominalizările Romias 2026!')
             ->and($sent->payloads[0]->body)->toContain('13.10.2026, 23:59')
             ->and($member->notifications()->count())->toBe(1)
             ->and($member->notifications()->first()->data)->toBe(['edition_id' => $edition->id, 'days_before' => 1]);

@@ -6,15 +6,20 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Link de vot Romias</title>
+    <title>Link de vot The Romanian Music Industry Awards</title>
 </head>
 <body style="margin:0;padding:0;background:#0f0f1a;font-family:Arial,Helvetica,sans-serif;color:#1e1b4b;">
     <div style="max-width:480px;margin:0 auto;padding:32px 24px;">
         <div style="background:#ffffff;border-radius:16px;padding:32px;">
-            <h1 style="margin:0 0 16px;font-size:22px;">Votează la Romias!</h1>
+            <h1 style="margin:0 0 16px;font-size:22px;">Votează în cadrul the Romanian Music Industry Awards!</h1>
+
+            <p style="margin:0 0 16px;font-size:15px;line-height:1.5;">
+                Apasă butonul de mai jos pentru a-ți exprima votul. Linkul poate fi folosit o singură dată.
+            </p>
 
             <p style="margin:0 0 24px;font-size:15px;line-height:1.5;">
-                Apasă butonul de mai jos pentru a-ți exprima votul. Linkul poate fi folosit o singură dată.
+                Mulțumim pentru implicarea în această ediție the Romanian Music Industry Awards. Vom reveni
+                curând cu mai multe detalii despre Gala The Romanian Music Industry Awards.
             </p>
 
             <div style="text-align:center;margin:0 0 24px;">

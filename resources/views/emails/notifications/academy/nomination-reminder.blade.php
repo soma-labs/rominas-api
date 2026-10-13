@@ -15,7 +15,7 @@
     <div style="max-width:480px;margin:0 auto;padding:32px 24px;">
         <div style="background:#ffffff;border-radius:16px;padding:32px;">
             <h1 style="margin:0 0 16px;font-size:22px;">
-                {{ $daysBefore === 1 ? 'Mâine se încheie nominalizările' : "Mai sunt {$daysBefore} zile pentru nominalizări" }}
+                {{ $daysBefore === 1 ? 'Mâine se încheie nominalizările!' : "Mai sunt {$daysBefore} zile pentru nominalizări!" }}
             </h1>
 
             <p style="margin:0 0 24px;font-size:15px;line-height:1.5;">
@@ -31,7 +31,7 @@
             </div>
 
             <p style="margin:0;font-size:13px;color:#64748b;line-height:1.5;">
-                Primești acest mesaj pentru că ești membru al Academiei Romias.
+                Primești acest mesaj pentru că ești membru al Academiei The Romanian Music Industry Awards.
             </p>
         </div>
     </div>

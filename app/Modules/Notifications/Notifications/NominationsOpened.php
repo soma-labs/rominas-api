@@ -39,7 +39,7 @@ class NominationsOpened extends MemberNotification
     public function toDelivery(object $notifiable): NotificationEmail
     {
         return new NotificationEmail(
-            subject: "Nominalizările {$this->editionName} sunt deschise",
+            subject: "Nominalizările {$this->editionName} sunt deschise!",
             view: 'emails.notifications.academy.nominations-opened',
             viewData: [
                 'editionName' => $this->editionName,

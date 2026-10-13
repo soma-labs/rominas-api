@@ -1,22 +1,27 @@
 @php
     /** @var string $name */
     /** @var string $url */
+    /** @var string|null $proposerName */
 @endphp
 <!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invitație în Academia Romias</title>
+    <title>Invitație în Academia The Romanian Music Industry Awards</title>
 </head>
 <body style="margin:0;padding:0;background:#0f0f1a;font-family:Arial,Helvetica,sans-serif;color:#1e1b4b;">
     <div style="max-width:480px;margin:0 auto;padding:32px 24px;">
         <div style="background:#ffffff;border-radius:16px;padding:32px;">
             <h1 style="margin:0 0 16px;font-size:22px;">Salut{{ $name ? ', ' . $name : '' }}!</h1>
 
+            <p style="margin:0 0 16px;font-size:15px;line-height:1.5;">
+                Ai fost invitat(ă) să faci parte din Academia The Romanian Music Industry Awards{{ $proposerName ? ' de către ' . $proposerName : '' }}.
+                Apasă butonul de mai jos pentru a-ți activa contul și a intra în panoul de nominalizări.
+            </p>
+
             <p style="margin:0 0 24px;font-size:15px;line-height:1.5;">
-                Ai fost invitat(ă) să faci parte din Academia Romias. Apasă butonul de mai jos pentru
-                a-ți activa contul și a intra în panoul de nominalizări.
+                Ne bucurăm să te avem alături!
             </p>
 
             <div style="text-align:center;margin:0 0 24px;">

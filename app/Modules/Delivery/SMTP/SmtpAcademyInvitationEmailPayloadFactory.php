@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rominas\Delivery\SMTP;
 
 use Illuminate\Support\Str;
+use Rominas\Academy\MemberProposal\Model\MemberProposal;
 use Rominas\Delivery\DeliveryPayloadInterface;
 use Rominas\Delivery\EmailContact;
 use Rominas\Delivery\PayloadFactoryInterface;
@@ -13,6 +14,7 @@ use SensitiveParameter;
 /**
  * Renders the academy-member invitation email. The link carries the raw magic-link token + email to
  * the academy SPA's onboarding screen, which verifies them and activates the member on first login.
+ * A member who came from an approved proposal is told who proposed them.
  */
 class SmtpAcademyInvitationEmailPayloadFactory implements PayloadFactoryInterface
 {
@@ -33,6 +35,7 @@ class SmtpAcademyInvitationEmailPayloadFactory implements PayloadFactoryInterfac
         $body = view('emails.academy.invitation', [
             'name' => Str::before($this->email, '@'),
             'url' => $url,
+            'proposerName' => $this->proposerName(),
         ])->render();
 
         return new SmtpMailPayload(
@@ -41,8 +44,18 @@ class SmtpAcademyInvitationEmailPayloadFactory implements PayloadFactoryInterfac
                 name: config('mail.from.name'),
             ),
             recipients: [$this->email],
-            subject: 'Invitație în Academia Romias',
+            subject: 'Invitație în Academia The Romanian Music Industry Awards',
             body: $body,
         );
+    }
+
+    private function proposerName(): ?string
+    {
+        return MemberProposal::query()
+            ->approvedForMemberEmail($this->email)
+            ->with('proposedBy')
+            ->first()
+            ?->proposedBy
+            ?->name;
     }
 }

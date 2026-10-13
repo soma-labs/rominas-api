@@ -42,7 +42,7 @@
             </div>
 
             <p style="margin:0;font-size:13px;color:#64748b;line-height:1.5;">
-                You receive this message because your Romias Admin account can see the reports.
+                You receive this message because your Admin account can see the reports.
             </p>
         </div>
     </div>

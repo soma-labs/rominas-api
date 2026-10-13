@@ -5,7 +5,9 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Bus;
 use Rominas\Academy\Member\Enums\MemberStatus;
 use Rominas\Academy\Member\Model\Member;
+use Rominas\Academy\MemberProposal\Model\MemberProposal;
 use Rominas\Auth\MagicLink\Jobs\SendMagicLinkJob;
+use Rominas\Delivery\SMTP\SmtpAcademyInvitationEmailPayloadFactory;
 use Rominas\Editions\Enums\EditionStatus;
 use Rominas\Editions\Model\Edition;
 
@@ -79,4 +81,32 @@ it('does not send invitations when an edition opens nominations', function (): v
 
     Bus::assertNotDispatched(SendMagicLinkJob::class);
     expect($member->refresh()->status)->toBe(MemberStatus::AwaitingInvitation);
+});
+
+it('names the proposing member in the invitation of a member who came from a proposal', function (): void {
+    $proposer = Member::factory()->active()->create(['name' => 'Ioana Proposer']);
+    $member = Member::factory()->awaitingInvitation()->create(['email' => 'corrected@example.test']);
+    MemberProposal::factory()->approved()->create([
+        'proposed_by_member_id' => $proposer->id,
+        'email' => 'as-proposed@example.test',
+        'member_id' => $member->id,
+    ]);
+
+    $payload = (new SmtpAcademyInvitationEmailPayloadFactory($member->email, 'link-token'))->create();
+
+    expect($payload->subject)->toBe('Invitație în Academia The Romanian Music Industry Awards')
+        ->and($payload->body)->toContain('Academia The Romanian Music Industry Awards de către Ioana Proposer.');
+});
+
+it('leaves the proposer out of the invitation of a member an admin added', function (): void {
+    $member = Member::factory()->awaitingInvitation()->create();
+    MemberProposal::factory()->approved()->create([
+        'member_id' => Member::factory()->awaitingInvitation(),
+    ]);
+    MemberProposal::factory()->create(['email' => $member->email]); // still pending — not this member's origin
+
+    $payload = (new SmtpAcademyInvitationEmailPayloadFactory($member->email, 'link-token'))->create();
+
+    expect($payload->body)->toContain('Academia The Romanian Music Industry Awards.')
+        ->and($payload->body)->not->toContain('de către');
 });

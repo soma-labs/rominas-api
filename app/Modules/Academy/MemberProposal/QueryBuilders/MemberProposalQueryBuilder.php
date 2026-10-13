@@ -49,6 +49,17 @@ class MemberProposalQueryBuilder extends Builder
     }
 
     /**
+     * The approved proposal that created the member with this address. Matched through the member, so
+     * it still holds after an admin corrects the member's address.
+     */
+    public function approvedForMemberEmail(string $email): self
+    {
+        return $this
+            ->filterByStatus(MemberProposalStatus::Approved)
+            ->whereRelation('member', 'email', '=', $email);
+    }
+
+    /**
      * @return string[]
      */
     protected function getSearchableFields(): array

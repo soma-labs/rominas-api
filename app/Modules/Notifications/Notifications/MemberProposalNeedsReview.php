@@ -31,7 +31,7 @@ class MemberProposalNeedsReview extends AdminNotification
 
     public function body(): string
     {
-        return "{$this->proposerName} proposed {$this->proposedName} as a future academy member. The proposal is waiting for review.";
+        return "{$this->proposerName} proposed {$this->proposedName} as a future Academy member. The proposal is waiting for review.";
     }
 
     public function url(): string

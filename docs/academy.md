@@ -94,6 +94,8 @@ nominations open.
 applies: if the previous link was issued under 60 seconds ago and is still valid, no new email goes out.
 
 The invitation is itself a magic link (`academy-invitation-email`), so opening it signs the member in.
+When the member was created by approving a proposal (§5), the e-mail names the member who proposed them
+("de către …"), found through `member_proposals.member_id`; a member an admin added gets the text without it.
 
 ## 4. Ranked nominations
 

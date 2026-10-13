@@ -44,8 +44,8 @@ class NominationDeadlineReminder extends MemberNotification
     {
         return new NotificationEmail(
             subject: $this->daysBefore === 1
-                ? "Mâine se încheie nominalizările {$this->editionName}"
-                : "Mai sunt {$this->daysBefore} zile pentru nominalizările {$this->editionName}",
+                ? "Mâine se încheie nominalizările {$this->editionName}!"
+                : "Mai sunt {$this->daysBefore} zile pentru nominalizările {$this->editionName}!",
             view: 'emails.notifications.academy.nomination-reminder',
             viewData: [
                 'editionName' => $this->editionName,

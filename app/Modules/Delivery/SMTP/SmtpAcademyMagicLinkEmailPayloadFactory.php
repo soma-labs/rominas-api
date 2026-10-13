@@ -41,7 +41,7 @@ class SmtpAcademyMagicLinkEmailPayloadFactory implements PayloadFactoryInterface
                 name: config('mail.from.name'),
             ),
             recipients: [$this->email],
-            subject: 'Link de autentificare Romias',
+            subject: 'Link de autentificare în Academia The Romanian Music Industry Awards',
             body: $body,
         );
     }
