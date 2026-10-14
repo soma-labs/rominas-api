@@ -29,6 +29,15 @@ class UpdateEditionRequest extends FormRequest
         // < voting_end_at < ends_at.
         return [
             'name' => ['required', 'string', Rule::unique($edition->getTable(), 'name')->ignore($edition)],
+            // Optional — omit to keep the edition's current slug.
+            'slug' => [
+                'sometimes',
+                'required',
+                'string',
+                'max:255',
+                'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+                Rule::unique($edition->getTable(), 'slug')->ignore($edition),
+            ],
             'starts_at' => 'required|date',
             'nominations_start_at' => 'required|date|after:starts_at',
             'nominations_end_at' => 'required|date|after:nominations_start_at',
@@ -38,6 +47,16 @@ class UpdateEditionRequest extends FormRequest
             // Result weighting (Scoring). Optional — omit to keep the edition's current weights.
             'academy_vote_weight' => 'sometimes|integer|min:0|max:100',
             'public_vote_weight' => 'sometimes|integer|min:0|max:100',
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'slug.regex' => 'The slug may only contain lowercase letters, numbers and single hyphens.',
         ];
     }
 

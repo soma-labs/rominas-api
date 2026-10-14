@@ -12,6 +12,11 @@ class UpdateEditionAction
     public function execute(Edition $edition, EditionData $data): Edition
     {
         $edition->name = $data->name;
+
+        if ($data->slug !== null) {
+            $edition->slug = $data->slug;
+        }
+
         $edition->starts_at = $data->starts_at;
         $edition->nominations_start_at = $data->nominations_start_at;
         $edition->nominations_end_at = $data->nominations_end_at;

@@ -126,8 +126,9 @@ previous one first.
 - **Create** → always starts in `draft` (`CreateEditionAction`), subject to the one-active invariant.
 - **Update** (`PATCH /api/admin/editions/{edition}`) → edits `name` + the six datetimes (re-validated
   against the strict chain), and optionally `academy_vote_weight` / `public_vote_weight` (omit to keep
-  the current values; they may not both be zero). Status is **not** changed here — use the status
-  endpoint (§2).
+  the current values; they may not both be zero), and optionally `slug` (lowercase letters, digits and
+  single hyphens, unique; omit to keep it). The slug is derived from the name on create only, so a rename
+  keeps the old slug unless one is sent. Status is **not** changed here — use the status endpoint (§2).
 - **Delete** → only while `draft` (`DeleteEditionAction` throws 422 otherwise); anything already
   underway is `archived`, never deleted.
 

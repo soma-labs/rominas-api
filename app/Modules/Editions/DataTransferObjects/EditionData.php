@@ -20,5 +20,7 @@ class EditionData
         // (create ignores these and falls back to the DB defaults 60/40).
         public ?int $academy_vote_weight = null,
         public ?int $public_vote_weight = null,
+        // Null = "not supplied" → keep the current slug (create always derives it from the name).
+        public ?string $slug = null,
     ) {}
 }

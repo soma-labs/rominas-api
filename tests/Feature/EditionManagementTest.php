@@ -115,6 +115,57 @@ it('rejects both vote weights being zero', function (): void {
         ->assertJsonValidationErrorFor('academy_vote_weight');
 });
 
+it('updates an edition\'s slug', function (): void {
+    actingAsSuperAdmin();
+    $edition = Edition::factory()->create();
+
+    patchJson("/api/admin/editions/{$edition->id}", validEditionPayload([
+        'name' => $edition->name,
+        'slug' => 'romias-2026-final',
+    ]))
+        ->assertStatus(200)
+        ->assertJsonPath('data.slug', 'romias-2026-final');
+
+    expect($edition->fresh()->slug)->toBe('romias-2026-final');
+});
+
+it('keeps the current slug when an update omits it', function (): void {
+    actingAsSuperAdmin();
+    $edition = Edition::factory()->create(['name' => 'Romias 2026', 'slug' => 'romias-2026']);
+
+    patchJson("/api/admin/editions/{$edition->id}", validEditionPayload(['name' => 'Romias 2026 Renamed']))
+        ->assertStatus(200);
+
+    expect($edition->fresh()->slug)->toBe('romias-2026');
+});
+
+it('rejects a slug another edition already uses', function (): void {
+    actingAsSuperAdmin();
+    Edition::factory()->archived()->create(['slug' => 'romias-2025']);
+    $edition = Edition::factory()->create();
+
+    patchJson("/api/admin/editions/{$edition->id}", validEditionPayload([
+        'name' => $edition->name,
+        'slug' => 'romias-2025',
+    ]))
+        ->assertStatus(422)
+        ->assertJsonValidationErrorFor('slug');
+});
+
+it('rejects a malformed slug', function (string $slug): void {
+    actingAsSuperAdmin();
+    $edition = Edition::factory()->create();
+
+    patchJson("/api/admin/editions/{$edition->id}", validEditionPayload([
+        'name' => $edition->name,
+        'slug' => $slug,
+    ]))
+        ->assertStatus(422)
+        ->assertJsonValidationErrors([
+            'slug' => 'The slug may only contain lowercase letters, numbers and single hyphens.',
+        ]);
+})->with(['Romias 2026', 'romias--2026', '-romias', 'Romias-2026']);
+
 it('performs a valid lifecycle transition', function (): void {
     actingAsSuperAdmin();
     $edition = Edition::factory()->create(); // draft
