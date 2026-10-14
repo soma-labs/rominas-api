@@ -11,7 +11,7 @@ use SensitiveParameter;
  * screen — no email or identifier in the URL, since the token alone authorizes the accountless voter. The
  * recipient email is used to send the message and is not embedded in the link.
  */
-abstract class VotingLinkEmailPayloadFactory extends MailPayloadFactory
+class VotingLinkEmailPayloadFactory extends MailPayloadFactory
 {
     public const string SUBJECT = 'Link de vot The Romanian Music Industry Awards';
 

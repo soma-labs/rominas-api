@@ -2,54 +2,29 @@
 
 declare(strict_types=1);
 
-use Rominas\Delivery\Brevo\Factories\BrevoAcademyInvitationEmailPayloadFactory;
-use Rominas\Delivery\Brevo\Factories\BrevoAcademyMagicLinkEmailPayloadFactory;
-use Rominas\Delivery\Brevo\Factories\BrevoExampleNotificationPayloadFactory;
 use Rominas\Delivery\Brevo\BrevoMailService;
-use Rominas\Delivery\Brevo\Factories\BrevoNotificationEmailPayloadFactory;
-use Rominas\Delivery\Brevo\Factories\BrevoVotingLinkEmailPayloadFactory;
-use Rominas\Delivery\SMTP\Factories\SmtpAcademyInvitationEmailPayloadFactory;
-use Rominas\Delivery\SMTP\Factories\SmtpAcademyMagicLinkEmailPayloadFactory;
-use Rominas\Delivery\SMTP\Factories\SmtpExampleNotificationPayloadFactory;
+use Rominas\Delivery\Factories\AcademyInvitationEmailPayloadFactory;
+use Rominas\Delivery\Factories\AcademyMagicLinkEmailPayloadFactory;
+use Rominas\Delivery\Factories\ExampleNotificationPayloadFactory;
+use Rominas\Delivery\Factories\NotificationEmailPayloadFactory;
+use Rominas\Delivery\Factories\VotingLinkEmailPayloadFactory;
 use Rominas\Delivery\SMTP\SmtpMailService;
-use Rominas\Delivery\SMTP\Factories\SmtpNotificationEmailPayloadFactory;
-use Rominas\Delivery\SMTP\Factories\SmtpVotingLinkEmailPayloadFactory;
 
 /*
 |--------------------------------------------------------------------------
 | E-mail transports
 |--------------------------------------------------------------------------
 |
-| Each transport maps a `service` to one payload factory per action key. Both
-| transports serve the same keys, and each SMTP / Brevo factory pair shares its
-| content (app/Modules/Delivery/Factories), so switching changes only how the
-| e-mail travels: `smtp` = the MAIL_* SMTP server (e.g. Brevo's SMTP relay),
-| `brevo` = Brevo's HTTP API with BREVO_API_KEY.
+| Each transport is the service that sends a MailPayload. Every e-mail is built
+| by the same factory whichever transport is in use, so switching changes only
+| how the e-mail travels: `smtp` = the MAIL_* SMTP server (e.g. Brevo's SMTP
+| relay), `brevo` = Brevo's HTTP API with BREVO_API_KEY.
 |
 */
 
 $transports = [
-    'smtp' => [
-        'service' => SmtpMailService::class,
-        'factories' => [
-            'example-notification' => SmtpExampleNotificationPayloadFactory::class,
-            'academy-invitation-email' => SmtpAcademyInvitationEmailPayloadFactory::class,
-            'academy-magic-link-email' => SmtpAcademyMagicLinkEmailPayloadFactory::class,
-            'voting-link-email' => SmtpVotingLinkEmailPayloadFactory::class,
-            // Every Notifications-module e-mail: the notification supplies subject + view.
-            'notification-email' => SmtpNotificationEmailPayloadFactory::class,
-        ],
-    ],
-    'brevo' => [
-        'service' => BrevoMailService::class,
-        'factories' => [
-            'example-notification' => BrevoExampleNotificationPayloadFactory::class,
-            'academy-invitation-email' => BrevoAcademyInvitationEmailPayloadFactory::class,
-            'academy-magic-link-email' => BrevoAcademyMagicLinkEmailPayloadFactory::class,
-            'voting-link-email' => BrevoVotingLinkEmailPayloadFactory::class,
-            'notification-email' => BrevoNotificationEmailPayloadFactory::class,
-        ],
-    ],
+    'smtp' => SmtpMailService::class,
+    'brevo' => BrevoMailService::class,
 ];
 
 $transport = env('MAIL_DELIVERY_TRANSPORT', 'smtp');
@@ -76,7 +51,17 @@ return [
     */
 
     'methods' => [
-        'email' => $transports[$transport] ?? null,
+        'email' => [
+            'service' => $transports[$transport] ?? null,
+            'factories' => [
+                'example-notification' => ExampleNotificationPayloadFactory::class,
+                'academy-invitation-email' => AcademyInvitationEmailPayloadFactory::class,
+                'academy-magic-link-email' => AcademyMagicLinkEmailPayloadFactory::class,
+                'voting-link-email' => VotingLinkEmailPayloadFactory::class,
+                // Every Notifications-module e-mail: the notification supplies subject + view.
+                'notification-email' => NotificationEmailPayloadFactory::class,
+            ],
+        ],
     ],
 
 ];

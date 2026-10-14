@@ -6,6 +6,7 @@ namespace Rominas\Delivery\SMTP;
 
 use Rominas\Delivery\DeliveryPayloadInterface;
 use Rominas\Delivery\DeliveryServiceInterface;
+use Rominas\Delivery\MailPayload;
 use Rominas\Delivery\MailServiceInterface;
 use Exception;
 use Illuminate\Mail\Message;
@@ -26,8 +27,8 @@ class SmtpMailService implements DeliveryServiceInterface, MailServiceInterface
 
     public function send(DeliveryPayloadInterface $payload): void
     {
-        if (! ($payload instanceof SmtpMailPayload)) {
-            throw new InvalidArgumentException('Invalid payload');
+        if (! ($payload instanceof MailPayload)) {
+            throw new InvalidArgumentException(sprintf('SmtpMailService expects a MailPayload, got %s.', get_debug_type($payload)));
         }
 
         try {

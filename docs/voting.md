@@ -231,7 +231,7 @@ proxies, since otherwise anyone can forge the header.
 | --- | --- |
 | Window gate | `Actions/ResolveOpenVotingEditionAction.php`, `Enums/VotingState.php` |
 | Public status | `Controllers/VotingStatusController.php`, `Actions/ResolveVotingStatusAction.php`, `Resources/VotingStatusResource.php` |
-| Link request | `Actions/RequestVotingLinkAction.php`, `Jobs/SendVotingLinkJob.php`, `Delivery/SMTP/Factories/SmtpVotingLinkEmailPayloadFactory.php` |
+| Link request | `Actions/RequestVotingLinkAction.php`, `Jobs/SendVotingLinkJob.php`, `Delivery/Factories/VotingLinkEmailPayloadFactory.php` |
 | E-mail validation | `EmailValidation/` (module: interface + ZeroBounce client), `Actions/ResolveEmailCheckDecisionAction.php`, `Enums/EmailCheckDecision.php`, `config/voting.php`, `config/services.php` |
 | Token → ballot | `Actions/ResolveBallotByTokenAction.php` |
 | Submit | `Actions/SubmitBallotAction.php`, `Requests/SubmitBallotRequest.php` |

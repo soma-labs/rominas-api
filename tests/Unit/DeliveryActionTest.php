@@ -7,13 +7,10 @@ use Rominas\Delivery\Actions\DeliveryAction;
 use Rominas\Delivery\DeliveryPayloadInterface;
 use Rominas\Delivery\DeliveryServiceInterface;
 use Rominas\Delivery\Exceptions\DeliveryFailedException;
+use Rominas\Delivery\Factories\AcademyInvitationEmailPayloadFactory;
+use Rominas\Delivery\Factories\AcademyMagicLinkEmailPayloadFactory;
+use Rominas\Delivery\Factories\VotingLinkEmailPayloadFactory;
 use Rominas\Delivery\PayloadFactoryInterface;
-use Rominas\Delivery\Brevo\Factories\BrevoAcademyInvitationEmailPayloadFactory;
-use Rominas\Delivery\Brevo\Factories\BrevoAcademyMagicLinkEmailPayloadFactory;
-use Rominas\Delivery\Brevo\Factories\BrevoVotingLinkEmailPayloadFactory;
-use Rominas\Delivery\SMTP\Factories\SmtpAcademyInvitationEmailPayloadFactory;
-use Rominas\Delivery\SMTP\Factories\SmtpAcademyMagicLinkEmailPayloadFactory;
-use Rominas\Delivery\SMTP\Factories\SmtpVotingLinkEmailPayloadFactory;
 use Tests\TestCase;
 
 // Boot the framework (for the app() container) without a database.
@@ -134,10 +131,7 @@ it('logs a failed link e-mail on the delivery channel with the token hidden', fu
 
     expect($loggedContext['params'])->toBe(['to@example.test', '[hidden]']);
 })->with([
-    SmtpAcademyMagicLinkEmailPayloadFactory::class,
-    SmtpAcademyInvitationEmailPayloadFactory::class,
-    SmtpVotingLinkEmailPayloadFactory::class,
-    BrevoAcademyMagicLinkEmailPayloadFactory::class,
-    BrevoAcademyInvitationEmailPayloadFactory::class,
-    BrevoVotingLinkEmailPayloadFactory::class,
+    AcademyMagicLinkEmailPayloadFactory::class,
+    AcademyInvitationEmailPayloadFactory::class,
+    VotingLinkEmailPayloadFactory::class,
 ]);

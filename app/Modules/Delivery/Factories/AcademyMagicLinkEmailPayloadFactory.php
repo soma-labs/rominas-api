@@ -11,7 +11,7 @@ use SensitiveParameter;
  * The returning-login magic-link e-mail for an existing academy member. The link carries the raw
  * magic-link token + email to the academy SPA's login screen, which verifies them for a token.
  */
-abstract class AcademyMagicLinkEmailPayloadFactory extends MailPayloadFactory
+class AcademyMagicLinkEmailPayloadFactory extends MailPayloadFactory
 {
     public const string SUBJECT = 'Link de autentificare în Academia The Romanian Music Industry Awards';
 

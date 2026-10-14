@@ -4,22 +4,20 @@ declare(strict_types=1);
 
 namespace Rominas\Delivery\Factories;
 
-use Rominas\Delivery\DeliveryPayloadInterface;
 use Rominas\Delivery\EmailContact;
 use Rominas\Delivery\MailPayload;
 use Rominas\Delivery\PayloadFactoryInterface;
 
 /**
  * Base of every e-mail payload factory. A subclass per e-mail says what is sent (recipients, subject,
- * rendered body, tags); a transport trait (`BuildsSmtpMailPayload`, `BuildsBrevoMailPayload`) says which
- * payload class carries it, so the SMTP and Brevo factories of one e-mail can never differ in content.
- * The sender is always the configured `mail.from` address.
+ * rendered body, tags); every transport sends the same {@see MailPayload}, so switching transports never
+ * changes an e-mail's content. The sender is always the configured `mail.from` address.
  */
 abstract class MailPayloadFactory implements PayloadFactoryInterface
 {
-    public function create(): DeliveryPayloadInterface
+    public function create(): MailPayload
     {
-        return $this->mailPayload(
+        return new MailPayload(
             sender: new EmailContact(
                 email: config('mail.from.address'),
                 name: config('mail.from.name'),
@@ -46,16 +44,4 @@ abstract class MailPayloadFactory implements PayloadFactoryInterface
      * @return list<string>
      */
     abstract protected function tags(): array;
-
-    /**
-     * @param  list<string>  $recipients
-     * @param  list<string>  $tags
-     */
-    abstract protected function mailPayload(
-        EmailContact $sender,
-        array $recipients,
-        string $subject,
-        string $body,
-        array $tags,
-    ): MailPayload;
 }

@@ -13,7 +13,7 @@ use SensitiveParameter;
  * SPA's onboarding screen, which verifies them and activates the member on first login. A member who came
  * from an approved proposal is told who proposed them.
  */
-abstract class AcademyInvitationEmailPayloadFactory extends MailPayloadFactory
+class AcademyInvitationEmailPayloadFactory extends MailPayloadFactory
 {
     public const string SUBJECT = 'Invitație în Academia The Romanian Music Industry Awards';
 

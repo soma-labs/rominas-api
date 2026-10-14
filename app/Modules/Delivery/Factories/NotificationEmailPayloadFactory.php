@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
  * Any notification e-mail (Notifications module): the notification supplies the subject and the Blade
  * view with its data, so one factory serves every notification type. The tag is the view's last segment.
  */
-abstract class NotificationEmailPayloadFactory extends MailPayloadFactory
+class NotificationEmailPayloadFactory extends MailPayloadFactory
 {
     /**
      * @param  array<string, mixed>  $viewData

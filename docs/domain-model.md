@@ -808,9 +808,9 @@ table through the `Notifiable` trait on `User` and `Member`. See [notifications.
   `action → PayloadFactory → service` pipeline driven by `config/delivery.php`; no stored models.
   `MAIL_DELIVERY_TRANSPORT` picks the transport: `smtp` (default, the `MAIL_*` server) or `brevo` (Brevo's
   HTTP API, `BREVO_API_KEY`); any other value stops the app at boot. Each e-mail's content (recipients,
-  subject, link, rendered view, a tag) lives once in an abstract factory under `Factories/`; its
-  `SMTP/Factories/Smtp…` and `Brevo/Factories/Brevo…` subclasses only choose the payload class, so both transports send the
-  same e-mail. Brevo shows the tag in its logs. A request Brevo refuses fails with its HTTP status and
+  subject, link, rendered view, a tag) lives in one factory under `Factories/`, which builds a plain
+  `MailPayload`; the transport only picks the service that sends it, so both transports send the same
+  e-mail. Brevo shows the tag in its logs; SMTP ignores it. A request Brevo refuses fails with its HTTP status and
   message (e.g. `Brevo API request failed (401): Key not found`). `rominas:test-mail` sends any template
   through the transport in use. A failed send is logged in its own daily
   file (`storage/logs/delivery/delivery-<date>.log`, the `delivery` log channel) with its params; a link

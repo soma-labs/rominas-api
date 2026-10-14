@@ -14,7 +14,7 @@ use Rominas\Auth\MagicLink\Model\MagicLinkToken;
 use Rominas\Delivery\Actions\DeliveryAction;
 use Rominas\Delivery\DeliveryPayloadInterface;
 use Rominas\Delivery\DeliveryServiceInterface;
-use Rominas\Delivery\SMTP\SmtpMailPayload;
+use Rominas\Delivery\MailPayload;
 use Rominas\Editions\Actions\TransitionEditionAction;
 use Rominas\Editions\Enums\EditionStatus;
 use Rominas\Editions\Model\Edition;
@@ -86,12 +86,12 @@ function notificationsStoreFor(User $user, array $attributes = []): DatabaseNoti
  */
 final class NotificationsRecordingDeliveryService implements DeliveryServiceInterface
 {
-    /** @var list<SmtpMailPayload> */
+    /** @var list<MailPayload> */
     public array $payloads = [];
 
     public function send(DeliveryPayloadInterface $payload): void
     {
-        assert($payload instanceof SmtpMailPayload);
+        assert($payload instanceof MailPayload);
 
         $this->payloads[] = $payload;
     }

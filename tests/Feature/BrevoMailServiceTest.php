@@ -9,10 +9,10 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Response;
 use Psr\Http\Message\RequestInterface;
-use Rominas\Delivery\Brevo\BrevoMailPayload;
 use Rominas\Delivery\Brevo\BrevoMailService;
+use Rominas\Delivery\DeliveryPayloadInterface;
 use Rominas\Delivery\EmailContact;
-use Rominas\Delivery\SMTP\SmtpMailPayload;
+use Rominas\Delivery\MailPayload;
 
 /**
  * A BrevoMailService whose client answers from the given responses and records each request, so
@@ -32,9 +32,9 @@ function brevoServiceAnswering(array $responses, array &$history): BrevoMailServ
     ));
 }
 
-function brevoTestPayload(): BrevoMailPayload
+function brevoTestPayload(): MailPayload
 {
-    return new BrevoMailPayload(
+    return new MailPayload(
         sender: new EmailContact(email: 'no-reply@example.test', name: 'The Romanian Music Industry Awards'),
         recipients: ['voter@example.test'],
         subject: 'Link de vot The Romanian Music Industry Awards',
@@ -72,16 +72,12 @@ it('reports Brevo\'s status and message when the request is refused', function (
         ->toThrow(RuntimeException::class, 'Brevo API request failed (401): Key not found');
 });
 
-it('refuses a payload meant for another transport', function (): void {
+it('refuses a payload that is not an e-mail', function (): void {
     $history = [];
     $service = brevoServiceAnswering([], $history);
 
-    expect(fn() => $service->send(new SmtpMailPayload(
-        sender: new EmailContact(email: 'no-reply@example.test', name: 'Romias'),
-        recipients: ['voter@example.test'],
-        subject: 'Subject',
-        body: 'Body',
-    )))->toThrow(InvalidArgumentException::class);
+    expect(fn() => $service->send(new class implements DeliveryPayloadInterface {}))
+        ->toThrow(InvalidArgumentException::class, 'BrevoMailService expects a MailPayload');
 
     expect($history)->toBe([]);
 });

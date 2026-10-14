@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Log;
 use Rominas\Delivery\Actions\DeliveryAction;
 use Rominas\Delivery\DeliveryPayloadInterface;
 use Rominas\Delivery\DeliveryServiceInterface;
-use Rominas\Delivery\SMTP\SmtpMailPayload;
+use Rominas\Delivery\MailPayload;
 
 use function Pest\Laravel\artisan;
 use function Pest\Laravel\travelTo;
@@ -16,12 +16,12 @@ use function Pest\Laravel\travelTo;
  */
 final class TestMailRecordingDeliveryService implements DeliveryServiceInterface
 {
-    /** @var list<SmtpMailPayload> */
+    /** @var list<MailPayload> */
     public array $payloads = [];
 
     public function send(DeliveryPayloadInterface $payload): void
     {
-        assert($payload instanceof SmtpMailPayload);
+        assert($payload instanceof MailPayload);
 
         $this->payloads[] = $payload;
     }

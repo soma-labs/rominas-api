@@ -177,7 +177,7 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->bind(
             \Rominas\Delivery\MailServiceInterface::class,
-            $transports[$transport]['service'],
+            $transports[$transport],
         );
 
         $this->configureSmtpMail();

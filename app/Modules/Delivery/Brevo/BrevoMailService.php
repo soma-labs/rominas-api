@@ -15,6 +15,7 @@ use Brevo\TransactionalEmails\Types\SendTransacEmailRequestToItem;
 use InvalidArgumentException;
 use Rominas\Delivery\DeliveryPayloadInterface;
 use Rominas\Delivery\DeliveryServiceInterface;
+use Rominas\Delivery\MailPayload;
 use Rominas\Delivery\EmailContact;
 use Rominas\Delivery\MailServiceInterface;
 use RuntimeException;
@@ -32,8 +33,8 @@ class BrevoMailService implements DeliveryServiceInterface, MailServiceInterface
 
     public function send(DeliveryPayloadInterface $payload): void
     {
-        if (! ($payload instanceof BrevoMailPayload)) {
-            throw new InvalidArgumentException('Invalid payload');
+        if (! ($payload instanceof MailPayload)) {
+            throw new InvalidArgumentException(sprintf('BrevoMailService expects a MailPayload, got %s.', get_debug_type($payload)));
         }
 
         $attachments = array_map(

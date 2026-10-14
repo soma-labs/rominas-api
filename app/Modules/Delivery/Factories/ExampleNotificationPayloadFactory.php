@@ -8,7 +8,7 @@ namespace Rominas\Delivery\Factories;
  * Generic, domain-neutral example: demonstrates the action => factory => service pipeline without
  * depending on any domain model or Blade view. The body is sent as given.
  */
-abstract class ExampleNotificationPayloadFactory extends MailPayloadFactory
+class ExampleNotificationPayloadFactory extends MailPayloadFactory
 {
     public function __construct(
         private readonly string $recipientEmail,
