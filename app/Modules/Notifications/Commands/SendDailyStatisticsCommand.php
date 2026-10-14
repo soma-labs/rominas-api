@@ -13,7 +13,7 @@ use Rominas\Notifications\Actions\SendDailyStatisticsAction;
  */
 class SendDailyStatisticsCommand extends Command
 {
-    protected $signature = 'notifications:daily-statistics';
+    protected $signature = 'rominas:daily-statistics';
 
     protected $description = 'Send the previous day\'s statistics of the edition in progress to admins';
 

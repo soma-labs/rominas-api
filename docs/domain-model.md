@@ -670,7 +670,7 @@ reason and the acting admin — the batch is the audit unit. Cancelled ballots p
 and stop counting toward [Scoring](#behavioural-modules-no-persistent-entities). **Invalidation is
 terminal** (no reversal); the nullable FK leaves room to add one later.
 
-**Proactive — fraud alerts.** A scheduled command (`fraud:detect`, hourly) runs pluggable detectors over
+**Proactive — fraud alerts.** A scheduled command (`rominas:detect-fraud`, hourly) runs pluggable detectors over
 the edition's submitted, still-valid ballots and records a `FraudAlert` per suspicious cluster. Detectors
 (`FraudMonitoring/Detectors/`): **SharedIp** (N+ ballots sharing one `ip_hash`), **VelocityBurst** (a
 submission spike inside a fixed time window), **IdenticalRanking** (N+ ballots with a byte-identical
@@ -720,7 +720,7 @@ edition's cached Scoring output.
 `(edition_id, type, signature)` is indexed (not unique) — dedupe is **per active alert**. `belongsTo`
 Edition; `belongsToMany` Ballot via the `fraud_alert_ballot` pivot (`ballots()`). `FraudAlertQueryBuilder`
 adds `forEdition` + `visibleToUser` / `actionableByUser`. Written by `DetectVotingFraudAction` (invoked by
-the `fraud:detect` command): each detector's candidate reuses the signature's existing **non-`solved`**
+the `rominas:detect-fraud` command): each detector's candidate reuses the signature's existing **non-`solved`**
 alert (a `pending` one, or a `dismissed` false positive kept suppressed) — refreshing its facts and
 re-`sync()`ing the pivot but **never** its `status` — and otherwise creates a new `pending` alert. So a
 signature that re-offends after being `solved` (its ballots invalidated → excluded by `->valid()`) raises

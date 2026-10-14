@@ -227,7 +227,7 @@ the `->valid()` filter keeps cancelled ballots out of the public tally.
 - `PATCH /api/admin/editions/{edition}/fraud-alerts/{fraudAlert}` (`can:update,fraudAlert`) — set the
   triage `status` (`pending` \| `solved` \| `dismissed`). Detection never overwrites a human-set status.
 
-Alerts are produced by the `fraud:detect` command (scheduled hourly in `routes/console.php`) — the
+Alerts are produced by the `rominas:detect-fraud` command (scheduled hourly in `routes/console.php`) — the
 scheduler only fires if the OS cron runs `php artisan schedule:run`. See the
 [FraudMonitoring](domain-model.md#fraudmonitoring) domain notes and the
 [fraud monitoring](fraud-monitoring.md) chapter.
