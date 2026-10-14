@@ -38,7 +38,8 @@ class NominationResource extends JsonResource
 
         /** @var Collection<int, Category> $categories */
         $categories = $nomination->edition->categories
-            ->filter(static fn(Category $category): bool => $category->isRanked());
+            ->filter(static fn(Category $category): bool => $category->isRanked())
+            ->sortBy([['position', 'asc'], ['id', 'asc']]);
 
         $categoriesPayload = $categories->map(function (Category $category) use ($byCategory): array {
             $rankings = ($byCategory->get($category->id) ?? collect())->sortBy('rank')->values();

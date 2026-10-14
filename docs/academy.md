@@ -184,7 +184,7 @@ first, then alphabetically. `search` needs at least 3 characters (422 otherwise)
 Only the Catalog is searched, never the names other members typed. Rate limit: 120 requests a minute.
 
 The response is always the **whole ballot** (`GET /api/academy/nominations` returns the same shape): every
-category of the active edition with the member's picks, each showing the `raw_name` typed, its
+ranked category of the active edition (by `position`, then id, as the special awards) with the member's picks, each showing the `raw_name` typed, its
 `submission_status`, and the resolved `nominee` once reconciled. A pick chosen from the suggestions has
 `raw_name` and `submission_status` null and its `nominee` filled. With no saved ballot yet, an empty draft is
 synthesized for display and not persisted.

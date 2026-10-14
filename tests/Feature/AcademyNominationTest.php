@@ -70,6 +70,20 @@ it('returns the ballot with every category and no persisted row when resuming', 
     expect(Nomination::query()->count())->toBe(0);
 });
 
+it('lists the ballot categories by position', function (): void {
+    $edition = openEdition();
+    $third = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist, 'position' => 3]);
+    $first = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist, 'position' => 1]);
+    $second = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist, 'position' => 2]);
+    actingMember();
+
+    getJson('/api/academy/nominations')
+        ->assertStatus(200)
+        ->assertJsonPath('data.categories.0.id', $first->id)
+        ->assertJsonPath('data.categories.1.id', $second->id)
+        ->assertJsonPath('data.categories.2.id', $third->id);
+});
+
 it('gives each ballot category its description, input placeholder and eligibility criteria', function (): void {
     $edition = openEdition();
     Category::factory()->for($edition)->create([
