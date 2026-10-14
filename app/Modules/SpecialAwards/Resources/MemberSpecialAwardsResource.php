@@ -57,6 +57,8 @@ class MemberSpecialAwardsResource extends JsonResource
             'id' => $data->category->id,
             'name' => $data->category->name,
             'description' => $data->category->description,
+            'placeholder' => $data->category->placeholder,
+            'eligibility_criteria' => $data->category->eligibility_criteria,
             'action' => $action,
             'entry_id' => $data->vote?->special_entry_id,
             'proposal' => $data->proposal === null ? null : $this->proposal($data->proposal),

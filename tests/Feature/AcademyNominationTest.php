@@ -70,6 +70,23 @@ it('returns the ballot with every category and no persisted row when resuming', 
     expect(Nomination::query()->count())->toBe(0);
 });
 
+it('gives each ballot category its description, input placeholder and eligibility criteria', function (): void {
+    $edition = openEdition();
+    Category::factory()->for($edition)->create([
+        'nominee_type' => NomineeType::Artist,
+        'description' => 'The artist of the year.',
+        'placeholder' => 'Artist name',
+        'eligibility_criteria' => '<p>Rules</p>',
+    ]);
+    actingMember();
+
+    getJson('/api/academy/nominations')
+        ->assertStatus(200)
+        ->assertJsonPath('data.categories.0.description', 'The artist of the year.')
+        ->assertJsonPath('data.categories.0.placeholder', 'Artist name')
+        ->assertJsonPath('data.categories.0.eligibility_criteria', '<p>Rules</p>');
+});
+
 it('saves a typed-in category ranking, staging each name as a pending submission', function (): void {
     $edition = openEdition();
     $category = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist]);

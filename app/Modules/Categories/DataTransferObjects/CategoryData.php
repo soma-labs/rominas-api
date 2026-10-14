@@ -16,5 +16,7 @@ class CategoryData
         public ?NomineeType $nominee_type,
         public int $position = 0,
         public ?string $description = null,
+        public ?string $placeholder = null,
+        public ?string $eligibility_criteria = null,
     ) {}
 }

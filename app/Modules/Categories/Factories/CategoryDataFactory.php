@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rominas\Categories\Factories;
 
 use Rominas\Catalog\Enums\NomineeType;
+use Rominas\Categories\Actions\SanitizeEligibilityCriteriaAction;
 use Rominas\Categories\DataTransferObjects\CategoryData;
 use Rominas\Categories\Enums\CategoryKind;
 use Rominas\Categories\Model\Category;
@@ -16,6 +17,7 @@ class CategoryDataFactory
     public static function fromCreateRequest(CreateCategoryRequest $request): CategoryData
     {
         $validated = $request->validated();
+        $sanitizer = new SanitizeEligibilityCriteriaAction();
 
         return new CategoryData(
             edition_id: (int) $validated['edition_id'],
@@ -24,6 +26,8 @@ class CategoryDataFactory
             nominee_type: NomineeType::tryFrom($validated['nominee_type'] ?? ''),
             position: (int) ($validated['position'] ?? 0),
             description: $validated['description'] ?? null,
+            placeholder: $validated['placeholder'] ?? null,
+            eligibility_criteria: $sanitizer->execute($validated['eligibility_criteria'] ?? null),
         );
     }
 
@@ -34,6 +38,7 @@ class CategoryDataFactory
     public static function fromUpdateRequest(UpdateCategoryRequest $request, Category $category): CategoryData
     {
         $validated = $request->validated();
+        $sanitizer = new SanitizeEligibilityCriteriaAction();
 
         return new CategoryData(
             edition_id: (int) $category->edition_id,
@@ -42,6 +47,8 @@ class CategoryDataFactory
             nominee_type: NomineeType::tryFrom($validated['nominee_type'] ?? ''),
             position: (int) ($validated['position'] ?? $category->position),
             description: $validated['description'] ?? null,
+            placeholder: $validated['placeholder'] ?? null,
+            eligibility_criteria: $sanitizer->execute($validated['eligibility_criteria'] ?? null),
         );
     }
 }

@@ -18,6 +18,8 @@ class CreateCategoryAction
             'nominee_type' => $data->nominee_type,
             'position' => $data->position,
             'description' => $data->description,
+            'placeholder' => $data->placeholder,
+            'eligibility_criteria' => $data->eligibility_criteria,
         ]);
     }
 }

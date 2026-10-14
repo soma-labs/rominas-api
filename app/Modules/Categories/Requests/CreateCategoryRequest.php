@@ -37,6 +37,8 @@ class CreateCategoryRequest extends FormRequest
             'nominee_type' => $isRanked ? ['required', Rule::enum(NomineeType::class)] : ['prohibited'],
             'position' => 'sometimes|integer',
             'description' => 'sometimes|nullable|string',
+            'placeholder' => 'sometimes|nullable|string|max:255',
+            'eligibility_criteria' => 'sometimes|nullable|string|max:20000',
         ];
     }
 }

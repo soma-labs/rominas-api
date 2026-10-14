@@ -177,6 +177,8 @@ decided; a ranked category is also **typed**: it declares which catalog entity t
 | `nominee_type` | `NomineeType` enum — the catalog entity type this category competes. **Nullable: only a ranked category has one** |
 | `position` | int — display ordering |
 | `description` | nullable |
+| `placeholder` | nullable, ≤255 — the academy's nominee input placeholder (ranked) or proposal input placeholder (`propose_or_vote`); empty = the app's default text |
+| `eligibility_criteria` | nullable text, **sanitized HTML** — shown to members in a modal next to the category title |
 
 **Enum** — `NomineeType` (`Catalog/Enums/NomineeType.php`): `artist` \| `band` \| `venue` \| `song`
 \| `album`. Slug-backed (never the class FQN); `modelClass()` resolves the slug to its Eloquent
@@ -203,7 +205,12 @@ non-null type for code that has already established the category is ranked.
 **Rules** — `edition_id` is required on create and **immutable on update** (`CategoryDataFactory`
 has separate `fromCreateRequest`/`fromUpdateRequest`); so is `kind` (a `kind` sent on update is ignored).
 `nominee_type` is validated with `Rule::enum(NomineeType::class)`: **required for a ranked category,
-prohibited for the others**. Points-per-rank / scoring config is **not** on Category — it
+prohibited for the others**. `eligibility_criteria` is cleaned on the way in by `SanitizeEligibilityCriteriaAction`
+(`symfony/html-sanitizer`): only `p`, `h2`, `h3`, `ul`, `ol`, `li`, `br` and `a[href]` (http, https, mailto;
+forced `target="_blank" rel="noopener noreferrer"`) survive, any other element is unwrapped to its text,
+scripts/styles/embeds are dropped whole, and markup with no text left (an emptied editor's `<p></p>`) is
+stored as `null`. The academy renders it as HTML, so it must never be written around the sanitizer. The
+member ballot and the member special-awards list carry `description`, `placeholder` and `eligibility_criteria`. Points-per-rank / scoring config is **not** on Category — it
 belongs to the planned `Scoring` module.
 
 ---

@@ -159,3 +159,69 @@ it('filters categories by kind', function (): void {
         ->assertStatus(200)
         ->assertJsonCount(2, 'data');
 });
+
+it('stores a category\'s input placeholder and eligibility criteria', function (): void {
+    actingAsSuperAdmin();
+    $edition = Edition::factory()->create();
+    $criteria = '<h2>Who can be nominated</h2><p>Artists with a release in <a href="https://example.com">the season</a>.</p><ul><li>One</li></ul>';
+
+    postJson('/api/admin/categories', [
+        'edition_id' => $edition->id,
+        'name' => 'Best Album',
+        'nominee_type' => NomineeType::Album->value,
+        'placeholder' => 'Album title',
+        'eligibility_criteria' => $criteria,
+    ])->assertStatus(201)
+        ->assertJsonPath('data.placeholder', 'Album title')
+        ->assertJsonPath(
+            'data.eligibility_criteria',
+            '<h2>Who can be nominated</h2><p>Artists with a release in <a href="https://example.com" target="_blank" rel="noopener noreferrer">the season</a>.</p><ul><li>One</li></ul>',
+        );
+});
+
+it('clears a category\'s placeholder and eligibility criteria on update', function (): void {
+    actingAsSuperAdmin();
+    $category = Category::factory()->create([
+        'placeholder' => 'Artist name',
+        'eligibility_criteria' => '<p>Rules</p>',
+    ]);
+
+    patchJson("/api/admin/categories/{$category->id}", [
+        'name' => $category->name,
+        'nominee_type' => $category->nominee_type?->value,
+        'placeholder' => null,
+        'eligibility_criteria' => '<p></p>',
+    ])->assertStatus(200)
+        ->assertJsonPath('data.placeholder', null)
+        ->assertJsonPath('data.eligibility_criteria', null);
+});
+
+it('strips from the eligibility criteria what the editor does not produce', function (string $input, string $expected): void {
+    actingAsSuperAdmin();
+    $category = Category::factory()->create();
+
+    patchJson("/api/admin/categories/{$category->id}", [
+        'name' => $category->name,
+        'nominee_type' => $category->nominee_type?->value,
+        'eligibility_criteria' => $input,
+    ])->assertStatus(200)
+        ->assertJsonPath('data.eligibility_criteria', $expected);
+})->with([
+    'script' => ['<p>Rules</p><script>alert(1)</script>', '<p>Rules</p>'],
+    'event handler' => ['<p onclick="alert(1)">Rules</p>', '<p>Rules</p>'],
+    'javascript link' => ['<p><a href="javascript:alert(1)">Rules</a></p>', '<p><a target="_blank" rel="noopener noreferrer">Rules</a></p>'],
+    'image' => ['<p>Rules<img src="https://example.com/x.png"></p>', '<p>Rules</p>'],
+    'other elements keep their text' => ['<h1>Title</h1><p><strong>Rules</strong></p>', 'Title<p>Rules</p>'],
+]);
+
+it('rejects a placeholder longer than 255 characters', function (): void {
+    actingAsSuperAdmin();
+    $category = Category::factory()->create();
+
+    patchJson("/api/admin/categories/{$category->id}", [
+        'name' => $category->name,
+        'nominee_type' => $category->nominee_type?->value,
+        'placeholder' => str_repeat('a', 256),
+    ])->assertStatus(422)
+        ->assertJsonValidationErrors('placeholder');
+});

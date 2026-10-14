@@ -29,6 +29,8 @@ use Rominas\Editions\Model\Edition;
     'nominee_type',
     'position',
     'description',
+    'placeholder',
+    'eligibility_criteria',
 ])]
 #[UsePolicy(CategoryPolicy::class)]
 class Category extends Model

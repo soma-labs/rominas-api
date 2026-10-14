@@ -15,6 +15,8 @@ class UpdateCategoryAction
         $category->nominee_type = $data->nominee_type;
         $category->position = $data->position;
         $category->description = $data->description;
+        $category->placeholder = $data->placeholder;
+        $category->eligibility_criteria = $data->eligibility_criteria;
 
         $category->save();
 

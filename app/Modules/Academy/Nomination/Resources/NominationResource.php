@@ -46,6 +46,9 @@ class NominationResource extends JsonResource
             return [
                 'id' => $category->id,
                 'name' => $category->name,
+                'description' => $category->description,
+                'placeholder' => $category->placeholder,
+                'eligibility_criteria' => $category->eligibility_criteria,
                 'nominee_type' => $category->rankedNomineeType()->value,
                 'has_nominees' => $rankings->isNotEmpty(),
                 'rankings' => NominationRankingResource::collection($rankings),

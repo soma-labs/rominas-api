@@ -32,6 +32,8 @@ class CategoryResource extends JsonResource
             'nominee_type_label' => $category->nominee_type?->label(),
             'position' => $category->position,
             'description' => $category->description,
+            'placeholder' => $category->placeholder,
+            'eligibility_criteria' => $category->eligibility_criteria,
             'created_at' => $category->created_at,
             'updated_at' => $category->updated_at,
         ];

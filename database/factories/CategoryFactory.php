@@ -32,6 +32,8 @@ class CategoryFactory extends Factory
             'nominee_type' => fake()->randomElement(NomineeType::cases()),
             'position' => 0,
             'description' => fake()->optional()->sentence(),
+            'placeholder' => fake()->optional()->words(2, true),
+            'eligibility_criteria' => fake()->optional()->passthrough('<p>' . fake()->sentence() . '</p>'),
         ];
     }
 

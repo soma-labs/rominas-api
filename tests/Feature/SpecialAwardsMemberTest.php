@@ -68,7 +68,7 @@ it('shows a member the propose-or-vote categories with their approved entries on
                 'edition_id',
                 'nominations_start_at',
                 'nominations_end_at',
-                'categories' => [['id', 'name', 'description', 'action', 'entry_id', 'proposal', 'entries' => [['id', 'title']]]],
+                'categories' => [['id', 'name', 'description', 'placeholder', 'eligibility_criteria', 'action', 'entry_id', 'proposal', 'entries' => [['id', 'title']]]],
             ],
         ])
         ->assertJsonPath('data.categories.0.entries.0.id', $approved->id);
