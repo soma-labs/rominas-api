@@ -9,6 +9,7 @@ use Rominas\Academy\Member\Enums\MemberStatus;
 use Rominas\Academy\Member\Model\Member;
 use Rominas\Auth\MagicLink\Actions\SendMagicLinkAction;
 use Rominas\Auth\MagicLink\Model\MagicLinkToken;
+use Rominas\Delivery\Factories\AcademyMagicLinkEmailPayloadFactory;
 use Rominas\Users\Model\User;
 
 use function Pest\Laravel\getJson;
@@ -77,6 +78,15 @@ it('rate limits magic-link requests', function (): void {
     }
 
     postJson('/api/academy/auth/magic/request', ['email' => $member->email])->assertStatus(429);
+});
+
+it('greets the member by their name in the login e-mail, not by their e-mail address', function (): void {
+    $member = Member::factory()->active()->create(['name' => 'Ana Popescu', 'email' => 'ana.p@example.test']);
+
+    $payload = (new AcademyMagicLinkEmailPayloadFactory($member->email, 'link-token'))->create();
+
+    expect($payload->body)->toContain('Salut, Ana Popescu!')
+        ->and($payload->body)->not->toContain('Salut, ana.p');
 });
 
 it('verifies a valid magic link, activates the member, and issues a token', function (): void {

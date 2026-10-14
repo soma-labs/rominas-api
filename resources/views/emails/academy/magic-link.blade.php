@@ -1,5 +1,5 @@
 @php
-    /** @var string $name */
+    /** @var string|null $name */
     /** @var string $url */
 @endphp
 <!DOCTYPE html>

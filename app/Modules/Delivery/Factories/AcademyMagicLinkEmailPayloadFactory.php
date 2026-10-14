@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Rominas\Delivery\Factories;
 
-use Illuminate\Support\Str;
+use Rominas\Academy\Member\Model\Member;
 use SensitiveParameter;
 
 /**
  * The returning-login magic-link e-mail for an existing academy member. The link carries the raw
- * magic-link token + email to the academy SPA's login screen, which verifies them for a token.
+ * magic-link token + email to the academy SPA's login screen, which verifies them for a token. The
+ * greeting uses the member's name.
  */
 class AcademyMagicLinkEmailPayloadFactory extends MailPayloadFactory
 {
@@ -38,7 +39,7 @@ class AcademyMagicLinkEmailPayloadFactory extends MailPayloadFactory
             . '&email=' . rawurlencode($this->email);
 
         return view('emails.academy.magic-link', [
-            'name' => Str::before($this->email, '@'),
+            'name' => $this->memberName(),
             'url' => $url,
         ])->render();
     }
@@ -46,5 +47,10 @@ class AcademyMagicLinkEmailPayloadFactory extends MailPayloadFactory
     protected function tags(): array
     {
         return ['academy-login'];
+    }
+
+    private function memberName(): ?string
+    {
+        return Member::query()->where('email', $this->email)->value('name');
     }
 }
