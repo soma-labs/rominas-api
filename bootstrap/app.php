@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Rominas\Delivery\Commands\SendTestEmailCommand;
 use Rominas\FraudMonitoring\Commands\DetectVotingFraudCommand;
 use Rominas\Notifications\Commands\SendDailyStatisticsCommand;
 use Rominas\Notifications\Commands\SendNominationDeadlineRemindersCommand;
@@ -21,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         DetectVotingFraudCommand::class,
         SendDailyStatisticsCommand::class,
         SendNominationDeadlineRemindersCommand::class,
+        SendTestEmailCommand::class,
     ])
     ->withMiddleware(function (Middleware $middleware): void {
         // Records an audit-trail entry; attached to the /admin group (opt-out) and to the auth /

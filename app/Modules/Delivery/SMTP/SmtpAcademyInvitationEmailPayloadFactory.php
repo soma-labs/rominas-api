@@ -18,6 +18,8 @@ use SensitiveParameter;
  */
 class SmtpAcademyInvitationEmailPayloadFactory implements PayloadFactoryInterface
 {
+    public const string SUBJECT = 'Invitație în Academia The Romanian Music Industry Awards';
+
     public function __construct(
         private readonly string $email,
         #[SensitiveParameter]
@@ -44,7 +46,7 @@ class SmtpAcademyInvitationEmailPayloadFactory implements PayloadFactoryInterfac
                 name: config('mail.from.name'),
             ),
             recipients: [$this->email],
-            subject: 'Invitație în Academia The Romanian Music Industry Awards',
+            subject: self::SUBJECT,
             body: $body,
         );
     }

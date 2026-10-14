@@ -75,6 +75,12 @@ running the command twice sends nothing new, once the queue has processed the fi
 
 Both commands can be run by hand.
 
+**Checking an e-mail by hand.** `rominas:test-mail {email} {template}` sends one e-mail template, or
+`all` of them, with sample data to the given address (it asks for whichever is left out). It covers every
+member, voter and admin e-mail, including the invitation with and without a proposer. It sends at once,
+without the queue, writes nothing to the database, and prints the mail server's reply when sending
+fails. Links carry a placeholder token and do not sign anyone in.
+
 ## 5. Endpoints
 
 All under `/api/admin/notifications`, Sanctum-guarded. Every admin user has a list; a user sees and
