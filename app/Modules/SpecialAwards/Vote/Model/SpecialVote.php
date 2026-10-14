@@ -15,9 +15,10 @@ use Rominas\SpecialAwards\Entry\Model\SpecialEntry;
 use Rominas\SpecialAwards\Vote\QueryBuilders\SpecialVoteQueryBuilder;
 
 /**
- * A member's single vote in a propose-or-vote category. Proposing an entry casts the proposer's vote for
- * it, so the row is also the record that the member has acted in the category: the table is unique on
- * (category, member), which is what keeps a member from both proposing and voting.
+ * A member's vote in a propose-or-vote category. A member holds at most two per category: the one their
+ * proposal carries (`via_proposal`, cast when they propose and kept on the target if the entry is merged)
+ * and the one they chose for an entry another member proposed. The table is unique on
+ * (category, member, via_proposal), which is what caps each kind at one.
  *
  * @mixin IdeHelperSpecialVote
  */
@@ -25,6 +26,7 @@ use Rominas\SpecialAwards\Vote\QueryBuilders\SpecialVoteQueryBuilder;
     'category_id',
     'member_id',
     'special_entry_id',
+    'via_proposal',
 ])]
 class SpecialVote extends Model
 {
@@ -40,6 +42,16 @@ class SpecialVote extends Model
         $builder = parent::query();
 
         return $builder;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'via_proposal' => 'boolean',
+        ];
     }
 
     public function newEloquentBuilder($query): SpecialVoteQueryBuilder
@@ -69,13 +81,5 @@ class SpecialVote extends Model
     public function entry(): BelongsTo
     {
         return $this->belongsTo(SpecialEntry::class, 'special_entry_id');
-    }
-
-    /**
-     * Whether this vote is the one a member cast by proposing the entry, rather than by choosing it.
-     */
-    public function isOnOwnProposal(): bool
-    {
-        return $this->entry->proposed_by_member_id === $this->member_id;
     }
 }

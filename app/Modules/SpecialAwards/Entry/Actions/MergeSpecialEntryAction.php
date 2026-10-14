@@ -18,7 +18,9 @@ use Rominas\Users\Model\User;
  * at review — nobody loses their say and the votes are not split between two spellings. Works for a
  * pending proposal and for an entry that was approved before the duplicate was noticed.
  *
- * A member holds one vote per category, so moving votes inside a category can never collide.
+ * Moving votes cannot collide on the (category, member, via_proposal) key: a member holds at most one
+ * vote of each kind per category. A proposer who also voted for the target ends up with both votes on it,
+ * and both count.
  */
 class MergeSpecialEntryAction
 {

@@ -15,13 +15,15 @@ use Rominas\SpecialAwards\Vote\Model\SpecialVote;
 final class MemberSpecialCategoryData
 {
     /**
-     * @param  SpecialVote|null  $vote  the member's vote in the category (with `entry` loaded), if they acted
+     * @param  SpecialVote|null  $proposalVote  the vote the member's proposal carries, if they have one
+     * @param  SpecialVote|null  $chosenVote  the vote the member chose for another member's entry, if any
      * @param  SpecialEntry|null  $proposal  the member's latest proposal in the category, whatever became of it
      * @param  Collection<int, SpecialEntry>  $entries  the approved entries, alphabetically
      */
     public function __construct(
         public readonly Category $category,
-        public readonly ?SpecialVote $vote,
+        public readonly ?SpecialVote $proposalVote,
+        public readonly ?SpecialVote $chosenVote,
         public readonly ?SpecialEntry $proposal,
         public readonly Collection $entries,
     ) {}

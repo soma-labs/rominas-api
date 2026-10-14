@@ -13,8 +13,10 @@ use Rominas\SpecialAwards\Entry\Model\SpecialEntry;
 use Rominas\SpecialAwards\Vote\Model\SpecialVote;
 
 /**
- * Casts a member's vote for an approved entry of a propose-or-vote category. A member who already voted
- * for another entry moves their vote; a member who proposed an entry cannot vote until they withdraw it.
+ * Casts a member's vote for an approved entry another member proposed, in a propose-or-vote category. A
+ * member who already voted for another entry moves their vote. This vote is separate from the one their
+ * own proposal carries, so proposing does not stop a member from voting; voting for their own entry does
+ * not count and is refused.
  */
 class VoteForSpecialEntryAction
 {
@@ -34,13 +36,13 @@ class VoteForSpecialEntryAction
             ]);
         }
 
-        $vote = SpecialVote::query()->forMember($member)->forCategory($category)->with('entry')->first();
-
-        if ($vote !== null && $vote->isOnOwnProposal()) {
+        if ($entry->proposed_by_member_id === $member->id) {
             throw ValidationException::withMessages([
-                'category' => __('You have proposed an entry in this category, so you cannot vote in it.'),
+                'entry_id' => __('You cannot vote for your own proposal.'),
             ]);
         }
+
+        $vote = SpecialVote::query()->forMember($member)->forCategory($category)->chosen()->first();
 
         if ($vote !== null) {
             $vote->special_entry_id = $entry->id;
@@ -54,11 +56,12 @@ class VoteForSpecialEntryAction
                 'category_id' => $category->id,
                 'member_id' => $member->id,
                 'special_entry_id' => $entry->id,
+                'via_proposal' => false,
             ]);
         } catch (UniqueConstraintViolationException) {
             // Two requests from the same member at once: the unique key let only one through.
             throw ValidationException::withMessages([
-                'category' => __('You have already proposed or voted in this category.'),
+                'category' => __('You have already voted in this category.'),
             ]);
         }
     }

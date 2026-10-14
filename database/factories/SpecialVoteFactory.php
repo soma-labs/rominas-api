@@ -29,6 +29,15 @@ class SpecialVoteFactory extends Factory
                 ->findOrFail($attributes['special_entry_id'])
                 ->category_id,
             'member_id' => Member::factory()->active(),
+            'via_proposal' => false,
         ];
+    }
+
+    /**
+     * The vote a proposal carries: the member is the entry's proposer.
+     */
+    public function viaProposal(): static
+    {
+        return $this->state(['via_proposal' => true]);
     }
 }

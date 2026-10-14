@@ -29,4 +29,20 @@ class SpecialVoteQueryBuilder extends Builder
     {
         return $this->where('special_entry_id', '=', $entry->id);
     }
+
+    /**
+     * The vote a member's proposal carries.
+     */
+    public function viaProposal(): self
+    {
+        return $this->where('via_proposal', '=', true);
+    }
+
+    /**
+     * The vote a member chose for an entry another member proposed.
+     */
+    public function chosen(): self
+    {
+        return $this->where('via_proposal', '=', false);
+    }
 }

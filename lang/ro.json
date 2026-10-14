@@ -51,10 +51,11 @@
 
     "This category has no shortlist.": "Această categorie nu are o listă scurtă de nominalizați.",
     "This entry already exists. You can vote for it instead.": "Această propunere există deja. Poți vota pentru ea.",
-    "You have already proposed or voted in this category.": "Ai propus sau ai votat deja la această categorie.",
+    "You have already made a proposal in this category.": "Ai făcut deja o propunere la această categorie.",
+    "You have already voted in this category.": "Ai votat deja la această categorie.",
     "You have no proposal to withdraw in this category.": "Nu ai nicio propunere de retras la această categorie.",
     "This entry cannot be voted for. Please choose again.": "Această propunere nu poate fi votată. Te rugăm să alegi din nou.",
-    "You have proposed an entry in this category, so you cannot vote in it.": "Ai făcut o propunere la această categorie, așa că nu poți vota la ea.",
+    "You cannot vote for your own proposal.": "Nu poți vota propria propunere.",
     "You have no vote to withdraw in this category.": "Nu ai niciun vot de retras la această categorie.",
     "The results of this edition are published, so its special entries can no longer be changed.": "Rezultatele acestei ediții sunt publicate, așa că propunerile ei speciale nu mai pot fi modificate.",
     "Only a pending entry can be approved.": "Doar o propunere în așteptare poate fi aprobată.",

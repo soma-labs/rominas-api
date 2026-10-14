@@ -14,15 +14,17 @@ use Rominas\SpecialAwards\Actions\ResolveOpenSpecialCategoryAction;
 use Rominas\SpecialAwards\Entry\DataTransferObjects\SpecialEntryData;
 use Rominas\SpecialAwards\Entry\Enums\SpecialEntryStatus;
 use Rominas\SpecialAwards\Entry\Model\SpecialEntry;
+use Rominas\SpecialAwards\Vote\Actions\VoteForSpecialEntryAction;
 use Rominas\SpecialAwards\Vote\Model\SpecialVote;
 
 /**
  * Records a member's proposal of a new entry in a propose-or-vote category. The entry starts pending —
  * other members see it only after an admin approves it — and it carries the proposer's vote from the
- * start, so a member who proposes has used their one action in the category.
+ * start. A member makes one proposal per category; their vote for another member's entry is separate
+ * ({@see VoteForSpecialEntryAction}).
  *
- * Guards: the category must be open for members, the member must not have proposed or voted in it yet,
- * and the title must not be one that is already approved (the member can vote for that entry instead).
+ * Guards: the category must be open for members, the member must not have a proposal in it yet, and the
+ * title must not be one that is already approved (the member can vote for that entry instead).
  */
 class ProposeSpecialEntryAction
 {
@@ -34,8 +36,8 @@ class ProposeSpecialEntryAction
     {
         $this->resolveOpenCategory->execute($category);
 
-        if (SpecialVote::query()->forMember($member)->forCategory($category)->exists()) {
-            $this->failAsAlreadyActed();
+        if (SpecialVote::query()->forMember($member)->forCategory($category)->viaProposal()->exists()) {
+            $this->failAsAlreadyProposed();
         }
 
         $alreadyApproved = SpecialEntry::query()
@@ -63,23 +65,24 @@ class ProposeSpecialEntryAction
                     'category_id' => $category->id,
                     'member_id' => $member->id,
                     'special_entry_id' => $entry->id,
+                    'via_proposal' => true,
                 ]);
 
                 return $entry;
             });
         } catch (UniqueConstraintViolationException) {
             // Two requests from the same member at once: the unique key let only one through.
-            $this->failAsAlreadyActed();
+            $this->failAsAlreadyProposed();
         }
     }
 
     /**
      * @throws ValidationException
      */
-    private function failAsAlreadyActed(): never
+    private function failAsAlreadyProposed(): never
     {
         throw ValidationException::withMessages([
-            'category' => __('You have already proposed or voted in this category.'),
+            'category' => __('You have already made a proposal in this category.'),
         ]);
     }
 }

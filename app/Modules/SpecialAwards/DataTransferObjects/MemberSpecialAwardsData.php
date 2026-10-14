@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rominas\SpecialAwards\DataTransferObjects;
 
+use Rominas\Academy\Member\Model\Member;
 use Rominas\Editions\Model\Edition;
 
 /**
@@ -16,6 +17,7 @@ final class MemberSpecialAwardsData
      */
     public function __construct(
         public readonly Edition $edition,
+        public readonly Member $member,
         public readonly array $categories,
     ) {}
 }

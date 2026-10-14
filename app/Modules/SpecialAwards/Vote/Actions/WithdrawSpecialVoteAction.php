@@ -12,7 +12,7 @@ use Rominas\SpecialAwards\Entry\Actions\WithdrawSpecialEntryAction;
 use Rominas\SpecialAwards\Vote\Model\SpecialVote;
 
 /**
- * A member takes back their vote in a category, which frees them to propose or vote again. The vote a
+ * A member takes back the vote they chose in a category, which frees them to vote again. The vote a
  * proposal carries is not withdrawn here but with the proposal ({@see WithdrawSpecialEntryAction}).
  */
 class WithdrawSpecialVoteAction
@@ -25,9 +25,9 @@ class WithdrawSpecialVoteAction
     {
         $this->resolveOpenCategory->execute($category);
 
-        $vote = SpecialVote::query()->forMember($member)->forCategory($category)->with('entry')->first();
+        $vote = SpecialVote::query()->forMember($member)->forCategory($category)->chosen()->first();
 
-        if ($vote === null || $vote->isOnOwnProposal()) {
+        if ($vote === null) {
             throw ValidationException::withMessages([
                 'category' => __('You have no vote to withdraw in this category.'),
             ]);

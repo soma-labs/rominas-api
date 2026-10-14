@@ -469,7 +469,7 @@ erDiagram
     CATEGORY ||--o{ SPECIAL_ENTRY : "has"
     MEMBER ||--o{ SPECIAL_ENTRY : "proposes"
     SPECIAL_ENTRY ||--o{ SPECIAL_VOTE : "receives"
-    MEMBER ||--o{ SPECIAL_VOTE : "casts (one per category)"
+    MEMBER ||--o{ SPECIAL_VOTE : "casts (up to two per category)"
     SPECIAL_ENTRY }o--o| SPECIAL_ENTRY : "merged into"
 ```
 
@@ -486,25 +486,31 @@ erDiagram
 | `reviewed_by_user_id`, `reviewed_at`, `review_note` | the review; the note is required on rejection and the proposer reads it |
 
 **SpecialVote** — `SpecialAwards/Vote/Model/SpecialVote.php` — `category_id`, `member_id`,
-`special_entry_id`. **Unique on `(category_id, member_id)`**: a member holds one vote per category, and a
-proposal carries its proposer's vote. That single key is what makes "propose or vote, never both" hold.
+`special_entry_id`, `via_proposal`. A member holds up to two votes per category: the one their proposal
+carries (`via_proposal = true`) and the one they chose for an entry another member proposed
+(`via_proposal = false`). **Unique on `(category_id, member_id, via_proposal)`**: that key is what caps each
+kind at one.
 
-### A member's one action per category
+### A member's proposal and vote per category
 
 Members act inside the nomination window (the same gate as the ballot, `ResolveOpenNominationEditionAction`),
 independently of the ranked ballot: submitting the ballot does not lock the special awards.
 
-- **Propose** — creates a `pending` entry plus the proposer's vote. Refused if the member already has a
-  vote in the category, or if an approved entry with the same normalized title exists (they can vote for it).
-- **Vote** — for an `approved` entry of the category. A member who voted for another entry **moves** the
-  vote; one who proposed must withdraw first.
+The two are independent: proposing does not stop a member from voting, nor the other way round.
+
+- **Propose** — creates a `pending` entry plus the proposer's vote (`via_proposal`). Refused if the member
+  already has a proposal in the category, or if an approved entry with the same normalized title exists
+  (they can vote for it).
+- **Vote** — for an `approved` entry of the category that another member proposed (voting for their own
+  entry is refused). A member who voted for another entry **moves** the vote.
 - **Withdraw a proposal** — while pending, the entry and the vote are deleted; once approved the entry
-  stays for the others and only the proposer's vote is removed.
-- **Withdraw a vote** — frees the member to vote again or to propose.
+  stays for the others and only the vote the proposal carried is removed. The chosen vote is untouched.
+- **Withdraw a vote** — removes the chosen vote only; frees the member to vote again.
 
 `GET /api/academy/special-awards` returns every `propose_or_vote` category with its approved entries
-(alphabetically), the member's `action` (`proposed` \| `voted` \| null), the `entry_id` their vote is on,
-and their own latest `proposal` with its review outcome. It never returns a vote count, another member's
+(alphabetically, each with `proposed_by_me`), the entry the member's proposal vote is on
+(`proposed_entry_id`), the entry they chose to vote for (`voted_entry_id`), and their own latest `proposal`
+with its review outcome. It never returns a vote count, another member's
 pending proposal, a proposer's name, or an appointed category. Every write answers with that whole view.
 The four writes are audited (`config/audit.php`).
 
@@ -512,14 +518,15 @@ The four writes are audited (`config/audit.php`).
 
 An admin with the `specialAwards` permission reviews an edition's entries
 (`/api/admin/editions/{edition}/special-entries…`): **approve**, **reject** (note required; the proposer's
-vote is deleted, so they can act again), **correct the text**, or **merge**.
+vote is deleted, so they can propose again), **correct the text**, or **merge**.
 
 Merging is how duplicates are handled. `?with_similar=1` on the single-entry read lists the approved
 entries of the category whose title is close to this one, scored by `NameSimilarity` — the same matching
 the Catalog reconciliation suggestions use. Merging moves every vote on the duplicate to the target and
 marks it `merged`; the target must be an approved entry of the same category. It works for a pending
-proposal and for an entry approved before the duplicate was noticed. Because a member holds one vote per
-category, moved votes cannot collide. Approving is refused while an approved entry with the same
+proposal and for an entry approved before the duplicate was noticed. Moved votes cannot collide on the
+unique key, since a member holds at most one vote of each kind; a proposer who had also voted for the
+target ends up with both votes on it, and both count (user decision, 2026-10-14). Approving is refused while an approved entry with the same
 normalized title exists.
 
 The review endpoints carry **no vote counts**: how members voted is part of the results and stays

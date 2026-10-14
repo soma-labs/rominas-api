@@ -8,17 +8,19 @@ use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use JsonSerializable;
+use Rominas\Academy\Member\Model\Member;
 use Rominas\SpecialAwards\DataTransferObjects\MemberSpecialAwardsData;
 use Rominas\SpecialAwards\DataTransferObjects\MemberSpecialCategoryData;
 use Rominas\SpecialAwards\Entry\Model\SpecialEntry;
 use Rominas\SpecialAwards\Entry\Resources\MemberSpecialEntryResource;
 
 /**
- * A member's view of the edition's special awards. Per category: `action` is what the member did
- * (`proposed`, `voted` or null), `entry_id` the entry their vote is on, `proposal` their own latest
- * proposal with its review outcome, and `entries` the approved entries they may vote for. Carries the
- * nomination window so the SPA can gate the form on it, as the ballot does. No vote counts, no other
- * member's pending proposal, no proposer names.
+ * A member's view of the edition's special awards. Per category: `proposed_entry_id` is the entry the vote
+ * their proposal carries is on (null = they may propose), `voted_entry_id` the entry they chose to vote
+ * for (null = they may vote), `proposal` their own latest proposal with its review outcome, and `entries`
+ * the approved entries, each marked `proposed_by_me` when it is the member's own (they cannot vote for
+ * it). Carries the nomination window so the SPA can gate the form on it, as the ballot does. No vote
+ * counts, no other member's pending proposal, no proposer names.
  */
 class MemberSpecialAwardsResource extends JsonResource
 {
@@ -36,7 +38,7 @@ class MemberSpecialAwardsResource extends JsonResource
             'nominations_start_at' => $awards->edition->nominations_start_at,
             'nominations_end_at' => $awards->edition->nominations_end_at,
             'categories' => array_map(
-                fn(MemberSpecialCategoryData $category): array => $this->category($category),
+                fn(MemberSpecialCategoryData $category): array => $this->category($category, $awards->member),
                 $awards->categories,
             ),
         ];
@@ -45,24 +47,24 @@ class MemberSpecialAwardsResource extends JsonResource
     /**
      * @return array<string, mixed>
      */
-    private function category(MemberSpecialCategoryData $data): array
+    private function category(MemberSpecialCategoryData $data, Member $member): array
     {
-        $action = null;
-
-        if ($data->vote !== null) {
-            $action = $data->vote->isOnOwnProposal() ? 'proposed' : 'voted';
-        }
-
         return [
             'id' => $data->category->id,
             'name' => $data->category->name,
             'description' => $data->category->description,
             'placeholder' => $data->category->placeholder,
             'eligibility_criteria' => $data->category->eligibility_criteria,
-            'action' => $action,
-            'entry_id' => $data->vote?->special_entry_id,
+            'proposed_entry_id' => $data->proposalVote?->special_entry_id,
+            'voted_entry_id' => $data->chosenVote?->special_entry_id,
             'proposal' => $data->proposal === null ? null : $this->proposal($data->proposal),
-            'entries' => MemberSpecialEntryResource::collection($data->entries),
+            'entries' => $data->entries
+                ->map(fn(SpecialEntry $entry): array => [
+                    ...(new MemberSpecialEntryResource($entry))->resolve(),
+                    'proposed_by_me' => $entry->proposed_by_member_id === $member->id,
+                ])
+                ->values()
+                ->all(),
         ];
     }
 

@@ -58,7 +58,7 @@ function specialReviewPendingProposal(Category $category, string $title): Specia
         'title' => $title,
         'proposed_by_member_id' => $member->id,
     ]);
-    SpecialVote::factory()->create(['special_entry_id' => $entry->id, 'member_id' => $member->id]);
+    SpecialVote::factory()->viaProposal()->create(['special_entry_id' => $entry->id, 'member_id' => $member->id]);
 
     return $entry;
 }
@@ -168,6 +168,20 @@ it('merges a duplicate proposal into the entry that stays, moving its vote', fun
 
     expect(SpecialVote::query()->forEntry($target)->count())->toBe(3)
         ->and(SpecialVote::query()->forEntry($duplicate)->count())->toBe(0);
+});
+
+it('keeps both votes of a proposer who also voted for the entry their proposal is merged into', function (): void {
+    specialReviewActingAsAdmin();
+    [$edition, $category] = specialReviewEditionAndCategory();
+    $target = SpecialEntry::factory()->approved()->create(['category_id' => $category->id, 'title' => 'Maria Tanase']);
+    $duplicate = specialReviewPendingProposal($category, 'M. Tanase');
+    SpecialVote::factory()->create(['special_entry_id' => $target->id, 'member_id' => $duplicate->proposed_by_member_id]);
+
+    postJson("/api/admin/editions/{$edition->id}/special-entries/{$duplicate->id}/merge", ['target_entry_id' => $target->id])
+        ->assertStatus(200);
+
+    expect(SpecialVote::query()->forEntry($target)->where('member_id', '=', $duplicate->proposed_by_member_id)->count())
+        ->toBe(2);
 });
 
 it('merges two approved entries, moving every vote', function (): void {

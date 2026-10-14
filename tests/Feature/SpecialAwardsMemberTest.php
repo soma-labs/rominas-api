@@ -61,14 +61,15 @@ it('shows a member the propose-or-vote categories with their approved entries on
         ->assertJsonPath('data.edition_id', $edition->id)
         ->assertJsonCount(1, 'data.categories')
         ->assertJsonPath('data.categories.0.id', $category->id)
-        ->assertJsonPath('data.categories.0.action', null)
+        ->assertJsonPath('data.categories.0.proposed_entry_id', null)
+        ->assertJsonPath('data.categories.0.voted_entry_id', null)
         ->assertJsonPath('data.categories.0.proposal', null)
         ->assertExactJsonStructure([
             'data' => [
                 'edition_id',
                 'nominations_start_at',
                 'nominations_end_at',
-                'categories' => [['id', 'name', 'description', 'placeholder', 'eligibility_criteria', 'action', 'entry_id', 'proposal', 'entries' => [['id', 'title']]]],
+                'categories' => [['id', 'name', 'description', 'placeholder', 'eligibility_criteria', 'proposed_entry_id', 'voted_entry_id', 'proposal', 'entries' => [['id', 'title', 'proposed_by_me']]]],
             ],
         ])
         ->assertJsonPath('data.categories.0.entries.0.id', $approved->id);
@@ -78,20 +79,21 @@ it('records a proposal as a pending entry carrying the proposer\'s vote', functi
     [, $category] = specialOpenEditionAndCategory();
     $member = specialActingMember();
 
-    postJson("/api/academy/special-awards/categories/{$category->id}/proposal", [
+    $response = postJson("/api/academy/special-awards/categories/{$category->id}/proposal", [
         'title' => 'Maria Tanase',
     ])
         ->assertStatus(200)
-        ->assertJsonPath('data.categories.0.action', 'proposed')
+        ->assertJsonPath('data.categories.0.voted_entry_id', null)
         ->assertJsonPath('data.categories.0.proposal.title', 'Maria Tanase')
         ->assertJsonPath('data.categories.0.proposal.status', 'pending')
         ->assertJsonCount(0, 'data.categories.0.entries');
 
     $entry = SpecialEntry::query()->sole();
+    $response->assertJsonPath('data.categories.0.proposed_entry_id', $entry->id);
 
     expect($entry->status)->toBe(SpecialEntryStatus::Pending)
         ->and($entry->proposed_by_member_id)->toBe($member->id)
-        ->and(SpecialVote::query()->forMember($member)->forEntry($entry)->count())->toBe(1);
+        ->and(SpecialVote::query()->forMember($member)->forEntry($entry)->viaProposal()->count())->toBe(1);
 });
 
 it('requires a title for a proposal', function (): void {
@@ -103,32 +105,63 @@ it('requires a title for a proposal', function (): void {
         ->assertJsonValidationErrors('title');
 });
 
-it('refuses a vote from a member who proposed in the category', function (): void {
+it('lets a member who proposed in the category also vote for another member\'s entry', function (): void {
     [, $category] = specialOpenEditionAndCategory();
     $other = specialApprovedEntry($category);
-    specialActingMember();
+    $member = specialActingMember();
     postJson("/api/academy/special-awards/categories/{$category->id}/proposal", ['title' => 'Mine'])->assertStatus(200);
 
     putJson("/api/academy/special-awards/categories/{$category->id}/vote", ['entry_id' => $other->id])
-        ->assertStatus(422)
-        ->assertJsonValidationErrors([
-            'category' => 'You have proposed an entry in this category, so you cannot vote in it.',
-        ]);
+        ->assertStatus(200)
+        ->assertJsonPath('data.categories.0.voted_entry_id', $other->id)
+        ->assertJsonPath('data.categories.0.proposal.title', 'Mine');
 
-    expect(SpecialVote::query()->forEntry($other)->count())->toBe(0);
+    expect(SpecialVote::query()->forMember($member)->count())->toBe(2);
 });
 
-it('refuses a proposal from a member who voted in the category', function (): void {
+it('lets a member who voted in the category also propose', function (): void {
     [, $category] = specialOpenEditionAndCategory();
     $entry = specialApprovedEntry($category);
-    specialActingMember();
+    $member = specialActingMember();
     putJson("/api/academy/special-awards/categories/{$category->id}/vote", ['entry_id' => $entry->id])->assertStatus(200);
 
     postJson("/api/academy/special-awards/categories/{$category->id}/proposal", ['title' => 'Something Else'])
+        ->assertStatus(200)
+        ->assertJsonPath('data.categories.0.voted_entry_id', $entry->id)
+        ->assertJsonPath('data.categories.0.proposal.title', 'Something Else');
+
+    expect(SpecialVote::query()->forMember($member)->count())->toBe(2);
+});
+
+it('refuses a second proposal in the same category', function (): void {
+    [, $category] = specialOpenEditionAndCategory();
+    specialActingMember();
+    postJson("/api/academy/special-awards/categories/{$category->id}/proposal", ['title' => 'Mine'])->assertStatus(200);
+
+    postJson("/api/academy/special-awards/categories/{$category->id}/proposal", ['title' => 'Another'])
         ->assertStatus(422)
-        ->assertJsonValidationErrors(['category' => 'You have already proposed or voted in this category.']);
+        ->assertJsonValidationErrors(['category' => 'You have already made a proposal in this category.']);
 
     expect(SpecialEntry::query()->count())->toBe(1);
+});
+
+it('refuses a vote for the member\'s own entry and marks it as theirs', function (): void {
+    [, $category] = specialOpenEditionAndCategory();
+    $member = specialActingMember();
+    $own = SpecialEntry::factory()->approved()->create([
+        'category_id' => $category->id,
+        'proposed_by_member_id' => $member->id,
+    ]);
+
+    putJson("/api/academy/special-awards/categories/{$category->id}/vote", ['entry_id' => $own->id])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['entry_id' => 'You cannot vote for your own proposal.']);
+
+    getJson('/api/academy/special-awards')
+        ->assertStatus(200)
+        ->assertJsonPath('data.categories.0.entries.0.proposed_by_me', true);
+
+    expect(SpecialVote::query()->count())->toBe(0);
 });
 
 it('lets a member propose in one category and vote in another', function (): void {
@@ -141,9 +174,9 @@ it('lets a member propose in one category and vote in another', function (): voi
 
     putJson("/api/academy/special-awards/categories/{$second->id}/vote", ['entry_id' => $entry->id])
         ->assertStatus(200)
-        ->assertJsonPath('data.categories.0.action', 'proposed')
-        ->assertJsonPath('data.categories.1.action', 'voted')
-        ->assertJsonPath('data.categories.1.entry_id', $entry->id);
+        ->assertJsonPath('data.categories.0.voted_entry_id', null)
+        ->assertJsonPath('data.categories.1.proposed_entry_id', null)
+        ->assertJsonPath('data.categories.1.voted_entry_id', $entry->id);
 });
 
 it('moves a member\'s vote when they choose another entry', function (): void {
@@ -155,7 +188,7 @@ it('moves a member\'s vote when they choose another entry', function (): void {
 
     putJson("/api/academy/special-awards/categories/{$category->id}/vote", ['entry_id' => $second->id])
         ->assertStatus(200)
-        ->assertJsonPath('data.categories.0.entry_id', $second->id);
+        ->assertJsonPath('data.categories.0.voted_entry_id', $second->id);
 
     expect(SpecialVote::query()->forMember($member)->pluck('special_entry_id')->all())->toBe([$second->id]);
 });
@@ -192,7 +225,7 @@ it('deletes a pending proposal when its proposer withdraws it', function (): voi
 
     deleteJson("/api/academy/special-awards/categories/{$category->id}/proposal")
         ->assertStatus(200)
-        ->assertJsonPath('data.categories.0.action', null)
+        ->assertJsonPath('data.categories.0.proposed_entry_id', null)
         ->assertJsonPath('data.categories.0.proposal', null);
 
     expect(SpecialEntry::query()->count())->toBe(0)
@@ -206,31 +239,38 @@ it('keeps an approved entry for the others when its proposer withdraws', functio
         'category_id' => $category->id,
         'proposed_by_member_id' => $member->id,
     ]);
-    SpecialVote::factory()->create(['special_entry_id' => $entry->id, 'member_id' => $member->id]);
+    SpecialVote::factory()->viaProposal()->create(['special_entry_id' => $entry->id, 'member_id' => $member->id]);
     SpecialVote::factory()->create(['special_entry_id' => $entry->id]);
 
     deleteJson("/api/academy/special-awards/categories/{$category->id}/proposal")
         ->assertStatus(200)
-        ->assertJsonPath('data.categories.0.action', null)
+        ->assertJsonPath('data.categories.0.proposed_entry_id', null)
         ->assertJsonPath('data.categories.0.entries.0.id', $entry->id);
 
     expect(SpecialVote::query()->forEntry($entry)->count())->toBe(1)
         ->and(SpecialVote::query()->forMember($member)->count())->toBe(0);
 });
 
-it('withdraws a vote, freeing the member to propose', function (): void {
+it('withdraws the proposal and the chosen vote of one category separately', function (): void {
     [, $category] = specialOpenEditionAndCategory();
-    $entry = specialApprovedEntry($category);
-    specialActingMember();
-    putJson("/api/academy/special-awards/categories/{$category->id}/vote", ['entry_id' => $entry->id])->assertStatus(200);
+    $other = specialApprovedEntry($category);
+    $member = specialActingMember();
+    postJson("/api/academy/special-awards/categories/{$category->id}/proposal", ['title' => 'Mine'])->assertStatus(200);
+    putJson("/api/academy/special-awards/categories/{$category->id}/vote", ['entry_id' => $other->id])->assertStatus(200);
 
     deleteJson("/api/academy/special-awards/categories/{$category->id}/vote")
         ->assertStatus(200)
-        ->assertJsonPath('data.categories.0.action', null);
+        ->assertJsonPath('data.categories.0.voted_entry_id', null)
+        ->assertJsonPath('data.categories.0.proposal.title', 'Mine');
 
-    postJson("/api/academy/special-awards/categories/{$category->id}/proposal", ['title' => 'Mine'])
+    expect(SpecialVote::query()->forMember($member)->viaProposal()->count())->toBe(1);
+
+    putJson("/api/academy/special-awards/categories/{$category->id}/vote", ['entry_id' => $other->id])->assertStatus(200);
+
+    deleteJson("/api/academy/special-awards/categories/{$category->id}/proposal")
         ->assertStatus(200)
-        ->assertJsonPath('data.categories.0.action', 'proposed');
+        ->assertJsonPath('data.categories.0.proposed_entry_id', null)
+        ->assertJsonPath('data.categories.0.voted_entry_id', $other->id);
 });
 
 it('does not withdraw the vote of a proposal through the vote route, nor a plain vote through the proposal route', function (): void {
@@ -305,12 +345,13 @@ it('requires member authentication', function (): void {
 
 it('answers a member in Romanian when asked to', function (): void {
     [, $category] = specialOpenEditionAndCategory();
-    $entry = specialApprovedEntry($category);
-    specialActingMember();
-    putJson("/api/academy/special-awards/categories/{$category->id}/vote", ['entry_id' => $entry->id])->assertStatus(200);
+    $own = SpecialEntry::factory()->approved()->create([
+        'category_id' => $category->id,
+        'proposed_by_member_id' => specialActingMember()->id,
+    ]);
 
     withHeaders(['Accept-Language' => 'ro'])
-        ->postJson("/api/academy/special-awards/categories/{$category->id}/proposal", ['title' => 'Mine'])
+        ->putJson("/api/academy/special-awards/categories/{$category->id}/vote", ['entry_id' => $own->id])
         ->assertStatus(422)
-        ->assertJsonValidationErrors(['category' => 'Ai propus sau ai votat deja la această categorie.']);
+        ->assertJsonValidationErrors(['entry_id' => 'Nu poți vota propria propunere.']);
 });

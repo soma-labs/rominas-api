@@ -15,8 +15,8 @@ use Rominas\SpecialAwards\Vote\Model\SpecialVote;
 
 /**
  * Builds what a member sees of an edition's special awards: each propose-or-vote category with the
- * approved entries they can vote for, what they did there (proposed, voted or nothing yet), and what
- * became of their own latest proposal. Appointed categories are never included, and neither are other
+ * approved entries they can vote for, the vote their proposal carries and the vote they chose (either,
+ * both or neither), and what became of their own latest proposal. Appointed categories are never included, and neither are other
  * members' pending proposals or any vote count.
  */
 class GetMemberSpecialAwardsAction
@@ -35,9 +35,10 @@ class GetMemberSpecialAwardsAction
         $votes = SpecialVote::query()
             ->forMember($member)
             ->whereIn('category_id', $categoryIds)
-            ->with('entry')
-            ->get()
-            ->keyBy('category_id');
+            ->get();
+
+        $proposalVotes = $votes->where('via_proposal', '=', true)->keyBy('category_id');
+        $chosenVotes = $votes->where('via_proposal', '=', false)->keyBy('category_id');
 
         // Latest first, so the first one met per category is the member's most recent proposal.
         $proposals = SpecialEntry::query()
@@ -60,12 +61,13 @@ class GetMemberSpecialAwardsAction
         foreach ($categories as $category) {
             $data[] = new MemberSpecialCategoryData(
                 category: $category,
-                vote: $votes->get($category->id),
+                proposalVote: $proposalVotes->get($category->id),
+                chosenVote: $chosenVotes->get($category->id),
                 proposal: $proposals->get($category->id)?->first(),
                 entries: $entries->get($category->id) ?? collect(),
             );
         }
 
-        return new MemberSpecialAwardsData($edition, $data);
+        return new MemberSpecialAwardsData($edition, $member, $data);
     }
 }

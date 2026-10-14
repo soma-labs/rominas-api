@@ -13,9 +13,10 @@ use Rominas\SpecialAwards\Entry\Enums\SpecialEntryStatus;
 use Rominas\SpecialAwards\Vote\Model\SpecialVote;
 
 /**
- * A member takes back the entry they proposed in a category, which frees them to propose or vote again.
- * While the entry is pending it disappears with their vote. Once approved it belongs to the pool other
- * members vote from, so it stays and only the proposer's own vote is removed.
+ * A member takes back the entry they proposed in a category, which frees them to propose again; their
+ * vote for another member's entry is untouched. While the entry is pending it disappears with their vote.
+ * Once approved it belongs to the pool other members vote from, so it stays and only the vote the
+ * proposal carried is removed.
  */
 class WithdrawSpecialEntryAction
 {
@@ -27,9 +28,9 @@ class WithdrawSpecialEntryAction
     {
         $this->resolveOpenCategory->execute($category);
 
-        $vote = SpecialVote::query()->forMember($member)->forCategory($category)->with('entry')->first();
+        $vote = SpecialVote::query()->forMember($member)->forCategory($category)->viaProposal()->with('entry')->first();
 
-        if ($vote === null || ! $vote->isOnOwnProposal()) {
+        if ($vote === null) {
             throw ValidationException::withMessages([
                 'category' => __('You have no proposal to withdraw in this category.'),
             ]);
