@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Validator;
 use Rominas\Delivery\Actions\DeliveryAction;
 use Rominas\Delivery\Exceptions\DeliveryFailedException;
+use Rominas\Delivery\Enums\EmailAudience;
 use Rominas\Delivery\Factories\AcademyInvitationEmailPayloadFactory;
 use Rominas\Notifications\Channels\DeliveryChannel;
 use Rominas\Notifications\Notifications\DailyStatistics;
@@ -132,6 +133,7 @@ class SendTestEmailCommand extends Command implements PromptsForMissingInput
                 $email,
                 AcademyInvitationEmailPayloadFactory::SUBJECT,
                 'emails.academy.invitation',
+                EmailAudience::Academy,
                 [
                     'name' => 'Ana Popescu',
                     'url' => rtrim((string) config('services.frontend.academy_url'), '/') . '/invitatie?token=' . self::TOKEN . '&email=' . rawurlencode($email),

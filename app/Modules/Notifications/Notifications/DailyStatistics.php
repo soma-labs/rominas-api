@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rominas\Notifications\Notifications;
 
+use Rominas\Delivery\Enums\EmailAudience;
 use Rominas\Notifications\DataTransferObjects\NotificationEmail;
 use Rominas\Notifications\Enums\NotificationType;
 
@@ -67,6 +68,7 @@ class DailyStatistics extends AdminNotification
         return new NotificationEmail(
             subject: $this->title(),
             view: 'emails.notifications.admin-daily-statistics',
+            audience: EmailAudience::Admin,
             viewData: [
                 'title' => $this->title(),
                 'day' => $this->day,

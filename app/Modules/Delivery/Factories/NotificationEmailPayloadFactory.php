@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Rominas\Delivery\Factories;
 
 use Illuminate\Support\Str;
+use Rominas\Delivery\Enums\EmailAudience;
 
 /**
  * Any notification e-mail (Notifications module): the notification supplies the subject and the Blade
- * view with its data, so one factory serves every notification type. The tag is the view's last segment.
+ * view with its data, so one factory serves every notification type. The audience picks the sender name; the
+ * tag is the view's last segment.
  */
 class NotificationEmailPayloadFactory extends MailPayloadFactory
 {
@@ -19,8 +21,14 @@ class NotificationEmailPayloadFactory extends MailPayloadFactory
         private readonly string $email,
         private readonly string $subject,
         private readonly string $view,
+        private readonly EmailAudience $audience,
         private readonly array $viewData = [],
     ) {}
+
+    protected function senderName(): string
+    {
+        return $this->audience->senderName();
+    }
 
     protected function recipients(): array
     {

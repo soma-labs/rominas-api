@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rominas\Notifications\Notifications;
 
+use Rominas\Delivery\Enums\EmailAudience;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
@@ -59,6 +60,7 @@ abstract class AdminNotification extends Notification implements DeliverableByEm
         return new NotificationEmail(
             subject: $this->title(),
             view: 'emails.notifications.admin',
+            audience: EmailAudience::Admin,
             viewData: [
                 'title' => $this->title(),
                 'body' => $this->body(),

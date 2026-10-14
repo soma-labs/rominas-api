@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rominas\Notifications\Notifications;
 
+use Rominas\Delivery\Enums\EmailAudience;
 use Rominas\Notifications\DataTransferObjects\NotificationEmail;
 use Rominas\Notifications\Enums\NotificationType;
 
@@ -41,6 +42,7 @@ class NominationsOpened extends MemberNotification
         return new NotificationEmail(
             subject: "Nominalizările {$this->editionName} sunt deschise!",
             view: 'emails.notifications.academy.nominations-opened',
+            audience: EmailAudience::Academy,
             viewData: [
                 'editionName' => $this->editionName,
                 'deadline' => $this->deadline,

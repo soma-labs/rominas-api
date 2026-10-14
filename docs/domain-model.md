@@ -824,7 +824,10 @@ table through the `Notifiable` trait on `User` and `Member`. See [notifications.
   HTTP API, `BREVO_API_KEY`); any other value stops the app at boot. Each e-mail's content (recipients,
   subject, link, rendered view, a tag) lives in one factory under `Factories/`, which builds a plain
   `MailPayload`; the transport only picks the service that sends it, so both transports send the same
-  e-mail. Brevo shows the tag in its logs; SMTP ignores it. A request Brevo refuses fails with its HTTP status and
+  e-mail. Every e-mail is sent from `MAIL_FROM_ADDRESS`; the sender name follows the audience
+  (`EmailAudience`, `delivery.sender_names`): admins get `MAIL_FROM_NAME_ADMIN` (*Platforma ROMIAS*), academy
+  members `MAIL_FROM_NAME_ACADEMY` (*Academia ROMIAS*), public voters `MAIL_FROM_NAME_VOTING` (*ROMIAS*).
+  A notification names its audience in its `NotificationEmail`. Brevo shows the tag in its logs; SMTP ignores it. A request Brevo refuses fails with its HTTP status and
   message (e.g. `Brevo API request failed (401): Key not found`). `romias:test-mail` sends any template
   through the transport in use. A failed send is logged in its own daily
   file (`storage/logs/delivery/delivery-<date>.log`, the `delivery` log channel) with its params; a link

@@ -64,7 +64,7 @@ function testMailRecordDeliveries(): TestMailRecordingDeliveryService
     return $recorder;
 }
 
-it('sends the chosen template to the given address', function (string $template, string $subject): void {
+it('sends the chosen template to the given address from its audience\'s sender name', function (string $template, string $subject, string $senderName): void {
     travelTo('2026-10-14 09:00:00');
     $sent = testMailRecordDeliveries();
 
@@ -72,20 +72,31 @@ it('sends the chosen template to the given address', function (string $template,
 
     expect($sent->payloads)->toHaveCount(1)
         ->and($sent->payloads[0]->recipients)->toBe(['tester@example.test'])
-        ->and($sent->payloads[0]->subject)->toBe($subject);
+        ->and($sent->payloads[0]->subject)->toBe($subject)
+        ->and($sent->payloads[0]->sender->email)->toBe(config('mail.from.address'))
+        ->and($sent->payloads[0]->sender->name)->toBe($senderName);
 })->with([
-    ['academy-invitation', 'Invitație în Academia The Romanian Music Industry Awards'],
-    ['academy-invitation-proposed', 'Invitație în Academia The Romanian Music Industry Awards'],
-    ['academy-login', 'Link de autentificare în Academia The Romanian Music Industry Awards'],
-    ['voting-link', 'Link de vot The Romanian Music Industry Awards'],
-    ['nominations-opened', 'Nominalizările Romias 2026 sunt deschise!'],
-    ['nomination-reminder-3', 'Mai sunt 3 zile pentru nominalizările Romias 2026!'],
-    ['nomination-reminder-1', 'Mâine se încheie nominalizările Romias 2026!'],
-    ['admin-member-proposal', 'New member proposal: Ana Popescu'],
-    ['admin-member-joined', 'Ana Popescu joined the academy'],
-    ['admin-fraud-alerts', '3 new fraud alerts for Romias 2026'],
-    ['admin-daily-statistics', 'Daily statistics for Romias 2026: 13 Oct 2026'],
+    ['academy-invitation', 'Invitație în Academia The Romanian Music Industry Awards', 'Academia ROMIAS'],
+    ['academy-invitation-proposed', 'Invitație în Academia The Romanian Music Industry Awards', 'Academia ROMIAS'],
+    ['academy-login', 'Link de autentificare în Academia The Romanian Music Industry Awards', 'Academia ROMIAS'],
+    ['voting-link', 'Link de vot The Romanian Music Industry Awards', 'ROMIAS'],
+    ['nominations-opened', 'Nominalizările Romias 2026 sunt deschise!', 'Academia ROMIAS'],
+    ['nomination-reminder-3', 'Mai sunt 3 zile pentru nominalizările Romias 2026!', 'Academia ROMIAS'],
+    ['nomination-reminder-1', 'Mâine se încheie nominalizările Romias 2026!', 'Academia ROMIAS'],
+    ['admin-member-proposal', 'New member proposal: Ana Popescu', 'Platforma ROMIAS'],
+    ['admin-member-joined', 'Ana Popescu joined the academy', 'Platforma ROMIAS'],
+    ['admin-fraud-alerts', '3 new fraud alerts for Romias 2026', 'Platforma ROMIAS'],
+    ['admin-daily-statistics', 'Daily statistics for Romias 2026: 13 Oct 2026', 'Platforma ROMIAS'],
 ]);
+
+it('uses the sender name configured for the audience', function (): void {
+    config(['delivery.sender_names.voting' => 'Votul ROMIAS']);
+    $sent = testMailRecordDeliveries();
+
+    artisan('romias:test-mail', ['email' => 'tester@example.test', 'template' => 'voting-link'])->assertSuccessful();
+
+    expect($sent->payloads[0]->sender->name)->toBe('Votul ROMIAS');
+});
 
 it('names a sample proposer only in the proposal variant of the invitation', function (): void {
     $sent = testMailRecordDeliveries();

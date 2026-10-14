@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Rominas\Delivery\Factories;
 
 use Rominas\Academy\Member\Model\Member;
+use Rominas\Delivery\Enums\EmailAudience;
 use SensitiveParameter;
 
 /**
@@ -21,6 +22,11 @@ class AcademyMagicLinkEmailPayloadFactory extends MailPayloadFactory
         #[SensitiveParameter]
         private readonly string $token,
     ) {}
+
+    protected function senderName(): string
+    {
+        return EmailAudience::Academy->senderName();
+    }
 
     protected function recipients(): array
     {

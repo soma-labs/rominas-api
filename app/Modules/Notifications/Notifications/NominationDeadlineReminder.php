@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rominas\Notifications\Notifications;
 
+use Rominas\Delivery\Enums\EmailAudience;
 use Rominas\Notifications\DataTransferObjects\NotificationEmail;
 use Rominas\Notifications\Enums\NotificationType;
 
@@ -47,6 +48,7 @@ class NominationDeadlineReminder extends MemberNotification
                 ? "Mâine se încheie nominalizările {$this->editionName}!"
                 : "Mai sunt {$this->daysBefore} zile pentru nominalizările {$this->editionName}!",
             view: 'emails.notifications.academy.nomination-reminder',
+            audience: EmailAudience::Academy,
             viewData: [
                 'editionName' => $this->editionName,
                 'daysBefore' => $this->daysBefore,

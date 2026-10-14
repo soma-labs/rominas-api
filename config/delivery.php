@@ -40,6 +40,16 @@ return [
     'transports' => $transports,
 
     /*
+    | The sender name per audience (Rominas\Delivery\Enums\EmailAudience). Every e-mail is sent from
+    | MAIL_FROM_ADDRESS; an e-mail without an audience uses MAIL_FROM_NAME.
+    */
+    'sender_names' => [
+        'admin' => env('MAIL_FROM_NAME_ADMIN', 'Platforma ROMIAS'),
+        'academy' => env('MAIL_FROM_NAME_ACADEMY', 'Academia ROMIAS'),
+        'voting' => env('MAIL_FROM_NAME_VOTING', 'ROMIAS'),
+    ],
+
+    /*
     |--------------------------------------------------------------------------
     | Delivery methods
     |--------------------------------------------------------------------------

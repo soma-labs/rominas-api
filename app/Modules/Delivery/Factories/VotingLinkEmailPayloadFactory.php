@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rominas\Delivery\Factories;
 
+use Rominas\Delivery\Enums\EmailAudience;
 use SensitiveParameter;
 
 /**
@@ -20,6 +21,11 @@ class VotingLinkEmailPayloadFactory extends MailPayloadFactory
         #[SensitiveParameter]
         private readonly string $token,
     ) {}
+
+    protected function senderName(): string
+    {
+        return EmailAudience::Voting->senderName();
+    }
 
     protected function recipients(): array
     {

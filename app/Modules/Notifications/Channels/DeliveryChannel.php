@@ -40,6 +40,7 @@ class DeliveryChannel
             $address,
             $email->subject,
             $email->view,
+            $email->audience,
             $email->viewData,
         );
     }
