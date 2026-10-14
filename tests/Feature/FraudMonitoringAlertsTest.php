@@ -254,13 +254,13 @@ it('does not re-raise a dismissed signature', function (): void {
         ->and(FraudAlert::query()->firstOrFail()->status)->toBe(FraudAlertStatus::Dismissed);
 });
 
-it('runs via the rominas:detect-fraud command', function (): void {
+it('runs via the romias:detect-fraud command', function (): void {
     config(['fraud.shared_ip.threshold' => 3]);
     $edition = Edition::factory()->status(EditionStatus::VotingOpen)->create();
     $ip = hash('sha256', '203.0.113.9');
     collect(range(1, 3))->each(fn(): Ballot => alertsSeedBallot($edition, $ip));
 
-    test()->artisan('rominas:detect-fraud')->assertExitCode(0);
+    test()->artisan('romias:detect-fraud')->assertExitCode(0);
 
     expect(FraudAlert::query()->where('edition_id', $edition->id)->count())->toBe(1);
 });

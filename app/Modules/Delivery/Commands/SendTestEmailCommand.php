@@ -38,7 +38,7 @@ class SendTestEmailCommand extends Command implements PromptsForMissingInput
 
     private const string EDITION_NAME = 'Romias 2026';
 
-    protected $signature = 'rominas:test-mail
+    protected $signature = 'romias:test-mail
         {email : The address that receives the e-mail}
         {template : The template to send, or "all"}';
 

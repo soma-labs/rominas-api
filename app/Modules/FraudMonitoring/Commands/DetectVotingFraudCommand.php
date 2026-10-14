@@ -16,7 +16,7 @@ use Rominas\FraudMonitoring\Actions\DetectVotingFraudAction;
  */
 class DetectVotingFraudCommand extends Command
 {
-    protected $signature = 'rominas:detect-fraud {--edition= : Restrict detection to a single edition id}';
+    protected $signature = 'romias:detect-fraud {--edition= : Restrict detection to a single edition id}';
 
     protected $description = 'Scan submitted public ballots for suspicious activity and record fraud alerts';
 

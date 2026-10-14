@@ -68,7 +68,7 @@ it('sends the chosen template to the given address', function (string $template,
     travelTo('2026-10-14 09:00:00');
     $sent = testMailRecordDeliveries();
 
-    artisan('rominas:test-mail', ['email' => 'tester@example.test', 'template' => $template])->assertSuccessful();
+    artisan('romias:test-mail', ['email' => 'tester@example.test', 'template' => $template])->assertSuccessful();
 
     expect($sent->payloads)->toHaveCount(1)
         ->and($sent->payloads[0]->recipients)->toBe(['tester@example.test'])
@@ -90,8 +90,8 @@ it('sends the chosen template to the given address', function (string $template,
 it('names a sample proposer only in the proposal variant of the invitation', function (): void {
     $sent = testMailRecordDeliveries();
 
-    artisan('rominas:test-mail', ['email' => 'tester@example.test', 'template' => 'academy-invitation'])->assertSuccessful();
-    artisan('rominas:test-mail', ['email' => 'tester@example.test', 'template' => 'academy-invitation-proposed'])->assertSuccessful();
+    artisan('romias:test-mail', ['email' => 'tester@example.test', 'template' => 'academy-invitation'])->assertSuccessful();
+    artisan('romias:test-mail', ['email' => 'tester@example.test', 'template' => 'academy-invitation-proposed'])->assertSuccessful();
 
     expect($sent->payloads[0]->body)->not->toContain('de către')
         ->and($sent->payloads[1]->body)->toContain('de către Ion Ionescu');
@@ -100,7 +100,7 @@ it('names a sample proposer only in the proposal variant of the invitation', fun
 it('sends every template when asked for all of them', function (): void {
     $sent = testMailRecordDeliveries();
 
-    artisan('rominas:test-mail', ['email' => 'tester@example.test', 'template' => 'all'])->assertSuccessful();
+    artisan('romias:test-mail', ['email' => 'tester@example.test', 'template' => 'all'])->assertSuccessful();
 
     expect($sent->payloads)->toHaveCount(11);
 });
@@ -108,7 +108,7 @@ it('sends every template when asked for all of them', function (): void {
 it('refuses an invalid address or an unknown template without sending', function (string $email, string $template): void {
     $sent = testMailRecordDeliveries();
 
-    artisan('rominas:test-mail', ['email' => $email, 'template' => $template])->assertFailed();
+    artisan('romias:test-mail', ['email' => $email, 'template' => $template])->assertFailed();
 
     expect($sent->payloads)->toBe([]);
 })->with([
@@ -119,7 +119,7 @@ it('refuses an invalid address or an unknown template without sending', function
 it('asks for the address and the template when they are not given', function (): void {
     $sent = testMailRecordDeliveries();
 
-    artisan('rominas:test-mail')
+    artisan('romias:test-mail')
         ->expectsQuestion('Which address should receive the e-mail?', 'tester@example.test')
         ->expectsQuestion('Which template?', 'voting-link')
         ->assertSuccessful();
@@ -133,7 +133,7 @@ it('reports the mail server\'s reply when sending fails', function (): void {
     Log::shouldReceive('error');
     testMailDeliverThrough(TestMailRefusingDeliveryService::class);
 
-    artisan('rominas:test-mail', ['email' => 'tester@example.test', 'template' => 'voting-link'])
+    artisan('romias:test-mail', ['email' => 'tester@example.test', 'template' => 'voting-link'])
         ->expectsOutputToContain('535 5.7.8 Authentication failed')
         ->assertFailed();
 });

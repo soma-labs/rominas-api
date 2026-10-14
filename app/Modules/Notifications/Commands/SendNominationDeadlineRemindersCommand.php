@@ -13,7 +13,7 @@ use Rominas\Notifications\Actions\SendNominationDeadlineRemindersAction;
  */
 class SendNominationDeadlineRemindersCommand extends Command
 {
-    protected $signature = 'rominas:nomination-reminders';
+    protected $signature = 'romias:nomination-reminders';
 
     protected $description = 'Remind academy members without submitted nominations of the nomination deadline';
 

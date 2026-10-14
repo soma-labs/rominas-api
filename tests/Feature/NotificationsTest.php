@@ -255,7 +255,7 @@ describe('daily statistics', function (): void {
         Ballot::factory()->submitted()->create(['edition_id' => $edition->id, 'submitted_at' => '2026-10-09 10:00:00']);
         Notification::fake();
 
-        artisan('rominas:daily-statistics')->assertSuccessful();
+        artisan('romias:daily-statistics')->assertSuccessful();
 
         Notification::assertSentTo(
             $reporter,
@@ -278,7 +278,7 @@ describe('daily statistics', function (): void {
         Edition::factory()->status(EditionStatus::Draft)->create();
         Notification::fake();
 
-        artisan('rominas:daily-statistics')->assertSuccessful();
+        artisan('romias:daily-statistics')->assertSuccessful();
 
         Notification::assertNothingSent();
     });
@@ -300,7 +300,7 @@ describe('nomination deadline reminders', function (): void {
         $suspended = Member::factory()->suspended()->create();
         Notification::fake();
 
-        artisan('rominas:nomination-reminders')->assertSuccessful();
+        artisan('romias:nomination-reminders')->assertSuccessful();
 
         Notification::assertSentTo(
             $notStarted,
@@ -323,7 +323,7 @@ describe('nomination deadline reminders', function (): void {
         Member::factory()->active()->create();
         Notification::fake();
 
-        artisan('rominas:nomination-reminders')->assertSuccessful();
+        artisan('romias:nomination-reminders')->assertSuccessful();
 
         Notification::assertNothingSent();
     });
@@ -337,8 +337,8 @@ describe('nomination deadline reminders', function (): void {
         $member = Member::factory()->active()->create(['email' => 'ana@example.test']);
         $sent = notificationsRecordDeliveries();
 
-        artisan('rominas:nomination-reminders')->assertSuccessful();
-        artisan('rominas:nomination-reminders')->assertSuccessful();
+        artisan('romias:nomination-reminders')->assertSuccessful();
+        artisan('romias:nomination-reminders')->assertSuccessful();
 
         expect($sent->payloads)->toHaveCount(1)
             ->and($sent->payloads[0]->recipients)->toBe(['ana@example.test'])

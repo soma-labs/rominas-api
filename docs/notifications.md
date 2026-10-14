@@ -14,7 +14,7 @@ carry. It adds no model of its own.
 | --- | --- | --- |
 | `member_proposal_needs_review` | a member proposes a future member (`MemberProposalCreated`) | users with `memberProposals` |
 | `member_joined` | an invited member signs in for the first time (`MemberActivated`) | users with `members` |
-| `new_fraud_alerts` | a `rominas:detect-fraud` run records at least one **new** alert (`FraudAlertsDetected`) | users with `fraudMonitoring` |
+| `new_fraud_alerts` | a `romias:detect-fraud` run records at least one **new** alert (`FraudAlertsDetected`) | users with `fraudMonitoring` |
 | `daily_statistics` | every day at 08:00, while an edition is in progress | users with `reporting` |
 | `nominations_opened` | an edition moves to `nominations_open` (`EditionTransitioned`) | members `invited` or `active` |
 | `nomination_deadline_reminder` | every day at 10:00, on the reminder days (§4) | members `invited` or `active` who have not submitted |
@@ -62,12 +62,12 @@ The Blade views are in `resources/views/emails/notifications/`: `admin` (any adm
 Both are scheduled in `routes/console.php` and follow the **Romanian day**, not UTC
 (`config/notifications.php`: `timezone`, the two send times, `nomination_reminder_days`).
 
-**`rominas:daily-statistics`** (08:00). Sends only when an edition is in progress
+**`romias:daily-statistics`** (08:00). Sends only when an edition is in progress
 (`nominations_open` up to `committee_review`). The numbers are the Edition Summary report
 ([reporting.md](reporting.md)) run twice: over the previous Romanian calendar day and over the whole
 edition. "Academy nominations in draft" is a count at the moment of sending and has no per-day value.
 
-**`rominas:nomination-reminders`** (10:00). Sends only while nominations are open, and only when
+**`romias:nomination-reminders`** (10:00). Sends only while nominations are open, and only when
 the number of calendar days left until `nominations_end_at` is one of `nomination_reminder_days`
 (default: 3 and 1). It goes to members who have no **submitted** nomination for the edition; a saved
 draft still gets the reminder. A member who already has the reminder for that day count is skipped, so
@@ -75,7 +75,7 @@ running the command twice sends nothing new, once the queue has processed the fi
 
 Both commands can be run by hand.
 
-**Checking an e-mail by hand.** `rominas:test-mail {email} {template}` sends one e-mail template, or
+**Checking an e-mail by hand.** `romias:test-mail {email} {template}` sends one e-mail template, or
 `all` of them, with sample data to the given address (it asks for whichever is left out). It covers every
 member, voter and admin e-mail, including the invitation with and without a proposer. It sends at once,
 without the queue, writes nothing to the database, and prints the mail server's reply when sending

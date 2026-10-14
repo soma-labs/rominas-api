@@ -14,7 +14,7 @@ the application layer; Cloudflare custom rules are the network layer and are con
 
 ```mermaid
 flowchart LR
-    B[(Submitted ballots)] --> D[rominas:detect-fraud<br/>hourly]
+    B[(Submitted ballots)] --> D[romias:detect-fraud<br/>hourly]
     D --> A[FraudAlert<br/>pending]
     A -->|monitor reviews| R{decision}
     R -->|false positive| X[dismissed]
@@ -86,7 +86,7 @@ Key properties:
 
 ## 4. Automatic detection
 
-The **`rominas:detect-fraud`** command is scheduled **hourly** in `routes/console.php`. It only runs if the server's
+The **`romias:detect-fraud`** command is scheduled **hourly** in `routes/console.php`. It only runs if the server's
 cron calls `php artisan schedule:run`. By default it scans every edition in `voting_open`, `voting_closed`
 or `committee_review`; `--edition=<id>` restricts it to one edition. It can also be run by hand.
 
