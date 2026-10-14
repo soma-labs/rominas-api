@@ -4,60 +4,12 @@ declare(strict_types=1);
 
 namespace Rominas\Delivery\SMTP;
 
-use Illuminate\Support\Str;
-use Rominas\Academy\MemberProposal\Model\MemberProposal;
-use Rominas\Delivery\DeliveryPayloadInterface;
-use Rominas\Delivery\EmailContact;
-use Rominas\Delivery\PayloadFactoryInterface;
-use SensitiveParameter;
+use Rominas\Delivery\Factories\AcademyInvitationEmailPayloadFactory;
 
 /**
- * Renders the academy-member invitation email. The link carries the raw magic-link token + email to
- * the academy SPA's onboarding screen, which verifies them and activates the member on first login.
- * A member who came from an approved proposal is told who proposed them.
+ * The academy invitation e-mail sent over SMTP. The content lives in {@see AcademyInvitationEmailPayloadFactory}.
  */
-class SmtpAcademyInvitationEmailPayloadFactory implements PayloadFactoryInterface
+class SmtpAcademyInvitationEmailPayloadFactory extends AcademyInvitationEmailPayloadFactory
 {
-    public const string SUBJECT = 'Invitație în Academia The Romanian Music Industry Awards';
-
-    public function __construct(
-        private readonly string $email,
-        #[SensitiveParameter]
-        private readonly string $token,
-    ) {}
-
-    public function create(): DeliveryPayloadInterface
-    {
-        $base = config('services.frontend.academy_url');
-
-        $url = rtrim((string) $base, '/')
-            . '/invitatie?token=' . $this->token
-            . '&email=' . rawurlencode($this->email);
-
-        $body = view('emails.academy.invitation', [
-            'name' => Str::before($this->email, '@'),
-            'url' => $url,
-            'proposerName' => $this->proposerName(),
-        ])->render();
-
-        return new SmtpMailPayload(
-            sender: new EmailContact(
-                email: config('mail.from.address'),
-                name: config('mail.from.name'),
-            ),
-            recipients: [$this->email],
-            subject: self::SUBJECT,
-            body: $body,
-        );
-    }
-
-    private function proposerName(): ?string
-    {
-        return MemberProposal::query()
-            ->approvedForMemberEmail($this->email)
-            ->with('proposedBy')
-            ->first()
-            ?->proposedBy
-            ?->name;
-    }
+    use BuildsSmtpMailPayload;
 }

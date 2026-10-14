@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Validator;
 use Rominas\Delivery\Actions\DeliveryAction;
 use Rominas\Delivery\Exceptions\DeliveryFailedException;
-use Rominas\Delivery\SMTP\SmtpAcademyInvitationEmailPayloadFactory;
+use Rominas\Delivery\Factories\AcademyInvitationEmailPayloadFactory;
 use Rominas\Notifications\Channels\DeliveryChannel;
 use Rominas\Notifications\Notifications\DailyStatistics;
 use Rominas\Notifications\Notifications\MemberJoined;
@@ -130,7 +130,7 @@ class SendTestEmailCommand extends Command implements PromptsForMissingInput
                 'notification-email',
                 ['email'],
                 $email,
-                SmtpAcademyInvitationEmailPayloadFactory::SUBJECT,
+                AcademyInvitationEmailPayloadFactory::SUBJECT,
                 'emails.academy.invitation',
                 [
                     'name' => 'ana.popescu',

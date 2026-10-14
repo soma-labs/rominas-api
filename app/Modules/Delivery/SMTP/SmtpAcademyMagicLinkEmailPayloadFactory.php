@@ -4,45 +4,12 @@ declare(strict_types=1);
 
 namespace Rominas\Delivery\SMTP;
 
-use Illuminate\Support\Str;
-use Rominas\Delivery\DeliveryPayloadInterface;
-use Rominas\Delivery\EmailContact;
-use Rominas\Delivery\PayloadFactoryInterface;
-use SensitiveParameter;
+use Rominas\Delivery\Factories\AcademyMagicLinkEmailPayloadFactory;
 
 /**
- * Renders the returning-login magic-link email for an existing academy member. The link carries the
- * raw magic-link token + email to the academy SPA's login screen, which verifies them for a token.
+ * The academy login link e-mail sent over SMTP. The content lives in {@see AcademyMagicLinkEmailPayloadFactory}.
  */
-class SmtpAcademyMagicLinkEmailPayloadFactory implements PayloadFactoryInterface
+class SmtpAcademyMagicLinkEmailPayloadFactory extends AcademyMagicLinkEmailPayloadFactory
 {
-    public function __construct(
-        private readonly string $email,
-        #[SensitiveParameter]
-        private readonly string $token,
-    ) {}
-
-    public function create(): DeliveryPayloadInterface
-    {
-        $base = config('services.frontend.academy_url');
-
-        $url = rtrim((string) $base, '/')
-            . '/autentificare?token=' . $this->token
-            . '&email=' . rawurlencode($this->email);
-
-        $body = view('emails.academy.magic-link', [
-            'name' => Str::before($this->email, '@'),
-            'url' => $url,
-        ])->render();
-
-        return new SmtpMailPayload(
-            sender: new EmailContact(
-                email: config('mail.from.address'),
-                name: config('mail.from.name'),
-            ),
-            recipients: [$this->email],
-            subject: 'Link de autentificare în Academia The Romanian Music Industry Awards',
-            body: $body,
-        );
-    }
+    use BuildsSmtpMailPayload;
 }
