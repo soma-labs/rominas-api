@@ -49,7 +49,8 @@ roster update (`PATCH /api/admin/members/{member}`), which is how a member is su
 | `active` | The member's first successful magic-link verify (also stamps `email_verified_at`, `activated_at`) | Yes |
 | `suspended` | An admin sets it via the roster update | **No** — verify returns 422 |
 
-Admins manage the roster under `/api/admin/members` (the `members` permission, held by `admin`).
+Admins manage the roster under `/api/admin/members` (the `members` permission, held by `admin`); the list
+shows the newest members first unless `orderBy` / `orderDir` say otherwise.
 A member has three optional contact details — `position`, `company`, `phone`. Only these admin
 endpoints return them (`AdminMemberResource`); the member-facing `/api/academy/me` does not.
 

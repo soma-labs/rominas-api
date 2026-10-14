@@ -41,8 +41,8 @@ class MembersController
                 ->visibleToUser($user)
                 ->search($request->query('search'))
                 ->orderBy(
-                    $request->query('orderBy', 'name'),
-                    $request->query('orderDir', 'asc'),
+                    $request->query('orderBy', 'id'),
+                    $request->query('orderDir', 'desc'),
                 )
                 ->paginate($request->query('perPage', MemberQueryBuilder::PER_PAGE)),
         );

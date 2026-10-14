@@ -76,6 +76,17 @@ it('lets an admin list members', function (): void {
         ->assertJsonCount(3, 'data');
 });
 
+it('lists the newest members first by default', function (): void {
+    actingAsSuperAdmin();
+    $older = Member::factory()->create(['name' => 'Ana']);
+    $newer = Member::factory()->create(['name' => 'Zoe']);
+
+    getJson('/api/admin/members')
+        ->assertStatus(200)
+        ->assertJsonPath('data.0.id', $newer->id)
+        ->assertJsonPath('data.1.id', $older->id);
+});
+
 it('lets an admin update a member', function (): void {
     actingAsSuperAdmin();
     $member = Member::factory()->create(['name' => 'Old Name']);
