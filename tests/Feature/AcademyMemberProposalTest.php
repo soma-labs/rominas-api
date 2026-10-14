@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Bus;
 use Laravel\Sanctum\Sanctum;
 use Rominas\Academy\Member\Enums\MemberStatus;
 use Rominas\Academy\Member\Model\Member;
 use Rominas\Academy\MemberProposal\Enums\MemberProposalStatus;
 use Rominas\Academy\MemberProposal\Model\MemberProposal;
+use Rominas\Auth\MagicLink\Jobs\SendMagicLinkJob;
 use Rominas\Users\Model\User;
 
 use function Pest\Laravel\deleteJson;
@@ -121,8 +123,9 @@ it('lets an admin list proposals', function (): void {
         ->assertJsonCount(3, 'data');
 });
 
-it('creates a member awaiting invitation when an admin approves a proposal', function (): void {
+it('creates an invited member and sends the invitation when an admin approves a proposal', function (): void {
     actingAsSuperAdmin();
+    Bus::fake();
     $proposal = MemberProposal::factory()->create([
         'name' => 'Approved Person',
         'email' => 'approved@example.test',
@@ -137,7 +140,8 @@ it('creates a member awaiting invitation when an admin approves a proposal', fun
 
     $member = Member::query()->where('email', 'approved@example.test')->first();
     expect($member)->not->toBeNull();
-    expect($member->status)->toBe(MemberStatus::AwaitingInvitation);
+    expect($member->status)->toBe(MemberStatus::Invited);
+    expect($member->invited_at)->not->toBeNull();
     expect($member->position)->toBe('Producer');
     expect($member->company)->toBe('Studio Nord');
     expect($member->phone)->toBe('+40 720 000 000');
@@ -145,13 +149,18 @@ it('creates a member awaiting invitation when an admin approves a proposal', fun
     $proposal->refresh();
     expect($proposal->status)->toBe(MemberProposalStatus::Approved);
     expect($proposal->member_id)->toBe($member->id);
+
+    Bus::assertDispatchedTimes(SendMagicLinkJob::class, 1);
 });
 
 it('cannot approve a proposal that is not pending', function (): void {
     actingAsSuperAdmin();
+    Bus::fake();
     $proposal = MemberProposal::factory()->rejected()->create();
 
     postJson("/api/admin/member-proposals/{$proposal->id}/approve")->assertStatus(422);
+
+    Bus::assertNotDispatched(SendMagicLinkJob::class);
 });
 
 it('rejects a proposal without creating a member', function (): void {

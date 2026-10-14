@@ -10,15 +10,14 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Rominas\Academy\Actions\SendAcademyInvitationsAction;
 use Rominas\Academy\Member\Actions\CreateMemberAction;
 use Rominas\Academy\Member\Actions\DeleteMemberAction;
+use Rominas\Academy\Member\Actions\InviteMemberAction;
 use Rominas\Academy\Member\Actions\UpdateMemberAction;
-use Rominas\Academy\Member\Enums\MemberStatus;
 use Rominas\Academy\Member\Factories\MemberDataFactory;
 use Rominas\Academy\Member\Model\Member;
 use Rominas\Academy\Member\QueryBuilders\MemberQueryBuilder;
 use Rominas\Academy\Member\Requests\CreateMemberRequest;
 use Rominas\Academy\Member\Requests\UpdateMemberRequest;
 use Rominas\Academy\Member\Resources\AdminMemberResource;
-use Rominas\Auth\MagicLink\Jobs\SendMagicLinkJob;
 use Rominas\Users\Model\User;
 
 use function response;
@@ -75,16 +74,9 @@ class MembersController
      * (Re)send a magic-link invitation to a single member. A member still awaiting their first
      * invitation moves to `Invited`; a re-send leaves an invited/active/suspended member's status alone.
      */
-    public function invite(Member $member): JsonResponse
+    public function invite(Member $member, InviteMemberAction $action): JsonResponse
     {
-        SendMagicLinkJob::dispatch('member', $member->email, 'academy-invitation-email');
-
-        $member->forceFill([
-            'status' => $member->status === MemberStatus::AwaitingInvitation
-                ? MemberStatus::Invited
-                : $member->status,
-            'invited_at' => now(),
-        ])->save();
+        $action->execute($member);
 
         return response()->json(['success' => true]);
     }

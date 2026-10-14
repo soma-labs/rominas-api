@@ -325,7 +325,7 @@ it can be tuned in isolation against example pairs without affecting anything el
 Academy-member accounts, their passwordless auth, and their **ranked nominations**. A **Member** is a
 participant account on its own `member` Sanctum guard (never the admin `web` guard); members log in
 via magic link. Admins manage the roster and send invitations manually (independent of the edition
-lifecycle). Members then rank nominees per category. Member proposals are handled here too;
+lifecycle); a member created from an approved proposal is invited automatically. Members then rank nominees per category. Member proposals are handled here too;
 the per-category voting **shortlist** — generated on demand by admins once nominations close — is a
 sibling submodule ([Shortlist](#shortlist)). How it all works end to end: [academy.md](academy.md).
 
@@ -357,7 +357,7 @@ erDiagram
 Authenticatable (`HasApiTokens`, `Notifiable`); **passwordless** (no password column). `#[UsePolicy(MemberPolicy)]`
 gates admin-side CRUD on the `members` permission. `MemberQueryBuilder` adds search/sort +
 `filterByStatus()`. A member starts `awaiting_invitation`, becomes `invited` when an admin sends the
-invitation, and `active` on first magic-link verify; `suspended` members are barred from logging in. Full auth story in [access-control.md](access-control.md).
+invitation (or at once, when created from an approved proposal), and `active` on first magic-link verify; `suspended` members are barred from logging in. Full auth story in [access-control.md](access-control.md).
 
 **Nomination** — `app/Modules/Academy/Nomination/Model/Nomination.php` — a member's ballot for one
 edition (one row per member+edition).
@@ -401,15 +401,15 @@ proposal, made by a member, to add a future academy member. Not edition-scoped (
 | `name`, `email` | the proposed person (required) |
 | `position`, `company`, `phone` | nullable — the proposed person's contact/identity details (*functie* / *firma* / *nr. telefon*) |
 | `status` | `MemberProposalStatus` enum — `pending` \| `approved` \| `rejected` |
-| `member_id` | nullable FK → Member — the `awaiting_invitation` Member created on approval |
+| `member_id` | nullable FK → Member — the Member created (and invited) on approval |
 | `reviewed_by_user_id` | nullable FK → User — the admin who reviewed |
 | `reviewed_at`, `review_note` | nullable — review metadata |
 
 Members submit/list/withdraw their own proposals (guard `member`, anytime), subject to a **per-member
 lifetime cap** (`config('academy.max_proposals_per_member')`, default 5 — counts every proposal the
 member has ever made, any status); admins review under the `memberProposals` permission — **approving
-creates an `awaiting_invitation` Member** (reusing `CreateMemberAction`, from `name` + `email` only),
-which an admin then invites manually. See [access-control.md](access-control.md#2d-member-proposals-the-memberproposal-module).
+creates the Member** (reusing `CreateMemberAction`, from the proposal's name, email and contact details)
+and sends its invitation at once (`InviteMemberAction`). See [access-control.md](access-control.md#2d-member-proposals-the-memberproposal-module).
 
 **MagicLinkToken** — `app/Modules/Auth/MagicLink/Model/MagicLinkToken.php` (guard-agnostic; see the
 Behavioural modules note).

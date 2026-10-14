@@ -44,8 +44,8 @@ roster update (`PATCH /api/admin/members/{member}`), which is how a member is su
 
 | Status | Entered when | Can sign in? |
 | --- | --- | --- |
-| `awaiting_invitation` | An admin creates the member, or approves a proposal (§5) | Yes, if they request a link — but they have not been told to |
-| `invited` | An admin sends the invitation email | Yes |
+| `awaiting_invitation` | An admin creates the member | Yes, if they request a link — but they have not been told to |
+| `invited` | An admin sends the invitation email, or approves a proposal (§5), which sends it at once | Yes |
 | `active` | The member's first successful magic-link verify (also stamps `email_verified_at`, `activated_at`) | Yes |
 | `suspended` | An admin sets it via the roster update | **No** — verify returns 422 |
 
@@ -84,7 +84,8 @@ only as a hash.
 ## 3. Invitations
 
 Invitations are a **manual admin action, not tied to the edition lifecycle** — typically sent before
-nominations open.
+nominations open. The exception is a member created by approving a proposal (§5): the approval sends
+their invitation itself. All three paths go through `InviteMemberAction`.
 
 - **Bulk** — `POST /api/admin/members/invitations`: `SendAcademyInvitationsAction` invites every
   `awaiting_invitation` member, moves each to `invited`, and returns the count. Each email is a queued
@@ -197,9 +198,9 @@ Members can propose future academy members at any time; the pool is not tied to 
   proposal.
 - **Admin review** (`memberProposals` permission, held by `admin`): list (`?status=`), view, then
   `approve` or `reject`, each with an optional `note`. Only pending proposals can be reviewed.
-  **Approving creates an `awaiting_invitation` Member** from the proposal's name, email and contact
-  details (reusing `CreateMemberAction`) and links it on `member_id`. That member then goes through the
-  normal invitation flow (§3).
+  **Approving creates the Member** from the proposal's name, email and contact details (reusing
+  `CreateMemberAction`), links it on `member_id` and **sends the invitation at once** (`InviteMemberAction`,
+  §3), so the member starts as `invited`. No admin has to invite them by hand.
 
 ## 6. The shortlist
 

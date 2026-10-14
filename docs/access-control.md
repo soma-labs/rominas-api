@@ -47,7 +47,8 @@ Academy members are **passwordless** and log in via a **guard-agnostic** magic-l
 4. Authenticated member endpoints run under `auth:member`: `GET /api/academy/me`, `POST /api/academy/logout`.
 
 **Invitations are manual**, handled by admins at any point (typically before nominations open) and
-**not tied to the edition lifecycle**. A member is created as `awaiting_invitation`; sending the
+**not tied to the edition lifecycle** (except that approving a proposal invites the new member at once,
+§2d). A member an admin adds is created as `awaiting_invitation`; sending the
 `academy-invitation-email` magic link moves them to `invited`, and their first login makes them `active`:
 - **Bulk** — `POST /api/admin/members/invitations` runs `SendAcademyInvitationsAction` for every
   `awaiting_invitation` member (returns the count invited).
@@ -101,9 +102,9 @@ open anytime. `app/Modules/Academy/MemberProposal/`:
 - **Admin-facing** (`auth:sanctum` + the `memberProposals` permission via `MemberProposalPolicy`):
   `GET /api/admin/member-proposals` (filter `?status=`), `GET /{memberProposal}`,
   `POST /{memberProposal}/approve`, `POST /{memberProposal}/reject` (both accept an optional `note`).
-  **Approve creates an `awaiting_invitation` Member** from the proposal — name, email and the three
-  contact details — (reusing `CreateMemberAction`)
-  and links it (`member_id`); an admin then invites it manually like any other member (§2b).
+  **Approve creates the Member** from the proposal — name, email and the three contact details —
+  (reusing `CreateMemberAction`), links it (`member_id`) and sends its invitation at once
+  (`InviteMemberAction`, dispatched after commit), so it starts as `invited`.
 
 ## 2e. Nominee shortlist (the `Shortlist` module)
 

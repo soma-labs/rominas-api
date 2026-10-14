@@ -7,6 +7,7 @@ namespace Rominas\Academy\MemberProposal\Actions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Rominas\Academy\Member\Actions\CreateMemberAction;
+use Rominas\Academy\Member\Actions\InviteMemberAction;
 use Rominas\Academy\Member\DataTransferObjects\MemberData;
 use Rominas\Academy\Member\Enums\MemberStatus;
 use Rominas\Academy\Member\Model\Member;
@@ -15,14 +16,15 @@ use Rominas\Academy\MemberProposal\Model\MemberProposal;
 use Rominas\Users\Model\User;
 
 /**
- * Approves a pending proposal: creates a Member awaiting invitation from it (feeding the manual
- * invitation flow) and records the review. Rejects a non-pending proposal, or one whose email has meanwhile
- * become a Member.
+ * Approves a pending proposal: creates a Member from it, records the review and sends the member their
+ * invitation at once (the e-mail names the proposer). Rejects a non-pending proposal, or one whose email
+ * has meanwhile become a Member.
  */
 class ApproveMemberProposalAction
 {
     public function __construct(
         private readonly CreateMemberAction $createMember,
+        private readonly InviteMemberAction $inviteMember,
     ) {}
 
     public function execute(MemberProposal $proposal, User $reviewer, ?string $note = null): MemberProposal
@@ -56,6 +58,8 @@ class ApproveMemberProposalAction
                 'reviewed_at' => now(),
                 'review_note' => $note,
             ])->save();
+
+            $this->inviteMember->execute($member);
 
             return $proposal;
         });
