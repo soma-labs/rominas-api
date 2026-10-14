@@ -7,7 +7,7 @@ use Rominas\Academy\Member\Enums\MemberStatus;
 use Rominas\Academy\Member\Model\Member;
 use Rominas\Academy\MemberProposal\Model\MemberProposal;
 use Rominas\Auth\MagicLink\Jobs\SendMagicLinkJob;
-use Rominas\Delivery\SMTP\SmtpAcademyInvitationEmailPayloadFactory;
+use Rominas\Delivery\SMTP\Factories\SmtpAcademyInvitationEmailPayloadFactory;
 use Rominas\Editions\Enums\EditionStatus;
 use Rominas\Editions\Model\Edition;
 

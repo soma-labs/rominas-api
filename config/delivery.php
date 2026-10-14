@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-use Rominas\Delivery\Brevo\BrevoAcademyInvitationEmailPayloadFactory;
-use Rominas\Delivery\Brevo\BrevoAcademyMagicLinkEmailPayloadFactory;
-use Rominas\Delivery\Brevo\BrevoExampleNotificationPayloadFactory;
+use Rominas\Delivery\Brevo\Factories\BrevoAcademyInvitationEmailPayloadFactory;
+use Rominas\Delivery\Brevo\Factories\BrevoAcademyMagicLinkEmailPayloadFactory;
+use Rominas\Delivery\Brevo\Factories\BrevoExampleNotificationPayloadFactory;
 use Rominas\Delivery\Brevo\BrevoMailService;
-use Rominas\Delivery\Brevo\BrevoNotificationEmailPayloadFactory;
-use Rominas\Delivery\Brevo\BrevoVotingLinkEmailPayloadFactory;
-use Rominas\Delivery\SMTP\SmtpAcademyInvitationEmailPayloadFactory;
-use Rominas\Delivery\SMTP\SmtpAcademyMagicLinkEmailPayloadFactory;
-use Rominas\Delivery\SMTP\SmtpExampleNotificationPayloadFactory;
+use Rominas\Delivery\Brevo\Factories\BrevoNotificationEmailPayloadFactory;
+use Rominas\Delivery\Brevo\Factories\BrevoVotingLinkEmailPayloadFactory;
+use Rominas\Delivery\SMTP\Factories\SmtpAcademyInvitationEmailPayloadFactory;
+use Rominas\Delivery\SMTP\Factories\SmtpAcademyMagicLinkEmailPayloadFactory;
+use Rominas\Delivery\SMTP\Factories\SmtpExampleNotificationPayloadFactory;
 use Rominas\Delivery\SMTP\SmtpMailService;
-use Rominas\Delivery\SMTP\SmtpNotificationEmailPayloadFactory;
-use Rominas\Delivery\SMTP\SmtpVotingLinkEmailPayloadFactory;
+use Rominas\Delivery\SMTP\Factories\SmtpNotificationEmailPayloadFactory;
+use Rominas\Delivery\SMTP\Factories\SmtpVotingLinkEmailPayloadFactory;
 
 /*
 |--------------------------------------------------------------------------

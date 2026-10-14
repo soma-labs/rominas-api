@@ -809,7 +809,7 @@ table through the `Notifiable` trait on `User` and `Member`. See [notifications.
   `MAIL_DELIVERY_TRANSPORT` picks the transport: `smtp` (default, the `MAIL_*` server) or `brevo` (Brevo's
   HTTP API, `BREVO_API_KEY`); any other value stops the app at boot. Each e-mail's content (recipients,
   subject, link, rendered view, a tag) lives once in an abstract factory under `Factories/`; its
-  `SMTP/Smtp…` and `Brevo/Brevo…` subclasses only choose the payload class, so both transports send the
+  `SMTP/Factories/Smtp…` and `Brevo/Factories/Brevo…` subclasses only choose the payload class, so both transports send the
   same e-mail. Brevo shows the tag in its logs. A request Brevo refuses fails with its HTTP status and
   message (e.g. `Brevo API request failed (401): Key not found`). `rominas:test-mail` sends any template
   through the transport in use. A failed send is logged in its own daily

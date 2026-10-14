@@ -8,12 +8,12 @@ use Rominas\Delivery\DeliveryPayloadInterface;
 use Rominas\Delivery\DeliveryServiceInterface;
 use Rominas\Delivery\Exceptions\DeliveryFailedException;
 use Rominas\Delivery\PayloadFactoryInterface;
-use Rominas\Delivery\Brevo\BrevoAcademyInvitationEmailPayloadFactory;
-use Rominas\Delivery\Brevo\BrevoAcademyMagicLinkEmailPayloadFactory;
-use Rominas\Delivery\Brevo\BrevoVotingLinkEmailPayloadFactory;
-use Rominas\Delivery\SMTP\SmtpAcademyInvitationEmailPayloadFactory;
-use Rominas\Delivery\SMTP\SmtpAcademyMagicLinkEmailPayloadFactory;
-use Rominas\Delivery\SMTP\SmtpVotingLinkEmailPayloadFactory;
+use Rominas\Delivery\Brevo\Factories\BrevoAcademyInvitationEmailPayloadFactory;
+use Rominas\Delivery\Brevo\Factories\BrevoAcademyMagicLinkEmailPayloadFactory;
+use Rominas\Delivery\Brevo\Factories\BrevoVotingLinkEmailPayloadFactory;
+use Rominas\Delivery\SMTP\Factories\SmtpAcademyInvitationEmailPayloadFactory;
+use Rominas\Delivery\SMTP\Factories\SmtpAcademyMagicLinkEmailPayloadFactory;
+use Rominas\Delivery\SMTP\Factories\SmtpVotingLinkEmailPayloadFactory;
 use Tests\TestCase;
 
 // Boot the framework (for the app() container) without a database.

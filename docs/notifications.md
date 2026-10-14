@@ -45,7 +45,7 @@ out on two channels:
   the row is only a record that the e-mail was sent; no endpoint serves it.
 - **`Channels/DeliveryChannel`** — the e-mail. It asks the notification for a `NotificationEmail`
   (subject, Blade view, view data) and sends it through `DeliveryAction` with the action key
-  `notification-email`. One payload factory, `Delivery/SMTP/SmtpNotificationEmailPayloadFactory`, serves
+  `notification-email`. One payload factory, `Delivery/SMTP/Factories/SmtpNotificationEmailPayloadFactory`, serves
   every type. Notification e-mails therefore use the same transport as every other e-mail.
 
 Notifications are **queued** and wait for the database transaction to commit. The two channels are
