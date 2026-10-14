@@ -117,4 +117,4 @@ reminder's day count.
    `bootstrap/app.php` and schedule it in `routes/console.php`.
 4. Test it in `tests/Feature/NotificationsTest.php` with `Notification::fake()`.
 
-Tests never send real e-mail: `tests/TestCase.php` points the `smtp` mailer at the in-memory transport.
+Tests never send real e-mail: `phpunit.xml` forces `MAIL_DELIVERY_TRANSPORT=smtp` with an empty `BREVO_API_KEY`, and `tests/TestCase.php` points the `smtp` mailer at the in-memory transport.
