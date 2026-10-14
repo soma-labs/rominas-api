@@ -53,6 +53,25 @@ Admins manage the roster under `/api/admin/members` (the `members` permission, h
 A member has three optional contact details — `position`, `company`, `phone`. Only these admin
 endpoints return them (`AdminMemberResource`); the member-facing `/api/academy/me` does not.
 
+**Import from a list.** `POST /api/admin/members/import` (multipart, field `file`: `.csv` or `.xlsx`, up to
+2 MB) creates one `awaiting_invitation` member per row and sends nothing; invitations stay the manual step
+in §3. It was built for the client's confirmation sheet (`NUME SOCIETATE`, `NUME ADMINISTRATOR`,
+`E-MAIL PERSOANA DE CONTACT`, `Status`):
+
+- **Columns are found by header**, compared without case or diacritics: a header containing `mail` is the
+  e-mail; `societate` / `firma` / `companie` / `company` the company; `functie` / `position` the
+  position; `telefon` / `phone` the phone; `nume` / `name` / `administrator` the name. Anything else
+  (the `Status` column included) is ignored. A file without a name and an e-mail column is a 422 on `file`.
+- **CSV**: the delimiter (`;` or `,`) is taken from the header line, a UTF-8 BOM is skipped, and a file
+  that isn't UTF-8 is read as Windows-1250 (Excel's plain "CSV" on a Romanian Windows). XLSX: first sheet.
+- **Each row** is trimmed, its e-mail lower-cased, and a name written all in capitals title-cased
+  (`RADU BARON` → `Radu Baron`); a mixed-case name is kept as typed.
+- **A row that can't be used is skipped, not fatal**: already a member, an e-mail repeated earlier in the
+  file, a missing name or e-mail, an invalid e-mail, a field over 255 characters. Blank rows are ignored.
+  The answer is `{ data: { created, skipped: [{ row, email, reason }] } }`, `row` being the
+  spreadsheet's row number (header = 1), so the same file can be uploaded again safely.
+- The audit entry stores the file as `"[file]"` plus the `imported` / `skipped` counts.
+
 ## 2. Magic-link sign-in
 
 Members authenticate with a **guard-agnostic** magic-link primitive that lives in `Auth/MagicLink/`, so the
@@ -267,6 +286,7 @@ All shortlist endpoints use the `shortlists` permission (held by `admin`).
 | Magic-link primitive | `Auth/MagicLink/Actions/{Send,Verify}MagicLinkAction.php`, `Jobs/SendMagicLinkJob.php` |
 | Member login | `Academy/Controllers/MemberAuthController.php`, `routes/api/academy/auth.php` |
 | Invitations | `Academy/Actions/SendAcademyInvitationsAction.php`, `routes/api/admin/members.php` |
+| Member import | `Academy/Member/Actions/ImportMembersAction.php`, `Academy/Member/Importers/MemberSpreadsheetReader.php` |
 | Nominations | `Academy/Nomination/`, `routes/api/academy/nominations.php` |
 | Proposals | `Academy/MemberProposal/`, `routes/api/academy/proposals.php`, `routes/api/admin/member-proposals.php` |
 | Shortlist | `Academy/Shortlist/`, `routes/api/admin/shortlist.php` |

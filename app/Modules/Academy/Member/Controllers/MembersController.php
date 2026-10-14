@@ -7,17 +7,21 @@ namespace Rominas\Academy\Member\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\UploadedFile;
 use Rominas\Academy\Actions\SendAcademyInvitationsAction;
 use Rominas\Academy\Member\Actions\CreateMemberAction;
 use Rominas\Academy\Member\Actions\DeleteMemberAction;
+use Rominas\Academy\Member\Actions\ImportMembersAction;
 use Rominas\Academy\Member\Actions\InviteMemberAction;
 use Rominas\Academy\Member\Actions\UpdateMemberAction;
 use Rominas\Academy\Member\Factories\MemberDataFactory;
 use Rominas\Academy\Member\Model\Member;
 use Rominas\Academy\Member\QueryBuilders\MemberQueryBuilder;
 use Rominas\Academy\Member\Requests\CreateMemberRequest;
+use Rominas\Academy\Member\Requests\ImportMembersRequest;
 use Rominas\Academy\Member\Requests\UpdateMemberRequest;
 use Rominas\Academy\Member\Resources\AdminMemberResource;
+use Rominas\Academy\Member\Resources\MemberImportResultResource;
 use Rominas\Users\Model\User;
 
 use function response;
@@ -54,6 +58,17 @@ class MembersController
         $member = $action->execute(MemberDataFactory::fromCreateRequest($request));
 
         return (new AdminMemberResource($member))->response()->setStatusCode(201);
+    }
+
+    /**
+     * Create a member awaiting invitation for each usable row of an uploaded CSV / XLSX list.
+     */
+    public function import(ImportMembersRequest $request, ImportMembersAction $action): MemberImportResultResource
+    {
+        /** @var UploadedFile $file */
+        $file = $request->file('file');
+
+        return new MemberImportResultResource($action->execute($file));
     }
 
     public function update(Member $member, UpdateMemberRequest $request, UpdateMemberAction $action): AdminMemberResource

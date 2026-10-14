@@ -65,5 +65,13 @@
     "Only a pending or approved entry can be merged.": "Doar o propunere în așteptare sau aprobată poate fi unită cu alta.",
     "An entry can only be merged into another approved entry of the same category.": "O propunere poate fi unită doar cu o altă propunere aprobată din aceeași categorie.",
     "Only a pending or approved entry can be edited.": "Doar o propunere în așteptare sau aprobată poate fi modificată.",
-    "Only an appointed category takes a result entered by hand.": "Doar o categorie cu rezultat desemnat primește un rezultat introdus manual."
+    "Only an appointed category takes a result entered by hand.": "Doar o categorie cu rezultat desemnat primește un rezultat introdus manual.",
+
+    "The file could not be read.": "Fișierul nu a putut fi citit.",
+    "The file needs a header row with a name column and an e-mail column.": "Fișierul trebuie să aibă un rând de antet cu o coloană pentru nume și una pentru e-mail.",
+    "Duplicate e-mail in the file.": "E-mail repetat în fișier.",
+    "The name is missing.": "Lipsește numele.",
+    "The e-mail is missing.": "Lipsește e-mailul.",
+    "The e-mail is not valid.": "E-mailul nu este valid.",
+    "Already a member.": "Este deja membru."
 }

@@ -8,6 +8,7 @@ use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Str;
 use Rominas\Audit\Model\AuditLog;
@@ -227,7 +228,8 @@ class RecordAuditTrail
     }
 
     /**
-     * Recursively replace the value of any key matching a redaction pattern with "[redacted]".
+     * Recursively replace the value of any key matching a redaction pattern with "[redacted]", and an
+     * uploaded file (which can't be stored as JSON, and may hold personal data) with "[file]".
      *
      * @param  array<array-key, mixed>  $data
      * @param  list<string>  $patterns
@@ -238,6 +240,12 @@ class RecordAuditTrail
         foreach ($data as $key => $value) {
             if (is_string($key) && $this->isRedacted($key, $patterns)) {
                 $data[$key] = '[redacted]';
+
+                continue;
+            }
+
+            if ($value instanceof UploadedFile) {
+                $data[$key] = '[file]';
 
                 continue;
             }

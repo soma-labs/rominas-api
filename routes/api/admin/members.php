@@ -19,6 +19,11 @@ Route::post('/invitations', [MembersController::class, 'inviteAll'])
     ->name('invitations')
     ->middleware('can:create,' . Member::class);
 
+// Bulk: one member awaiting invitation per row of an uploaded CSV / XLSX list; sends nothing.
+Route::post('/import', [MembersController::class, 'import'])
+    ->name('import')
+    ->middleware('can:create,' . Member::class);
+
 Route::get('/{member}', [MembersController::class, 'show'])
     ->name('view')
     ->middleware('can:view,member');

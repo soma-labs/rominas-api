@@ -130,7 +130,8 @@ are never audited (rule 1 above).
 **Redaction.** Every request-body key, at any depth, is matched case-insensitively against the glob
 patterns in `redact` (`password`, `password_confirmation`, `*token*`, `*secret*`, `otp`, `*email*`); a
 matching value becomes `"[redacted]"`. Credentials and tokens are never stored, and neither are emails —
-the subject reference already identifies the person.
+the subject reference already identifies the person. An uploaded file (the member import) is stored as
+`"[file]"`, never its contents.
 
 **Email hashing on auth routes.** On the routes in `hash_emails_on` (`api.authenticate`, and the
 magic-link request/verify) the attempted email is often the *only* identifier of an anonymous actor. There

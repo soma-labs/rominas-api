@@ -64,8 +64,8 @@ lifetime in their own wording — update them with the config. A row is one per 
 member who requests a sign-in link before using their invitation replaces it with the shorter-lived link
 (which still activates them).
 
-Admin roster CRUD lives under `/api/admin/members` (the `members` permission). Full flow:
-[academy.md](academy.md).
+Admin roster CRUD lives under `/api/admin/members` (the `members` permission), as does the CSV / XLSX
+import (`POST /api/admin/members/import`). Full flow: [academy.md](academy.md).
 
 ## 2c. Ranked nominations (the `Nomination` module)
 
