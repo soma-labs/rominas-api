@@ -2,6 +2,12 @@
 
 declare(strict_types=1);
 
+use Rominas\Delivery\Brevo\BrevoAcademyInvitationEmailPayloadFactory;
+use Rominas\Delivery\Brevo\BrevoAcademyMagicLinkEmailPayloadFactory;
+use Rominas\Delivery\Brevo\BrevoExampleNotificationPayloadFactory;
+use Rominas\Delivery\Brevo\BrevoMailService;
+use Rominas\Delivery\Brevo\BrevoNotificationEmailPayloadFactory;
+use Rominas\Delivery\Brevo\BrevoVotingLinkEmailPayloadFactory;
 use Rominas\Delivery\SMTP\SmtpAcademyInvitationEmailPayloadFactory;
 use Rominas\Delivery\SMTP\SmtpAcademyMagicLinkEmailPayloadFactory;
 use Rominas\Delivery\SMTP\SmtpExampleNotificationPayloadFactory;
@@ -9,45 +15,68 @@ use Rominas\Delivery\SMTP\SmtpMailService;
 use Rominas\Delivery\SMTP\SmtpNotificationEmailPayloadFactory;
 use Rominas\Delivery\SMTP\SmtpVotingLinkEmailPayloadFactory;
 
+/*
+|--------------------------------------------------------------------------
+| E-mail transports
+|--------------------------------------------------------------------------
+|
+| Each transport maps a `service` to one payload factory per action key. Both
+| transports serve the same keys, and each SMTP / Brevo factory pair shares its
+| content (app/Modules/Delivery/Factories), so switching changes only how the
+| e-mail travels: `smtp` = the MAIL_* SMTP server (e.g. Brevo's SMTP relay),
+| `brevo` = Brevo's HTTP API with BREVO_API_KEY.
+|
+*/
+
+$transports = [
+    'smtp' => [
+        'service' => SmtpMailService::class,
+        'factories' => [
+            'example-notification' => SmtpExampleNotificationPayloadFactory::class,
+            'academy-invitation-email' => SmtpAcademyInvitationEmailPayloadFactory::class,
+            'academy-magic-link-email' => SmtpAcademyMagicLinkEmailPayloadFactory::class,
+            'voting-link-email' => SmtpVotingLinkEmailPayloadFactory::class,
+            // Every Notifications-module e-mail: the notification supplies subject + view.
+            'notification-email' => SmtpNotificationEmailPayloadFactory::class,
+        ],
+    ],
+    'brevo' => [
+        'service' => BrevoMailService::class,
+        'factories' => [
+            'example-notification' => BrevoExampleNotificationPayloadFactory::class,
+            'academy-invitation-email' => BrevoAcademyInvitationEmailPayloadFactory::class,
+            'academy-magic-link-email' => BrevoAcademyMagicLinkEmailPayloadFactory::class,
+            'voting-link-email' => BrevoVotingLinkEmailPayloadFactory::class,
+            'notification-email' => BrevoNotificationEmailPayloadFactory::class,
+        ],
+    ],
+];
+
+$transport = env('MAIL_DELIVERY_TRANSPORT', 'smtp');
+
 return [
+
+    /*
+    | The e-mail transport in use: `smtp` (default) or `brevo`. Any other value stops the app at boot
+    | (AppServiceProvider). After changing it on a server: config:cache, then restart the queue worker.
+    */
+    'transport' => $transport,
+
+    'transports' => $transports,
 
     /*
     |--------------------------------------------------------------------------
     | Delivery methods
     |--------------------------------------------------------------------------
     |
-    | Each method maps a transport `service` to a set of payload `factories`.
     | DeliveryAction::execute($action, ['email'], ...$params) looks up
-    | factories[$action], instantiates it with $params, and sends the payload
-    | through `service`. Add Rominas-specific payload factories (OTP, voting
-    | link, academy invitation) here as those flows land in Phase 2.
+    | methods.email.factories[$action], instantiates it with $params, and sends
+    | the payload through methods.email.service.
     |
     */
 
     'methods' => [
-        'email' => [
-            'service' => SmtpMailService::class,
-            'factories' => [
-                // action key => payload factory
-                'example-notification' => SmtpExampleNotificationPayloadFactory::class,
-                'academy-invitation-email' => SmtpAcademyInvitationEmailPayloadFactory::class,
-                'academy-magic-link-email' => SmtpAcademyMagicLinkEmailPayloadFactory::class,
-                'voting-link-email' => SmtpVotingLinkEmailPayloadFactory::class,
-                // Every Notifications-module e-mail: the notification supplies subject + view.
-                'notification-email' => SmtpNotificationEmailPayloadFactory::class,
-            ],
-        ],
-
-        // Brevo transport — swap the 'email' block above for this and enable
-        // configureBrevoMail() in AppServiceProvider. Provide Brevo payload
-        // factories (extending PayloadFactoryInterface, returning BrevoMailPayload):
-        //
-        // 'email' => [
-        //     'service' => \Rominas\Delivery\Brevo\BrevoMailService::class,
-        //     'factories' => [
-        //         'academy-magic-link-email' => \Rominas\Delivery\Brevo\BrevoAcademyMagicLinkEmailPayloadFactory::class,
-        //     ],
-        // ],
+        'email' => $transports[$transport] ?? null,
     ],
 
 ];

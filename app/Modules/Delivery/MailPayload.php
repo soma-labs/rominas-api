@@ -8,7 +8,7 @@ class MailPayload implements DeliveryPayloadInterface
 {
     /**
      * @param  list<string>  $recipients
-     * @param  array<int, mixed>  $attachments  URLs or ['path' => ..., 'name' => ...] entries
+     * @param  list<array{path: string, name: string}>  $attachments  each path a URL or a local file
      * @param  list<EmailContact>  $cc
      */
     public function __construct(

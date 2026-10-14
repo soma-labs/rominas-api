@@ -804,9 +804,15 @@ table through the `Notifiable` trait on `User` and `Member`. See [notifications.
   `magic_link_tokens`, composite PK `(email, guard)`, hashed single-use token, per-link `expires_at` — 15 min for sign-in links, 48 h for invitations, from
   `config/magic-link.php` — and a 60s resend cooldown) plus `SendMagicLinkAction`/`VerifyMagicLinkAction` (resolve the account through the
   guard's own auth provider, so any participant guard reuses them) and a queued `SendMagicLinkJob`.
-- **`Delivery`** (`app/Modules/Delivery/`) — transactional email behind a transport seam
-  (SMTP active; Brevo ported as an opt-in alternative). An `action → PayloadFactory → service`
-  pipeline driven by `config/delivery.php`; no stored models. A failed send is logged in its own daily
+- **`Delivery`** (`app/Modules/Delivery/`) — transactional email behind a transport seam. An
+  `action → PayloadFactory → service` pipeline driven by `config/delivery.php`; no stored models.
+  `MAIL_DELIVERY_TRANSPORT` picks the transport: `smtp` (default, the `MAIL_*` server) or `brevo` (Brevo's
+  HTTP API, `BREVO_API_KEY`); any other value stops the app at boot. Each e-mail's content (recipients,
+  subject, link, rendered view, a tag) lives once in an abstract factory under `Factories/`; its
+  `SMTP/Smtp…` and `Brevo/Brevo…` subclasses only choose the payload class, so both transports send the
+  same e-mail. Brevo shows the tag in its logs. A request Brevo refuses fails with its HTTP status and
+  message (e.g. `Brevo API request failed (401): Key not found`). `rominas:test-mail` sends any template
+  through the transport in use. A failed send is logged in its own daily
   file (`storage/logs/delivery/delivery-<date>.log`, the `delivery` log channel) with its params; a link
   token is written as `[hidden]` (the factory marks it `#[SensitiveParameter]`). Each daily log channel
   keeps its newest `LOG_MAX_FILES` files (14): a count, not an age, and old files are removed only when

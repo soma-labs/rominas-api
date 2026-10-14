@@ -155,28 +155,37 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Wire the Delivery module's transactional-email pipeline (SMTP transport).
+     * Wire the Delivery module's transactional-email pipeline. Both transports are always wired; the
+     * one named by `delivery.transport` (MAIL_DELIVERY_TRANSPORT) is the one DeliveryAction uses.
      */
     private function configureDeliveryServices(): void
     {
+        $transport = config('delivery.transport');
+        $transports = (array) config('delivery.transports');
+
+        if (! is_string($transport) || ! array_key_exists($transport, $transports)) {
+            throw new \InvalidArgumentException(sprintf(
+                'Unknown e-mail transport [%s] in MAIL_DELIVERY_TRANSPORT; use one of: %s.',
+                is_scalar($transport) ? (string) $transport : get_debug_type($transport),
+                implode(', ', array_keys($transports)),
+            ));
+        }
+
         $this->app->when(\Rominas\Delivery\Actions\DeliveryAction::class)
             ->needs('$availableDeliveryMethods')
             ->give(config('delivery.methods'));
 
-        $this->configureSmtpMail();
+        $this->app->bind(
+            \Rominas\Delivery\MailServiceInterface::class,
+            $transports[$transport]['service'],
+        );
 
-        // Brevo transport — to switch, comment out configureSmtpMail() above, uncomment
-        // configureBrevoMail() below, and swap the 'email' block in config/delivery.php.
-        // $this->configureBrevoMail();
+        $this->configureSmtpMail();
+        $this->configureBrevoMail();
     }
 
     private function configureSmtpMail(): void
     {
-        $this->app->bind(
-            \Rominas\Delivery\MailServiceInterface::class,
-            \Rominas\Delivery\SMTP\SmtpMailService::class,
-        );
-
         $this->app->when(\Rominas\Delivery\SMTP\SmtpMailService::class)
             ->needs('$host')
             ->give(config('mail.mailers.smtp.host'));
@@ -198,22 +207,19 @@ class AppServiceProvider extends ServiceProvider
             ->give(config('mail.mailers.smtp.scheme') ?? 'tls');
     }
 
-    // Brevo transactional-email transport — requires getbrevo/brevo-php (installed) plus
-    // BREVO_* credentials in config/services.php. Enable via configureDeliveryServices().
-    // private function configureBrevoMail(): void
-    // {
-    //     $this->app->bind(
-    //         \Rominas\Delivery\MailServiceInterface::class,
-    //         \Rominas\Delivery\Brevo\BrevoMailService::class,
-    //     );
-    //
-    //     $this->app->when(\Rominas\Delivery\Brevo\BrevoMailService::class)
-    //         ->needs('$fromEmail')->give(config('services.brevo.from_email'));
-    //     $this->app->when(\Rominas\Delivery\Brevo\BrevoMailService::class)
-    //         ->needs('$fromName')->give(config('services.brevo.from_name'));
-    //     $this->app->when(\Rominas\Delivery\Brevo\BrevoMailService::class)
-    //         ->needs('$apiKey')->give(config('services.brevo.api_key'));
-    // }
+    /**
+     * The Brevo API client is built only when BrevoMailService is resolved, so a missing BREVO_API_KEY
+     * matters only while Brevo is the transport.
+     */
+    private function configureBrevoMail(): void
+    {
+        $this->app->when(\Rominas\Delivery\Brevo\BrevoMailService::class)
+            ->needs(\Brevo\Brevo::class)
+            ->give(static fn(): \Brevo\Brevo => new \Brevo\Brevo(
+                apiKey: (string) config('services.brevo.api_key'),
+                options: ['timeout' => (int) config('services.brevo.timeout')],
+            ));
+    }
 
     /**
      * Throttle the passwordless magic-link / OTP endpoints per email + IP — each request

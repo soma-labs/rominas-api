@@ -45,13 +45,12 @@ return [
         'voting_url' => env('FRONTEND_VOTING_URL', 'http://localhost:3002'),
     ],
 
-    // Brevo transactional email (Rominas\Delivery\Brevo\BrevoMailService). SMTP is the
-    // active transport by default; enable the Brevo blocks in config/delivery.php and
-    // AppServiceProvider to switch to it.
+    // Brevo's transactional e-mail API (Rominas\Delivery\Brevo\BrevoMailService), used when
+    // MAIL_DELIVERY_TRANSPORT=brevo (config/delivery.php). The sender is MAIL_FROM_* for both
+    // transports. `timeout` is in seconds.
     'brevo' => [
         'api_key' => env('BREVO_API_KEY'),
-        'from_email' => env('BREVO_FROM_EMAIL'),
-        'from_name' => env('BREVO_FROM_NAME'),
+        'timeout' => (int) env('BREVO_TIMEOUT', 10),
     ],
 
     // ZeroBounce e-mail validation (Rominas\EmailValidation\ZeroBounce\ZeroBounceEmailValidator), run on

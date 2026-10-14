@@ -8,6 +8,9 @@ use Rominas\Delivery\DeliveryPayloadInterface;
 use Rominas\Delivery\DeliveryServiceInterface;
 use Rominas\Delivery\Exceptions\DeliveryFailedException;
 use Rominas\Delivery\PayloadFactoryInterface;
+use Rominas\Delivery\Brevo\BrevoAcademyInvitationEmailPayloadFactory;
+use Rominas\Delivery\Brevo\BrevoAcademyMagicLinkEmailPayloadFactory;
+use Rominas\Delivery\Brevo\BrevoVotingLinkEmailPayloadFactory;
 use Rominas\Delivery\SMTP\SmtpAcademyInvitationEmailPayloadFactory;
 use Rominas\Delivery\SMTP\SmtpAcademyMagicLinkEmailPayloadFactory;
 use Rominas\Delivery\SMTP\SmtpVotingLinkEmailPayloadFactory;
@@ -134,4 +137,7 @@ it('logs a failed link e-mail on the delivery channel with the token hidden', fu
     SmtpAcademyMagicLinkEmailPayloadFactory::class,
     SmtpAcademyInvitationEmailPayloadFactory::class,
     SmtpVotingLinkEmailPayloadFactory::class,
+    BrevoAcademyMagicLinkEmailPayloadFactory::class,
+    BrevoAcademyInvitationEmailPayloadFactory::class,
+    BrevoVotingLinkEmailPayloadFactory::class,
 ]);
