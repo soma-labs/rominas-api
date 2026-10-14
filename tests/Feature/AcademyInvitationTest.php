@@ -83,6 +83,15 @@ it('does not send invitations when an edition opens nominations', function (): v
     expect($member->refresh()->status)->toBe(MemberStatus::AwaitingInvitation);
 });
 
+it('greets the invited member by their name, not by their e-mail address', function (): void {
+    $member = Member::factory()->awaitingInvitation()->create(['name' => 'Ana Popescu', 'email' => 'ana.p@example.test']);
+
+    $payload = (new AcademyInvitationEmailPayloadFactory($member->email, 'link-token'))->create();
+
+    expect($payload->body)->toContain('Salut, Ana Popescu!')
+        ->and($payload->body)->not->toContain('Salut, ana.p');
+});
+
 it('names the proposing member in the invitation of a member who came from a proposal', function (): void {
     $proposer = Member::factory()->active()->create(['name' => 'Ioana Proposer']);
     $member = Member::factory()->awaitingInvitation()->create(['email' => 'corrected@example.test']);

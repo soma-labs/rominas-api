@@ -133,7 +133,7 @@ class SendTestEmailCommand extends Command implements PromptsForMissingInput
                 AcademyInvitationEmailPayloadFactory::SUBJECT,
                 'emails.academy.invitation',
                 [
-                    'name' => 'ana.popescu',
+                    'name' => 'Ana Popescu',
                     'url' => rtrim((string) config('services.frontend.academy_url'), '/') . '/invitatie?token=' . self::TOKEN . '&email=' . rawurlencode($email),
                     'proposerName' => 'Ion Ionescu',
                 ],

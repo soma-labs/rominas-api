@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Rominas\Delivery\Factories;
 
-use Illuminate\Support\Str;
+use Rominas\Academy\Member\Model\Member;
 use Rominas\Academy\MemberProposal\Model\MemberProposal;
 use SensitiveParameter;
 
 /**
  * The academy-member invitation e-mail. The link carries the raw magic-link token + email to the academy
- * SPA's onboarding screen, which verifies them and activates the member on first login. A member who came
- * from an approved proposal is told who proposed them.
+ * SPA's onboarding screen, which verifies them and activates the member on first login. The greeting uses
+ * the member's name; a member who came from an approved proposal is told who proposed them.
  */
 class AcademyInvitationEmailPayloadFactory extends MailPayloadFactory
 {
@@ -40,7 +40,7 @@ class AcademyInvitationEmailPayloadFactory extends MailPayloadFactory
             . '&email=' . rawurlencode($this->email);
 
         return view('emails.academy.invitation', [
-            'name' => Str::before($this->email, '@'),
+            'name' => $this->memberName(),
             'url' => $url,
             'proposerName' => $this->proposerName(),
         ])->render();
@@ -49,6 +49,11 @@ class AcademyInvitationEmailPayloadFactory extends MailPayloadFactory
     protected function tags(): array
     {
         return ['academy-invitation'];
+    }
+
+    private function memberName(): ?string
+    {
+        return Member::query()->where('email', $this->email)->value('name');
     }
 
     private function proposerName(): ?string
