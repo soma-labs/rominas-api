@@ -65,7 +65,7 @@ an allow-list) and add `actionableByUser()`/`visibleToUser()` for permission sco
 | Eloquent factories | `database/factories/` | `class XFactory extends Factory { protected $model = X::class; }` |
 | Seeders | `database/seeders/` | `RoleSeeder`, `PermissionSeeder`, called from `DatabaseSeeder`. On demand (not in `DatabaseSeeder`): `NominationsClosedEditionSeeder` — wipes members/categories/Catalog/submissions/nominations, then seeds the active (or a new) edition at `nominations_closed` with members and submitted, unreconciled free-text nominations. Seeders are not tested |
 | Module config | `config/<module>.php` | e.g. `config/delivery.php`, `config/permission.php` |
-| Blade (emails) | `resources/views/emails/` | Delivery payload factories render these |
+| Blade (emails) | `resources/views/emails/` | Delivery payload factories render these. Each wraps its content in `<x-email.layout>` and uses `<x-email.button>` (`resources/views/components/email/`). Both are tables, plus a VML button, so that classic Outlook (Word's engine) renders them; inside an e-mail, avoid divs with a background or padding and margins on tables |
 
 ## 4. Adding a new module (port-and-adapt from `door`)
 
