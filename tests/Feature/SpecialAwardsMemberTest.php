@@ -232,7 +232,7 @@ it('deletes a pending proposal when its proposer withdraws it', function (): voi
         ->and(SpecialVote::query()->count())->toBe(0);
 });
 
-it('keeps an approved entry for the others when its proposer withdraws', function (): void {
+it('refuses to withdraw an approved proposal', function (): void {
     [, $category] = specialOpenEditionAndCategory();
     $member = specialActingMember();
     $entry = SpecialEntry::factory()->approved()->create([
@@ -243,12 +243,30 @@ it('keeps an approved entry for the others when its proposer withdraws', functio
     SpecialVote::factory()->create(['special_entry_id' => $entry->id]);
 
     deleteJson("/api/academy/special-awards/categories/{$category->id}/proposal")
-        ->assertStatus(200)
-        ->assertJsonPath('data.categories.0.proposed_entry_id', null)
-        ->assertJsonPath('data.categories.0.entries.0.id', $entry->id);
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('category');
 
-    expect(SpecialVote::query()->forEntry($entry)->count())->toBe(1)
-        ->and(SpecialVote::query()->forMember($member)->count())->toBe(0);
+    expect(SpecialEntry::query()->whereKey($entry->id)->exists())->toBeTrue()
+        ->and(SpecialVote::query()->forEntry($entry)->count())->toBe(2);
+});
+
+it('refuses to withdraw a proposal merged into an approved entry', function (): void {
+    [, $category] = specialOpenEditionAndCategory();
+    $member = specialActingMember();
+    $target = SpecialEntry::factory()->approved()->create(['category_id' => $category->id]);
+    SpecialEntry::factory()->create([
+        'category_id' => $category->id,
+        'proposed_by_member_id' => $member->id,
+        'status' => SpecialEntryStatus::Merged,
+        'merged_into_entry_id' => $target->id,
+    ]);
+    SpecialVote::factory()->viaProposal()->create(['special_entry_id' => $target->id, 'member_id' => $member->id]);
+
+    deleteJson("/api/academy/special-awards/categories/{$category->id}/proposal")
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('category');
+
+    expect(SpecialVote::query()->forMember($member)->count())->toBe(1);
 });
 
 it('withdraws the proposal and the chosen vote of one category separately', function (): void {

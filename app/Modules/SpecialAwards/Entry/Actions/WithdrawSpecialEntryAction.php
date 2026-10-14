@@ -14,9 +14,8 @@ use Rominas\SpecialAwards\Vote\Model\SpecialVote;
 
 /**
  * A member takes back the entry they proposed in a category, which frees them to propose again; their
- * vote for another member's entry is untouched. While the entry is pending it disappears with their vote.
- * Once approved it belongs to the pool other members vote from, so it stays and only the vote the
- * proposal carried is removed.
+ * vote for another member's entry is untouched. Only a pending entry can be taken back, and it disappears
+ * with their vote. Once approved (or merged into an approved one) the proposal stands.
  */
 class WithdrawSpecialEntryAction
 {
@@ -36,14 +35,16 @@ class WithdrawSpecialEntryAction
             ]);
         }
 
+        // A merged proposal's vote sits on the approved entry it was merged into.
+        if ($vote->entry->status !== SpecialEntryStatus::Pending) {
+            throw ValidationException::withMessages([
+                'category' => __('An approved proposal can no longer be withdrawn.'),
+            ]);
+        }
+
         DB::transaction(function () use ($vote): void {
-            $entry = $vote->entry;
-
             $vote->delete();
-
-            if ($entry->status === SpecialEntryStatus::Pending) {
-                $entry->delete();
-            }
+            $vote->entry->delete();
         });
     }
 }

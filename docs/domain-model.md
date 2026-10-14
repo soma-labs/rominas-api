@@ -503,8 +503,8 @@ The two are independent: proposing does not stop a member from voting, nor the o
   (they can vote for it).
 - **Vote** — for an `approved` entry of the category that another member proposed (voting for their own
   entry is refused). A member who voted for another entry **moves** the vote.
-- **Withdraw a proposal** — while pending, the entry and the vote are deleted; once approved the entry
-  stays for the others and only the vote the proposal carried is removed. The chosen vote is untouched.
+- **Withdraw a proposal** — only while pending: the entry and the vote are deleted. Once approved (or
+  merged into an approved entry) it is refused (422). The chosen vote is untouched.
 - **Withdraw a vote** — removes the chosen vote only; frees the member to vote again.
 
 `GET /api/academy/special-awards` returns every `propose_or_vote` category with its approved entries
