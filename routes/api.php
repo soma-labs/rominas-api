@@ -51,6 +51,7 @@ Route::middleware(['auth:sanctum', 'audit'])->prefix('/admin')->name('api.admin.
     // The authenticated admin's own account, and their permission-filtered sidebar menu.
     Route::get('/me', [UsersController::class, 'me'])->name('me');
     Route::get('/menu', [MenuController::class, 'menu'])->name('menu');
+    Route::get('/menu/counts', [MenuController::class, 'counts'])->name('menu.counts');
 
     Route::prefix('/permissions')->name('permissions.')->group(__DIR__ . '/api/admin/permissions.php');
     Route::prefix('/roles')->name('roles.')->group(__DIR__ . '/api/admin/roles.php');
