@@ -838,7 +838,11 @@ table through the `Notifiable` trait on `User` and `Member`. See [notifications.
 - **`Shared`** (`app/Modules/Shared/Concerns/`) — cross-module query-builder concerns
   (`QueryBuilderSearchableTrait`, `QueryBuilderSortableTrait`).
 - **`Menu`** (`app/Modules/Menu/`) — the admin dashboard's sidebar menu, filtered to the permissions of
-  the signed-in user (`GetMenuForUserAction`); no stored models.
+  the signed-in user (`GetMenuForUserAction`); no stored models. `GET /admin/menu/counts`
+  (`GetMenuCountsForUserAction`) gives the sidebar's pending-work badges, keyed by menu item id:
+  `sidenav.editions` = the active edition's `pending` nominee submissions, `sidenav.member-proposals` =
+  `pending` member proposals. A key is left out when the user can't `viewAny` that list. The admin polls it
+  every 10 s; it is a GET outside `audited_reads`, so it is not audited.
 - **`Scoring`** (`app/Modules/Scoring/`) — the results engine; **computes on demand, persists nothing**
   (the [`Results`](#results) module owns the custodian-gated view/export and the snapshot frozen when
   results are published). Per
