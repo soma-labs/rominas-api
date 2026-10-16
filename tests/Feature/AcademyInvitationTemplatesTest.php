@@ -55,6 +55,7 @@ it('lists the invitation templates, the default first', function (): void {
         ->assertStatus(200)
         ->assertExactJson(['data' => [
             ['key' => 'default', 'label' => 'Default (Romanian)'],
+            ['key' => 'unconfirmed', 'label' => 'Unconfirmed (Romanian)'],
             ['key' => 'english', 'label' => 'English'],
         ]]);
 });

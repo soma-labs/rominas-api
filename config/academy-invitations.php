@@ -20,6 +20,11 @@ return [
             'view' => 'emails.academy.invitations.default',
             'subject' => 'Invitație în Academia The Romanian Music Industry Awards',
         ],
+        'unconfirmed' => [
+            'label' => 'Unconfirmed (Romanian)',
+            'view' => 'emails.academy.invitations.unconfirmed',
+            'subject' => 'Invitație în Academia The Romanian Music Industry Awards',
+        ],
         'english' => [
             'label' => 'English',
             'view' => 'emails.academy.invitations.english',

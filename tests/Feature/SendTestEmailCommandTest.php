@@ -78,6 +78,8 @@ it('sends the chosen template to the given address from its audience\'s sender n
 })->with([
     ['academy-invitation', 'Invitație în Academia The Romanian Music Industry Awards', 'Academia ROMIAS'],
     ['academy-invitation-proposed', 'Invitație în Academia The Romanian Music Industry Awards', 'Academia ROMIAS'],
+    ['academy-invitation-unconfirmed', 'Invitație în Academia The Romanian Music Industry Awards', 'Academia ROMIAS'],
+    ['academy-invitation-unconfirmed-proposed', 'Invitație în Academia The Romanian Music Industry Awards', 'Academia ROMIAS'],
     ['academy-invitation-english', 'Invitation to The Romanian Music Industry Awards Academy', 'Academia ROMIAS'],
     ['academy-invitation-english-proposed', 'Invitation to The Romanian Music Industry Awards Academy', 'Academia ROMIAS'],
     ['academy-login', 'Link de autentificare în Academia The Romanian Music Industry Awards', 'Academia ROMIAS'],
@@ -115,7 +117,7 @@ it('sends every template when asked for all of them', function (): void {
 
     artisan('romias:test-mail', ['email' => 'tester@example.test', 'template' => 'all'])->assertSuccessful();
 
-    expect($sent->payloads)->toHaveCount(13);
+    expect($sent->payloads)->toHaveCount(15);
 });
 
 it('refuses an invalid address or an unknown template without sending', function (string $email, string $template): void {
