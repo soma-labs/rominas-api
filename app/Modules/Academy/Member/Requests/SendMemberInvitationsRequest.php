@@ -13,8 +13,8 @@ use Rominas\Academy\Member\Support\InvitationTemplates;
 use Rominas\Users\Model\User;
 
 /**
- * Invitations sent to members the admin picked, with a chosen template. Only members still awaiting their
- * first invitation (and visible to the admin) can be picked; re-sends go through the per-member invite.
+ * Invitations sent to members the admin picked, with a chosen template. Only members visible to the admin
+ * who are awaiting an invitation or already invited ({@see MemberStatus::invitable()}) can be picked.
  */
 class SendMemberInvitationsRequest extends FormRequest
 {
@@ -38,7 +38,7 @@ class SendMemberInvitationsRequest extends FormRequest
     }
 
     /**
-     * Every picked member must exist, be visible to the admin and still await their first invitation.
+     * Every picked member must exist, be visible to the admin and be awaiting an invitation or invited.
      *
      * @return array<int, callable(Validator): void>
      */
@@ -66,8 +66,8 @@ class SendMemberInvitationsRequest extends FormRequest
 
                     if ($status === null) {
                         $validator->errors()->add("member_ids.{$index}", __('The selected member does not exist.'));
-                    } elseif ($status !== MemberStatus::AwaitingInvitation) {
-                        $validator->errors()->add("member_ids.{$index}", __('This member is not awaiting an invitation.'));
+                    } elseif (! in_array($status, MemberStatus::invitable(), true)) {
+                        $validator->errors()->add("member_ids.{$index}", __('This member has already joined or is suspended.'));
                     }
                 }
             },

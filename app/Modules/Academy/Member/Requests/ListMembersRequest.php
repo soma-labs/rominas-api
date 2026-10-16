@@ -21,12 +21,31 @@ class ListMembersRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['sometimes', 'nullable', Rule::enum(MemberStatus::class)],
+            'status' => ['sometimes', 'array'],
+            'status.*' => [Rule::enum(MemberStatus::class)],
         ];
     }
 
-    public function status(): ?MemberStatus
+    /**
+     * `?status=invited` and `?status[]=invited&status[]=active` both work: one value becomes a list.
+     */
+    protected function prepareForValidation(): void
     {
-        return MemberStatus::tryFrom((string) $this->validated('status'));
+        if (is_string($this->query('status'))) {
+            $this->merge(['status' => [$this->query('status')]]);
+        }
+    }
+
+    /**
+     * The statuses to keep; empty when the list is not filtered by status.
+     *
+     * @return list<MemberStatus>
+     */
+    public function statuses(): array
+    {
+        /** @var list<string> $statuses */
+        $statuses = $this->validated('status', []);
+
+        return array_map(MemberStatus::from(...), $statuses);
     }
 }

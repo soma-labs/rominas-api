@@ -44,6 +44,11 @@ class MemberQueryBuilder extends Builder
         return $this->where('status', '=', $status->value);
     }
 
+    public function filterByStatuses(MemberStatus ...$statuses): self
+    {
+        return $this->whereIn('status', array_map(fn(MemberStatus $status): string => $status->value, $statuses));
+    }
+
     /**
      * Members who can receive academy e-mails: invited or already active (not suspended, and not
      * still waiting for their invitation).

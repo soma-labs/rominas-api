@@ -16,6 +16,17 @@ enum MemberStatus: string
     case Active = 'active';
     case Suspended = 'suspended';
 
+    /**
+     * The members an admin can pick for an invitation with a chosen template: a first invitation, or
+     * a re-send to someone who has not logged in yet.
+     *
+     * @return list<self>
+     */
+    public static function invitable(): array
+    {
+        return [self::AwaitingInvitation, self::Invited];
+    }
+
     public function label(): string
     {
         return match ($this) {

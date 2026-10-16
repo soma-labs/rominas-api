@@ -15,6 +15,7 @@ use Rominas\Users\Model\User;
 
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\postJson;
+use function Pest\Laravel\travelTo;
 
 /**
  * Stands in for the SMTP transport: keeps the invitation payloads it is asked to send.
@@ -94,7 +95,7 @@ it('sends the default Romanian invitation when an admin invites one member', fun
         ->and($sent->payloads[0]->body)->toContain('<html lang="ro"');
 });
 
-it('refuses a member who is not awaiting an invitation with a 422 and sends nothing', function (MemberStatus $status): void {
+it('refuses a member who has joined or is suspended with a 422 and sends nothing', function (MemberStatus $status): void {
     actingAsSuperAdmin();
     Bus::fake();
     $awaiting = Member::factory()->awaitingInvitation()->create();
@@ -102,11 +103,28 @@ it('refuses a member who is not awaiting an invitation with a 422 and sends noth
 
     postJson('/api/admin/members/invitations/send', ['member_ids' => [$awaiting->id, $other->id], 'template' => 'default'])
         ->assertStatus(422)
-        ->assertJsonValidationErrors(['member_ids.1' => 'This member is not awaiting an invitation.']);
+        ->assertJsonValidationErrors(['member_ids.1' => 'This member has already joined or is suspended.']);
 
     Bus::assertNotDispatched(SendMagicLinkJob::class);
     expect($awaiting->refresh()->status)->toBe(MemberStatus::AwaitingInvitation);
-})->with([MemberStatus::Invited, MemberStatus::Active, MemberStatus::Suspended]);
+})->with([MemberStatus::Active, MemberStatus::Suspended]);
+
+it('re-sends the chosen template to an invited member without changing their status', function (): void {
+    actingAsSuperAdmin();
+    travelTo('2026-10-16 09:00:00');
+    $sent = invitationTemplatesRecordDeliveries();
+    $member = Member::factory()->invited()->create(['email' => 'invited@example.test', 'invited_at' => '2026-10-01 09:00:00']);
+
+    postJson('/api/admin/members/invitations/send', ['member_ids' => [$member->id], 'template' => 'unconfirmed-romanian'])
+        ->assertStatus(200)
+        ->assertExactJson(['success' => true, 'invited' => 1]);
+
+    expect($sent->payloads)->toHaveCount(1)
+        ->and($sent->payloads[0]->recipients)->toBe(['invited@example.test'])
+        ->and($sent->payloads[0]->subject)->toBe('Invitația în Academia The Romanian Music Industry Awards este încă deschisă');
+    expect($member->refresh()->status)->toBe(MemberStatus::Invited)
+        ->and($member->invited_at?->toDateTimeString())->toBe('2026-10-16 09:00:00');
+});
 
 it('refuses a member that does not exist with a 422', function (): void {
     actingAsSuperAdmin();
@@ -162,10 +180,24 @@ it('lists only the members with the given status', function (): void {
         ->assertJsonPath('data.0.id', $awaiting->id);
 });
 
+it('lists the members with any of the given statuses', function (): void {
+    actingAsSuperAdmin();
+    $awaiting = Member::factory()->awaitingInvitation()->create();
+    $invited = Member::factory()->invited()->create();
+    Member::factory()->active()->create();
+    Member::factory()->suspended()->create();
+
+    $response = getJson('/api/admin/members?status[]=awaiting_invitation&status[]=invited')
+        ->assertStatus(200);
+
+    expect(collect($response->json('data'))->pluck('id')->sort()->values()->all())
+        ->toBe([$awaiting->id, $invited->id]);
+});
+
 it('refuses an unknown member status filter with a 422', function (): void {
     actingAsSuperAdmin();
 
     getJson('/api/admin/members?status=nonsense')
         ->assertStatus(422)
-        ->assertJsonValidationErrors(['status' => 'The selected status is invalid.']);
+        ->assertJsonValidationErrors(['status.0' => 'The selected status.0 is invalid.']);
 });

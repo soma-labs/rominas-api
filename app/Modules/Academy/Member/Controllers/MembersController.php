@@ -14,7 +14,6 @@ use Rominas\Academy\Member\Actions\DeleteMemberAction;
 use Rominas\Academy\Member\Actions\ImportMembersAction;
 use Rominas\Academy\Member\Actions\InviteMemberAction;
 use Rominas\Academy\Member\Actions\UpdateMemberAction;
-use Rominas\Academy\Member\Enums\MemberStatus;
 use Rominas\Academy\Member\Factories\MemberDataFactory;
 use Rominas\Academy\Member\Model\Member;
 use Rominas\Academy\Member\QueryBuilders\MemberQueryBuilder;
@@ -45,8 +44,8 @@ class MembersController
             Member::query()
                 ->visibleToUser($user)
                 ->when(
-                    $request->status(),
-                    fn(MemberQueryBuilder $query, MemberStatus $status): MemberQueryBuilder => $query->filterByStatus($status),
+                    $request->statuses(),
+                    fn(MemberQueryBuilder $query, array $statuses): MemberQueryBuilder => $query->filterByStatuses(...$statuses),
                 )
                 ->search($request->query('search'))
                 ->orderBy(

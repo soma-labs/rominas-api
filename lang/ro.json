@@ -20,7 +20,7 @@
     "Only a pending proposal can be rejected.": "Doar o propunere în așteptare poate fi respinsă.",
     "A member with this email already exists.": "Există deja un membru cu această adresă de e-mail.",
     "The selected member does not exist.": "Membrul ales nu există.",
-    "This member is not awaiting an invitation.": "Acest membru nu așteaptă o invitație.",
+    "This member has already joined or is suspended.": "Acest membru s-a alăturat deja sau este suspendat.",
 
     "If this address is registered, you will receive a sign-in link.": "Dacă adresa este validă, vei primi un link de autentificare.",
     "The sign-in link is invalid or has expired.": "Link-ul de autentificare este invalid sau a expirat.",

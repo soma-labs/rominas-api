@@ -11,7 +11,8 @@ use Rominas\Academy\Member\Model\Member;
 
 /**
  * Sends the invitation e-mail, in the chosen template (config/academy-invitations.php), to each of the
- * given members still awaiting one, and moves them to `Invited`. One e-mail per member, through
+ * given members awaiting an invitation or already invited; the first move to `Invited`, a re-sent
+ * member keeps their status (`invited_at` is re-stamped). One e-mail per member, through
  * {@see InviteMemberAction}; available via `POST /api/admin/members/invitations/send`. Returns the number
  * of members invited.
  */
@@ -29,7 +30,7 @@ class SendSelectedMemberInvitationsAction
         return DB::transaction(function () use ($memberIds, $template): int {
             $members = Member::query()
                 ->whereIn('id', $memberIds)
-                ->filterByStatus(MemberStatus::AwaitingInvitation)
+                ->filterByStatuses(...MemberStatus::invitable())
                 ->get();
 
             $members->each(fn(Member $member): Member => $this->inviteMember->execute($member, $template));

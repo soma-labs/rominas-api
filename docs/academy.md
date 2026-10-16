@@ -116,9 +116,13 @@ applies: if the previous link was issued under 60 seconds ago and is still valid
 - **Picked, with a template** — `POST /api/admin/members/invitations/send` with `{member_ids: [...], template}`
   (`SendMemberInvitationsRequest`, at most 500 members): `SendSelectedMemberInvitationsAction` invites
   each picked member in the chosen template and returns `{success, invited}`. Every picked member must
-  exist, be visible to the admin and still be `awaiting_invitation`; otherwise the request is refused
-  with a 422 on that `member_ids.N` and nothing is sent. Re-sends go through the single invite. The admin's
-  picker searches `GET /api/admin/members?status=awaiting_invitation` (the list takes an optional `status`).
+  exist, be visible to the admin and be `awaiting_invitation` or `invited` (`MemberStatus::invitable()`);
+  otherwise the request is refused with a 422 on that `member_ids.N` and nothing is sent. An invited member
+  gets a re-send (status kept, `invited_at` re-stamped), so the reminder templates reach members who have
+  not confirmed; the 60-second resend cooldown applies, so a re-send within a minute of the last link sends
+  nothing but still counts in `invited`. The admin's picker searches
+  `GET /api/admin/members?status[]=awaiting_invitation&status[]=invited` (the list takes an optional
+  `status`, one value or several).
 
 **Templates.** The invitation has several templates, listed in `config/academy-invitations.php` (key →
 admin label, Blade view under `resources/views/emails/academy/invitations/`, subject) and served to the
