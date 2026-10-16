@@ -123,7 +123,7 @@ applies: if the previous link was issued under 60 seconds ago and is still valid
 **Templates.** The invitation has several templates, listed in `config/academy-invitations.php` (key →
 admin label, Blade view under `resources/views/emails/academy/invitations/`, subject) and served to the
 admin by `GET /api/admin/members/invitation-templates` (`[{key, label}]`, in config order). Only the
-picked-members path chooses one; the others use the `default` (Romanian). Built-in: `default`, `unconfirmed` (for now the same text as `default`) and `english`.
+picked-members path chooses one; the others use the `default` (Romanian). Built-in: `default`, and the client's reminder for members who have not confirmed yet, `unconfirmed-romanian` and `unconfirmed-english`.
 The key travels with the queued `SendMagicLinkJob` to `AcademyInvitationEmailPayloadFactory`, read
 through `InvitationTemplates`. Only the invitation changes: the link, the academy app and later e-mails
 stay Romanian. To add a template: a Blade file (same variables `name`, `url`, `proposerName`, wrapped in

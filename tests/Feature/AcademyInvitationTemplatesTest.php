@@ -55,8 +55,8 @@ it('lists the invitation templates, the default first', function (): void {
         ->assertStatus(200)
         ->assertExactJson(['data' => [
             ['key' => 'default', 'label' => 'Default (Romanian)'],
-            ['key' => 'unconfirmed', 'label' => 'Unconfirmed (Romanian)'],
-            ['key' => 'english', 'label' => 'English'],
+            ['key' => 'unconfirmed-romanian', 'label' => 'Unconfirmed reminder (Romanian)'],
+            ['key' => 'unconfirmed-english', 'label' => 'Unconfirmed reminder (English)'],
         ]]);
 });
 
@@ -67,15 +67,15 @@ it('sends each picked member their own invitation in the chosen template and mar
     $ion = Member::factory()->awaitingInvitation()->create(['name' => 'Ion Ionescu', 'email' => 'ion@example.test']);
     $notPicked = Member::factory()->awaitingInvitation()->create();
 
-    postJson('/api/admin/members/invitations/send', ['member_ids' => [$ana->id, $ion->id], 'template' => 'english'])
+    postJson('/api/admin/members/invitations/send', ['member_ids' => [$ana->id, $ion->id], 'template' => 'unconfirmed-english'])
         ->assertStatus(200)
         ->assertExactJson(['success' => true, 'invited' => 2]);
 
     expect($sent->payloads)->toHaveCount(2)
         ->and($sent->payloads[0]->recipients)->toBe(['ana@example.test'])
-        ->and($sent->payloads[0]->subject)->toBe('Invitation to The Romanian Music Industry Awards Academy')
+        ->and($sent->payloads[0]->subject)->toBe('Your invitation to The Romanian Music Industry Awards Academy is still open')
         ->and($sent->payloads[0]->body)->toContain('<html lang="en"')
-        ->and($sent->payloads[0]->body)->toContain('Hello, Ana Popescu!')
+        ->and($sent->payloads[0]->body)->toContain('Dear Ana Popescu,')
         ->and($sent->payloads[1]->recipients)->toBe(['ion@example.test']);
     expect($ana->refresh()->status)->toBe(MemberStatus::Invited)
         ->and($ana->invited_at)->not->toBeNull();

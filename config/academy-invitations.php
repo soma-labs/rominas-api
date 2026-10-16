@@ -20,15 +20,15 @@ return [
             'view' => 'emails.academy.invitations.default',
             'subject' => 'Invitație în Academia The Romanian Music Industry Awards',
         ],
-        'unconfirmed' => [
-            'label' => 'Unconfirmed (Romanian)',
-            'view' => 'emails.academy.invitations.unconfirmed',
-            'subject' => 'Invitație în Academia The Romanian Music Industry Awards',
+        'unconfirmed-romanian' => [
+            'label' => 'Unconfirmed reminder (Romanian)',
+            'view' => 'emails.academy.invitations.unconfirmed-romanian',
+            'subject' => 'Invitația în Academia The Romanian Music Industry Awards este încă deschisă',
         ],
-        'english' => [
-            'label' => 'English',
-            'view' => 'emails.academy.invitations.english',
-            'subject' => 'Invitation to The Romanian Music Industry Awards Academy',
+        'unconfirmed-english' => [
+            'label' => 'Unconfirmed reminder (English)',
+            'view' => 'emails.academy.invitations.unconfirmed-english',
+            'subject' => 'Your invitation to The Romanian Music Industry Awards Academy is still open',
         ],
     ],
 
