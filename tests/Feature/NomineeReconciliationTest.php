@@ -288,6 +288,30 @@ it('lists an edition\'s submissions with their ranking counts', function (): voi
         ->assertJsonPath('data.0.ranking_count', 1);
 });
 
+it('shows every category a submission was typed in, once each and in category order', function (): void {
+    reconcileActingAsAdmin();
+    $edition = reconcileClosedEdition();
+    $second = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist, 'name' => 'Second', 'position' => 2]);
+    $first = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist, 'name' => 'First', 'position' => 1]);
+    reconcileBallot($edition, $second, ['Alpha']);
+    reconcileBallot($edition, $second, ['Alpha']);
+    reconcileBallot($edition, $first, ['Alpha']);
+    $submission = NomineeSubmission::query()->sole();
+    $expected = [['id' => $first->id, 'name' => 'First'], ['id' => $second->id, 'name' => 'Second']];
+
+    getJson("/api/admin/editions/{$edition->id}/nominee-submissions")
+        ->assertStatus(200)
+        ->assertJsonPath('data.0.categories', $expected);
+
+    getJson("/api/admin/editions/{$edition->id}/nominee-submissions/{$submission->id}")
+        ->assertStatus(200)
+        ->assertJsonPath('data.categories', $expected);
+
+    postJson("/api/admin/editions/{$edition->id}/nominee-submissions/{$submission->id}/reject")
+        ->assertStatus(200)
+        ->assertJsonPath('data.categories', $expected);
+});
+
 it('404s for a submission that belongs to another edition', function (): void {
     reconcileActingAsAdmin();
     $edition = reconcileClosedEdition();

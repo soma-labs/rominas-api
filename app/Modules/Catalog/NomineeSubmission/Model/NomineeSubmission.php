@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Attributes\UsePolicy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Rominas\Academy\Nomination\Model\NominationRanking;
@@ -17,6 +18,7 @@ use Rominas\Catalog\Enums\NomineeType;
 use Rominas\Catalog\NomineeSubmission\Enums\NomineeSubmissionStatus;
 use Rominas\Catalog\NomineeSubmission\Policies\NomineeSubmissionPolicy;
 use Rominas\Catalog\NomineeSubmission\QueryBuilders\NomineeSubmissionQueryBuilder;
+use Rominas\Categories\Model\Category;
 use Rominas\Editions\Model\Edition;
 use Rominas\Users\Model\User;
 
@@ -108,5 +110,18 @@ class NomineeSubmission extends Model
     public function rankings(): HasMany
     {
         return $this->hasMany(NominationRanking::class);
+    }
+
+    /**
+     * The categories the name was typed in, read from the pointing rankings. One submission can span
+     * several categories of the same nominee type, since it is shared per edition, type and name.
+     *
+     * @return BelongsToMany<Category, $this>
+     */
+    public function categories(): BelongsToMany
+    {
+        return $this->belongsToMany(Category::class, 'nomination_rankings')
+            ->distinct()
+            ->orderBy('position', 'asc');
     }
 }

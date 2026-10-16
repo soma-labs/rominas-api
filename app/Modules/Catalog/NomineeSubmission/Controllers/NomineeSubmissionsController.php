@@ -36,7 +36,7 @@ class NomineeSubmissionsController
         /** @var User $user */
         $user = $request->user();
 
-        $query = NomineeSubmission::query()->visibleToUser($user)->forEdition($edition)->withCount('rankings');
+        $query = NomineeSubmission::query()->visibleToUser($user)->forEdition($edition)->withCount('rankings')->with('categories');
 
         if ($request->filled('status')) {
             $query = $query->filterByStatus(NomineeSubmissionStatus::from((string) $request->query('status')));
@@ -62,7 +62,7 @@ class NomineeSubmissionsController
     ): NomineeSubmissionResource {
         $this->assertInEdition($edition, $nomineeSubmission);
 
-        $nomineeSubmission->loadCount('rankings')->load('resolvedNominee');
+        $nomineeSubmission->loadCount('rankings')->load(['resolvedNominee', 'categories']);
 
         if ($request->boolean('with_suggestions')) {
             $nomineeSubmission->suggestions = $suggest->execute($nomineeSubmission);
@@ -85,7 +85,7 @@ class NomineeSubmissionsController
 
         $submission = $action->execute($nomineeSubmission, (int) $validated['nominee_id'], $user, $validated['note'] ?? null);
 
-        return new NomineeSubmissionResource($submission->loadCount('rankings')->load('resolvedNominee'));
+        return new NomineeSubmissionResource($submission->loadCount('rankings')->load(['resolvedNominee', 'categories']));
     }
 
     public function create(
@@ -102,7 +102,7 @@ class NomineeSubmissionsController
 
         $submission = $action->execute($nomineeSubmission, $user, $validated['name'] ?? null, $validated['note'] ?? null);
 
-        return new NomineeSubmissionResource($submission->loadCount('rankings')->load('resolvedNominee'));
+        return new NomineeSubmissionResource($submission->loadCount('rankings')->load(['resolvedNominee', 'categories']));
     }
 
     public function reject(
@@ -118,7 +118,7 @@ class NomineeSubmissionsController
 
         $submission = $action->execute($nomineeSubmission, $user, $request->validated()['note'] ?? null);
 
-        return new NomineeSubmissionResource($submission->loadCount('rankings'));
+        return new NomineeSubmissionResource($submission->loadCount('rankings')->load('categories'));
     }
 
     public function unlink(
@@ -128,7 +128,7 @@ class NomineeSubmissionsController
     ): NomineeSubmissionResource {
         $this->assertInEdition($edition, $nomineeSubmission);
 
-        return new NomineeSubmissionResource($action->execute($nomineeSubmission)->loadCount('rankings'));
+        return new NomineeSubmissionResource($action->execute($nomineeSubmission)->loadCount('rankings')->load('categories'));
     }
 
     private function assertInEdition(Edition $edition, NomineeSubmission $submission): void

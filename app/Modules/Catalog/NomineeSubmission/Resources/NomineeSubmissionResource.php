@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use JsonSerializable;
 use Rominas\Catalog\NomineeSubmission\Model\NomineeSubmission;
+use Rominas\Categories\Model\Category;
 
 class NomineeSubmissionResource extends JsonResource
 {
@@ -33,6 +34,10 @@ class NomineeSubmissionResource extends JsonResource
             'normalized_name' => $submission->normalized_name,
             'status' => $submission->status->value,
             'status_label' => $submission->status->label(),
+            'categories' => $this->whenLoaded('categories', static fn(): array => $submission->categories
+                ->map(static fn(Category $category): array => ['id' => $category->id, 'name' => $category->name])
+                ->values()
+                ->all()),
             'ranking_count' => $this->when($submission->rankings_count !== null, $submission->rankings_count),
             'resolved_nominee_id' => $submission->resolved_nominee_id,
             'resolved_nominee' => $resolved === null ? null : [

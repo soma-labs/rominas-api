@@ -51,7 +51,10 @@ gives two submissions.
 
 `GET /api/admin/editions/{edition}/nominee-submissions` lists the edition's submissions (paginated,
 searchable, sortable), filterable by `?status=pending|resolved|rejected` and `?type=artist|band|…`. Each row
-carries `ranking_count`, the number of ballot picks behind it, which is a useful priority signal.
+carries `ranking_count`, the number of ballot picks behind it, which is a useful priority signal. It also
+carries `categories` (`[{id, name}]`, in category order): every category the name was typed in. A submission
+is shared per type, not per category, so it can list several. The show endpoint and every decision's
+response carry it too.
 
 `GET …/{nomineeSubmission}?with_suggestions=1` adds up to five ranked Catalog matches to help the admin link
 in one click (§4).
