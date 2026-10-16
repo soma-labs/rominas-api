@@ -105,7 +105,7 @@ only as a hash.
 
 Invitations are a **manual admin action, not tied to the edition lifecycle** — typically sent before
 nominations open. The exception is a member created by approving a proposal (§5): the approval sends
-their invitation itself. All three paths go through `InviteMemberAction`.
+their invitation itself. All four paths go through `InviteMemberAction`.
 
 - **Bulk** — `POST /api/admin/members/invitations`: `SendAcademyInvitationsAction` invites every
   `awaiting_invitation` member, moves each to `invited`, and returns the count. Each email is a queued
@@ -113,6 +113,22 @@ their invitation itself. All three paths go through `InviteMemberAction`.
 - **Single** — `POST /api/admin/members/{member}/invite`: invites one member. It also works as a resend for
   an already-invited member (status unchanged, `invited_at` re-stamped). The magic-link resend cooldown still
 applies: if the previous link was issued under 60 seconds ago and is still valid, no new email goes out.
+- **Picked, with a template** — `POST /api/admin/members/invitations/send` with `{member_ids: [...], template}`
+  (`SendMemberInvitationsRequest`, at most 500 members): `SendSelectedMemberInvitationsAction` invites
+  each picked member in the chosen template and returns `{success, invited}`. Every picked member must
+  exist, be visible to the admin and still be `awaiting_invitation`; otherwise the request is refused
+  with a 422 on that `member_ids.N` and nothing is sent. Re-sends go through the single invite. The admin's
+  picker searches `GET /api/admin/members?status=awaiting_invitation` (the list takes an optional `status`).
+
+**Templates.** The invitation has several templates, listed in `config/academy-invitations.php` (key →
+admin label, Blade view under `resources/views/emails/academy/invitations/`, subject) and served to the
+admin by `GET /api/admin/members/invitation-templates` (`[{key, label}]`, in config order). Only the
+picked-members path chooses one; the others use the `default` (Romanian). Built-in: `default` and `english`.
+The key travels with the queued `SendMagicLinkJob` to `AcademyInvitationEmailPayloadFactory`, read
+through `InvitationTemplates`. Only the invitation changes: the link, the academy app and later e-mails
+stay Romanian. To add a template: a Blade file (same variables `name`, `url`, `proposerName`, wrapped in
+`x-email.layout` with its `lang`) plus a config entry; `romias:test-mail` then offers it as
+`academy-invitation-<key>` (and `…-proposed`).
 
 The invitation is itself a magic link (`academy-invitation-email`), so opening it signs the member in.
 When the member was created by approving a proposal (§5), the e-mail names the member who proposed them
