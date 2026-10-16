@@ -10,10 +10,10 @@ use Illuminate\Contracts\Console\PromptsForMissingInput;
 use Illuminate\Notifications\Notification as BaseNotification;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Validator;
+use Rominas\Academy\Member\Support\InvitationTemplates;
 use Rominas\Delivery\Actions\DeliveryAction;
 use Rominas\Delivery\Exceptions\DeliveryFailedException;
 use Rominas\Delivery\Enums\EmailAudience;
-use Rominas\Delivery\Factories\AcademyInvitationEmailPayloadFactory;
 use Rominas\Notifications\Channels\DeliveryChannel;
 use Rominas\Notifications\Notifications\DailyStatistics;
 use Rominas\Notifications\Notifications\MemberJoined;
@@ -104,13 +104,24 @@ class SendTestEmailCommand extends Command implements PromptsForMissingInput
     }
 
     /**
+     * The academy invitation comes once per invitation template (config/academy-invitations.php): the
+     * default as `academy-invitation`, any other as `academy-invitation-<template>`; each also as the
+     * variant for a member from a proposal (`…-proposed`).
+     *
      * @return array<string, string> template key => label
      */
     private static function templates(): array
     {
+        $invitations = [];
+
+        foreach (InvitationTemplates::all() as $template) {
+            $key = self::invitationKey($template->key);
+            $invitations[$key] = "Academy invitation, {$template->label} (member added by an admin)";
+            $invitations["{$key}-proposed"] = "Academy invitation, {$template->label} (member from a proposal)";
+        }
+
         return [
-            'academy-invitation' => 'Academy invitation (member added by an admin)',
-            'academy-invitation-proposed' => 'Academy invitation (member from a proposal)',
+            ...$invitations,
             'academy-login' => 'Academy login link',
             'voting-link' => 'Voting link',
             'nominations-opened' => 'Nominations opened',
@@ -123,23 +134,44 @@ class SendTestEmailCommand extends Command implements PromptsForMissingInput
         ];
     }
 
+    private static function invitationKey(string $templateKey): string
+    {
+        return $templateKey === config('academy-invitations.default')
+            ? 'academy-invitation'
+            : "academy-invitation-{$templateKey}";
+    }
+
     private function send(string $template, string $email, DeliveryAction $delivery, DeliveryChannel $channel): void
     {
+        foreach (InvitationTemplates::all() as $invitation) {
+            $key = self::invitationKey($invitation->key);
+
+            if ($template === $key) {
+                $delivery->execute('academy-invitation-email', ['email'], $email, self::TOKEN, $invitation->key);
+
+                return;
+            }
+
+            if ($template === "{$key}-proposed") {
+                $delivery->execute(
+                    'notification-email',
+                    ['email'],
+                    $email,
+                    $invitation->subject,
+                    $invitation->view,
+                    EmailAudience::Academy,
+                    [
+                        'name' => 'Ana Popescu',
+                        'url' => rtrim((string) config('services.frontend.academy_url'), '/') . '/invitatie?token=' . self::TOKEN . '&email=' . rawurlencode($email),
+                        'proposerName' => 'Ion Ionescu',
+                    ],
+                );
+
+                return;
+            }
+        }
+
         match ($template) {
-            'academy-invitation' => $delivery->execute('academy-invitation-email', ['email'], $email, self::TOKEN),
-            'academy-invitation-proposed' => $delivery->execute(
-                'notification-email',
-                ['email'],
-                $email,
-                AcademyInvitationEmailPayloadFactory::SUBJECT,
-                'emails.academy.invitation',
-                EmailAudience::Academy,
-                [
-                    'name' => 'Ana Popescu',
-                    'url' => rtrim((string) config('services.frontend.academy_url'), '/') . '/invitatie?token=' . self::TOKEN . '&email=' . rawurlencode($email),
-                    'proposerName' => 'Ion Ionescu',
-                ],
-            ),
             'academy-login' => $delivery->execute('academy-magic-link-email', ['email'], $email, self::TOKEN),
             'voting-link' => $delivery->execute('voting-link-email', ['email'], $email, self::TOKEN),
             default => $channel->send(Notification::route('mail', $email), $this->notification($template)),

@@ -12,13 +12,14 @@ use Rominas\Auth\MagicLink\Jobs\SendMagicLinkJob;
  * Sends one member their invitation: a queued {@see SendMagicLinkJob} on the `member` guard, dispatched
  * after the surrounding transaction commits so the job never races a not-yet-persisted row. A member
  * awaiting their first invitation moves to `Invited`; a resend leaves an invited/active/suspended member's
- * status alone. `invited_at` is stamped either way.
+ * status alone. `invited_at` is stamped either way. The e-mail uses the given template
+ * (config/academy-invitations.php), or the default one.
  */
 class InviteMemberAction
 {
-    public function execute(Member $member): Member
+    public function execute(Member $member, ?string $template = null): Member
     {
-        SendMagicLinkJob::dispatch('member', $member->email, 'academy-invitation-email')
+        SendMagicLinkJob::dispatch('member', $member->email, 'academy-invitation-email', $template)
             ->afterCommit();
 
         $member->forceFill([

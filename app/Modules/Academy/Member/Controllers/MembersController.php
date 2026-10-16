@@ -5,23 +5,28 @@ declare(strict_types=1);
 namespace Rominas\Academy\Member\Controllers;
 
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\UploadedFile;
 use Rominas\Academy\Actions\SendAcademyInvitationsAction;
+use Rominas\Academy\Actions\SendSelectedMemberInvitationsAction;
 use Rominas\Academy\Member\Actions\CreateMemberAction;
 use Rominas\Academy\Member\Actions\DeleteMemberAction;
 use Rominas\Academy\Member\Actions\ImportMembersAction;
 use Rominas\Academy\Member\Actions\InviteMemberAction;
 use Rominas\Academy\Member\Actions\UpdateMemberAction;
+use Rominas\Academy\Member\Enums\MemberStatus;
 use Rominas\Academy\Member\Factories\MemberDataFactory;
 use Rominas\Academy\Member\Model\Member;
 use Rominas\Academy\Member\QueryBuilders\MemberQueryBuilder;
 use Rominas\Academy\Member\Requests\CreateMemberRequest;
 use Rominas\Academy\Member\Requests\ImportMembersRequest;
+use Rominas\Academy\Member\Requests\ListMembersRequest;
+use Rominas\Academy\Member\Requests\SendMemberInvitationsRequest;
 use Rominas\Academy\Member\Requests\UpdateMemberRequest;
 use Rominas\Academy\Member\Resources\AdminMemberResource;
+use Rominas\Academy\Member\Resources\InvitationTemplateResource;
 use Rominas\Academy\Member\Resources\MemberImportResultResource;
+use Rominas\Academy\Member\Support\InvitationTemplates;
 use Rominas\Users\Model\User;
 
 use function response;
@@ -31,7 +36,7 @@ use function response;
  */
 class MembersController
 {
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(ListMembersRequest $request): AnonymousResourceCollection
     {
         /** @var User $user */
         $user = $request->user();
@@ -39,6 +44,10 @@ class MembersController
         return AdminMemberResource::collection(
             Member::query()
                 ->visibleToUser($user)
+                ->when(
+                    $request->status(),
+                    fn(MemberQueryBuilder $query, MemberStatus $status): MemberQueryBuilder => $query->filterByStatus($status),
+                )
                 ->search($request->query('search'))
                 ->orderBy(
                     $request->query('orderBy', 'id'),
@@ -105,5 +114,24 @@ class MembersController
         $invited = $action->execute();
 
         return response()->json(['success' => true, 'invited' => $invited]);
+    }
+
+    /**
+     * Send the invitation, in the chosen template, to each picked member still awaiting one, and move
+     * them to `invited`. One e-mail per member.
+     */
+    public function invitePicked(SendMemberInvitationsRequest $request, SendSelectedMemberInvitationsAction $action): JsonResponse
+    {
+        $invited = $action->execute($request->memberIds(), $request->template());
+
+        return response()->json(['success' => true, 'invited' => $invited]);
+    }
+
+    /**
+     * The invitation templates an admin can choose from, in config/academy-invitations.php's order.
+     */
+    public function invitationTemplates(): AnonymousResourceCollection
+    {
+        return InvitationTemplateResource::collection(InvitationTemplates::all());
     }
 }

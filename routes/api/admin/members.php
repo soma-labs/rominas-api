@@ -19,6 +19,16 @@ Route::post('/invitations', [MembersController::class, 'inviteAll'])
     ->name('invitations')
     ->middleware('can:create,' . Member::class);
 
+// Bulk: invitations in a chosen template to the members the admin picked (each still awaiting one).
+Route::post('/invitations/send', [MembersController::class, 'invitePicked'])
+    ->name('invitations.send')
+    ->middleware('can:create,' . Member::class);
+
+// The invitation templates an admin can choose from.
+Route::get('/invitation-templates', [MembersController::class, 'invitationTemplates'])
+    ->name('invitation-templates')
+    ->middleware('can:create,' . Member::class);
+
 // Bulk: one member awaiting invitation per row of an uploaded CSV / XLSX list; sends nothing.
 Route::post('/import', [MembersController::class, 'import'])
     ->name('import')

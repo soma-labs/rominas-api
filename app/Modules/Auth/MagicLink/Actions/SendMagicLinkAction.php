@@ -19,7 +19,8 @@ use Rominas\Delivery\Actions\DeliveryAction;
  * The system is CLOSED — a link is only issued for an address that already has an account (an admin
  * invites members first). When no account matches, we return silently so the caller can always
  * respond 200 without leaking whether the address exists. Within the resend cooldown a still-valid
- * link is kept and nothing is re-sent.
+ * link is kept and nothing is re-sent. An e-mail template, when given, is passed on to the e-mail's payload
+ * factory untouched (only some e-mails offer templates, e.g. the academy invitation).
  */
 class SendMagicLinkAction
 {
@@ -29,7 +30,7 @@ class SendMagicLinkAction
         private readonly DeliveryAction $delivery,
     ) {}
 
-    public function execute(string $guard, string $email, string $emailAction): void
+    public function execute(string $guard, string $email, string $emailAction, ?string $emailTemplate = null): void
     {
         $provider = config("auth.guards.{$guard}.provider");
 
@@ -65,7 +66,13 @@ class SendMagicLinkAction
             ],
         );
 
-        $this->delivery->execute($emailAction, ['email'], $email, $token);
+        $this->delivery->execute(
+            $emailAction,
+            ['email'],
+            $email,
+            $token,
+            ...($emailTemplate === null ? [] : [$emailTemplate]),
+        );
     }
 
     /**
