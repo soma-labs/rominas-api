@@ -5,21 +5,24 @@ declare(strict_types=1);
 namespace Rominas\Academy\Member\Controllers;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Validation\Rule;
 use Rominas\Academy\Actions\SendAcademyInvitationsAction;
 use Rominas\Academy\Actions\SendSelectedMemberInvitationsAction;
 use Rominas\Academy\Member\Actions\CreateMemberAction;
 use Rominas\Academy\Member\Actions\DeleteMemberAction;
+use Rominas\Academy\Member\Actions\ExportMembersAction;
 use Rominas\Academy\Member\Actions\ImportMembersAction;
 use Rominas\Academy\Member\Actions\InviteMemberAction;
 use Rominas\Academy\Member\Actions\UpdateMemberAction;
+use Rominas\Academy\Member\Enums\MemberStatus;
 use Rominas\Academy\Member\Factories\MemberDataFactory;
 use Rominas\Academy\Member\Model\Member;
 use Rominas\Academy\Member\QueryBuilders\MemberQueryBuilder;
 use Rominas\Academy\Member\Requests\CreateMemberRequest;
 use Rominas\Academy\Member\Requests\ImportMembersRequest;
-use Rominas\Academy\Member\Requests\ListMembersRequest;
 use Rominas\Academy\Member\Requests\SendMemberInvitationsRequest;
 use Rominas\Academy\Member\Requests\UpdateMemberRequest;
 use Rominas\Academy\Member\Resources\AdminMemberResource;
@@ -27,6 +30,8 @@ use Rominas\Academy\Member\Resources\InvitationTemplateResource;
 use Rominas\Academy\Member\Resources\MemberImportResultResource;
 use Rominas\Academy\Member\Support\InvitationTemplates;
 use Rominas\Users\Model\User;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Rominas\Editions\Model\Edition;
 
 use function response;
 
@@ -35,24 +40,12 @@ use function response;
  */
 class MembersController
 {
-    public function index(ListMembersRequest $request): AnonymousResourceCollection
+    public function index(Request $request): AnonymousResourceCollection
     {
-        /** @var User $user */
-        $user = $request->user();
-
         return AdminMemberResource::collection(
-            Member::query()
-                ->visibleToUser($user)
-                ->when(
-                    $request->statuses(),
-                    fn(MemberQueryBuilder $query, array $statuses): MemberQueryBuilder => $query->filterByStatuses(...$statuses),
-                )
-                ->search($request->query('search'))
-                ->orderBy(
-                    $request->query('orderBy', 'id'),
-                    $request->query('orderDir', 'desc'),
-                )
-                ->paginate($request->query('perPage', MemberQueryBuilder::PER_PAGE)),
+            $this->membersQuery($request)->paginate(
+                $request->integer('perPage', MemberQueryBuilder::PER_PAGE)
+            )
         );
     }
 
@@ -132,5 +125,66 @@ class MembersController
     public function invitationTemplates(): AnonymousResourceCollection
     {
         return InvitationTemplateResource::collection(InvitationTemplates::all());
+    }
+
+    private function membersQuery(Request $request): MemberQueryBuilder
+    {
+        $filters = $request->validate([
+            'status' => ['nullable', Rule::enum(MemberStatus::class)],
+            'startedNominations' => ['nullable', Rule::in(['yes', 'no'])],
+            'submittedNominations' => ['nullable', Rule::in(['yes', 'no'])],
+            'submittedMemberProposals' => ['nullable', Rule::in(['yes', 'no'])],
+        ]);
+
+        /** @var User $user */
+        $user = $request->user();
+
+        $edition = Edition::query()->active()->first();
+
+        $query = Member::query()
+            ->visibleToUser($user)
+            ->search($request->query('search'));
+
+        if (! empty($filters['status'])) {
+            $query->filterByStatus(
+                MemberStatus::from($filters['status'])
+            );
+        }
+
+        if (! empty($filters['startedNominations'])) {
+            $query->filterByStartedNominations(
+                $filters['startedNominations'] === 'yes',
+                $edition
+            );
+        }
+
+        if (! empty($filters['submittedNominations'])) {
+            $query->filterBySubmittedNominations(
+                $filters['submittedNominations'] === 'yes',
+                $edition
+            );
+        }
+
+        if (! empty($filters['submittedMemberProposals'])) {
+            $query->filterBySubmittedMemberProposals(
+                $filters['submittedMemberProposals'] === 'yes'
+            );
+        }
+
+        return $query
+            ->withMemberProgress($edition)
+            ->orderBy(
+                $request->query('orderBy', 'id'),
+                $request->query('orderDir', 'desc')
+            );
+    }
+
+    public function export(
+        Request $request,
+        ExportMembersAction $action
+    ): BinaryFileResponse {
+        return $action->execute(
+            $this->membersQuery($request)
+        );
     }
 }

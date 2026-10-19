@@ -29,6 +29,17 @@ class AdminMemberResource extends MemberResource
             'position' => $member->position,
             'company' => $member->company,
             'phone' => $member->phone,
+            'has_started_nominations' => $this->resource->getAttribute('has_started_nominations') === null
+                ? null
+                : (bool) $this->resource->getAttribute('has_started_nominations'),
+
+            'has_submitted_nominations' => $this->resource->getAttribute('has_submitted_nominations') === null
+                ? null
+                : (bool) $this->resource->getAttribute('has_submitted_nominations'),
+
+            'has_submitted_member_proposals' => $this->resource->getAttribute('has_submitted_member_proposals') === null
+                ? null
+                : (bool) $this->resource->getAttribute('has_submitted_member_proposals'),
         ];
     }
 }

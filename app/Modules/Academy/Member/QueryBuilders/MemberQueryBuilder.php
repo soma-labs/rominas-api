@@ -12,6 +12,7 @@ use Rominas\Editions\Model\Edition;
 use Rominas\Shared\Concerns\QueryBuilderSearchableTrait;
 use Rominas\Shared\Concerns\QueryBuilderSortableTrait;
 use Rominas\Users\Model\User;
+use Rominas\Academy\Nomination\Enums\NominationStatus;
 
 /**
  * @extends Builder<Member>
@@ -89,5 +90,102 @@ class MemberQueryBuilder extends Builder
             'created_at',
             'updated_at',
         ];
+    }
+
+    public function withMemberProgress(?Edition $edition): self
+    {
+        $this->select('members.*');
+
+        $this->selectRaw('
+        EXISTS (
+            SELECT 1
+            FROM member_proposals
+            WHERE member_proposals.proposed_by_member_id = members.id
+        ) AS has_submitted_member_proposals
+    ');
+
+        if ($edition === null) {
+            return $this->selectRaw('
+            NULL AS has_started_nominations,
+            NULL AS has_submitted_nominations
+        ');
+        }
+
+        $this->selectRaw('
+        EXISTS (
+            SELECT 1
+            FROM nominations
+            INNER JOIN nomination_rankings
+                ON nomination_rankings.nomination_id = nominations.id
+            WHERE nominations.member_id = members.id
+              AND nominations.edition_id = ?
+        ) AS has_started_nominations
+    ', [$edition->id]);
+
+        return $this->selectRaw('
+        EXISTS (
+            SELECT 1
+            FROM nominations
+            WHERE nominations.member_id = members.id
+              AND nominations.edition_id = ?
+              AND nominations.status = ?
+        ) AS has_submitted_nominations
+    ', [$edition->id, NominationStatus::Submitted->value]);
+    }
+
+    public function filterByStartedNominations(
+        bool $started,
+        ?Edition $edition
+    ): self {
+        if ($edition === null) {
+            return $this;
+        }
+
+        $operator = $started ? 'EXISTS' : 'NOT EXISTS';
+
+        return $this->whereRaw("
+        {$operator} (
+            SELECT 1
+            FROM nominations
+            INNER JOIN nomination_rankings
+                ON nomination_rankings.nomination_id = nominations.id
+            WHERE nominations.member_id = members.id
+              AND nominations.edition_id = ?
+        )
+    ", [$edition->id]);
+    }
+
+    public function filterBySubmittedNominations(
+        bool $submitted,
+        ?Edition $edition
+    ): self {
+        if ($edition === null) {
+            return $this;
+        }
+
+        $operator = $submitted ? 'EXISTS' : 'NOT EXISTS';
+
+        return $this->whereRaw("
+        {$operator} (
+            SELECT 1
+            FROM nominations
+            WHERE nominations.member_id = members.id
+              AND nominations.edition_id = ?
+              AND nominations.status = ?
+        )
+    ", [$edition->id, NominationStatus::Submitted->value]);
+    }
+
+    public function filterBySubmittedMemberProposals(bool $submitted): self
+    {
+        $operator = $submitted ? 'EXISTS' : 'NOT EXISTS';
+
+        return $this->whereRaw("
+        {$operator} (
+            SELECT 1
+            FROM member_proposals
+            WHERE member_proposals.proposed_by_member_id = members.id
+        )
+    ");
     }
 }

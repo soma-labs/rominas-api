@@ -34,6 +34,10 @@ Route::post('/import', [MembersController::class, 'import'])
     ->name('import')
     ->middleware('can:create,' . Member::class);
 
+Route::get('/export', [MembersController::class, 'export'])
+    ->name('export')
+    ->middleware('can:viewAny,' . Member::class);
+
 Route::get('/{member}', [MembersController::class, 'show'])
     ->name('view')
     ->middleware('can:view,member');
