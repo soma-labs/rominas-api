@@ -130,7 +130,13 @@ class MembersController
     private function membersQuery(Request $request): MemberQueryBuilder
     {
         $filters = $request->validate([
-            'status' => ['nullable', Rule::enum(MemberStatus::class)],
+            'status' => [
+                'nullable',
+                is_array($request->input('status'))
+                    ? 'array'
+                    : Rule::enum(MemberStatus::class),
+            ],
+            'status.*' => [Rule::enum(MemberStatus::class)],
             'startedNominations' => ['nullable', Rule::in(['yes', 'no'])],
             'submittedNominations' => ['nullable', Rule::in(['yes', 'no'])],
             'submittedMemberProposals' => ['nullable', Rule::in(['yes', 'no'])],
@@ -146,9 +152,13 @@ class MembersController
             ->search($request->query('search'));
 
         if (! empty($filters['status'])) {
-            $query->filterByStatus(
-                MemberStatus::from($filters['status'])
-            );
+            $statuses = (array) $filters['status'];
+
+            if (count($statuses) === 1) {
+                $query->filterByStatus(MemberStatus::from($statuses[0]));
+            } else {
+                $query->whereIn('status', $statuses);
+            }
         }
 
         if (! empty($filters['startedNominations'])) {
