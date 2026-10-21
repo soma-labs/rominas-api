@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Rominas\Delivery\Brevo\BrevoMailService;
 use Rominas\Delivery\Factories\AcademyInvitationEmailPayloadFactory;
 use Rominas\Delivery\Factories\AcademyMagicLinkEmailPayloadFactory;
+use Rominas\Delivery\Factories\AcademyNominationFollowUpEmailPayloadFactory;
 use Rominas\Delivery\Factories\ExampleNotificationPayloadFactory;
 use Rominas\Delivery\Factories\NotificationEmailPayloadFactory;
 use Rominas\Delivery\Factories\VotingLinkEmailPayloadFactory;
@@ -70,6 +71,7 @@ return [
                 'voting-link-email' => VotingLinkEmailPayloadFactory::class,
                 // Every Notifications-module e-mail: the notification supplies subject + view.
                 'notification-email' => NotificationEmailPayloadFactory::class,
+                'academy-nomination-follow-up-email' => AcademyNominationFollowUpEmailPayloadFactory::class,
             ],
         ],
     ],

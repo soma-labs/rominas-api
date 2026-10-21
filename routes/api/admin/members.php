@@ -38,6 +38,10 @@ Route::get('/export', [MembersController::class, 'export'])
     ->name('export')
     ->middleware('can:viewAny,' . Member::class);
 
+Route::post('/nomination-follow-ups/send', [MembersController::class, 'sendNominationFollowUps'])
+    ->name('nomination-follow-ups.send')
+    ->middleware('can:create,' . Member::class);
+
 Route::get('/{member}', [MembersController::class, 'show'])
     ->name('view')
     ->middleware('can:view,member');

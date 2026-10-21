@@ -24,6 +24,7 @@ use Rominas\Academy\Member\QueryBuilders\MemberQueryBuilder;
 use Rominas\Academy\Member\Requests\CreateMemberRequest;
 use Rominas\Academy\Member\Requests\ImportMembersRequest;
 use Rominas\Academy\Member\Requests\SendMemberInvitationsRequest;
+use Rominas\Academy\Member\Requests\SendNominationFollowUpsRequest;
 use Rominas\Academy\Member\Requests\UpdateMemberRequest;
 use Rominas\Academy\Member\Resources\AdminMemberResource;
 use Rominas\Academy\Member\Resources\InvitationTemplateResource;
@@ -32,6 +33,7 @@ use Rominas\Academy\Member\Support\InvitationTemplates;
 use Rominas\Users\Model\User;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Rominas\Editions\Model\Edition;
+use Rominas\Academy\Actions\SendSelectedMemberNominationFollowUpsAction;
 
 use function response;
 
@@ -196,5 +198,20 @@ class MembersController
         return $action->execute(
             $this->membersQuery($request)
         );
+    }
+
+    public function sendNominationFollowUps(
+        SendNominationFollowUpsRequest $request,
+        SendSelectedMemberNominationFollowUpsAction $action
+    ): JsonResponse {
+        $sent = $action->execute(
+            $request->memberIds(),
+            $request->template()
+        );
+
+        return response()->json([
+            'success' => true,
+            'sent' => $sent,
+        ]);
     }
 }
