@@ -1,3 +1,4 @@
+
 @php
     /** @var string $name */
     /** @var string $url */
@@ -5,35 +6,35 @@
 
 <x-email.layout
     lang="ro"
-    title="Finalizează nominalizările și propune colegi în Academia ROMIAS"
+    title="Finalizează nominalizările în Academia ROMIAS"
 >
     <p>Stimate / Stimată {{ $name }},</p>
 
     <p>
-        Vă mulțumim pentru încrederea acordată și pentru că faceți parte din
-        Academia The Romanian Music Industry Awards. Implicarea dumneavoastră
-        contribuie la construirea unei inițiative dedicate recunoașterii
-        profesionalismului și excelenței în industria muzicală românească.
+        Procesul de nominalizare pentru The Romanian Music Industry Awards
+        continuă, iar implicarea dumneavoastră este esențială pentru
+        recunoașterea celor care contribuie la excelența industriei
+        muzicale românești.
     </p>
 
     <p>
-        Vă invităm să reveniți pe platforma ROMIAS pentru a finaliza
-        nominalizările și a propune colegii și profesioniștii pe care îi
-        considerați reprezentativi. Fiecare vot contează în construirea
-        unui sistem de recunoaștere bazat pe merit, integritate și profesionalism.
+        Vă reamintim să accesați platforma ROMIAS pentru a finaliza
+        nominalizările și pentru a propune artiștii, profesioniștii și
+        colegii care merită să fie recunoscuți pentru contribuția lor.
     </p>
 
     <x-email.button :href="$url">
-        Autentificare
+        Trimite nominalizările
     </x-email.button>
 
     <p>
-        Vă mulțumim pentru timpul acordat și pentru contribuția dumneavoastră!
+        Vă mulțumim pentru implicare și vă încurajăm să vă finalizați
+        nominalizările înainte de încheierea perioadei dedicate
+        acestui proces.
     </p>
 
     <p>
-        Cu apreciere și considerație,<br>
-        The ROMIAS Team<br>
-        The Romanian Music Industry Awards
+        Primiți acest mesaj pentru că sunteți membru al Academiei
+        The Romanian Music Industry Awards.
     </p>
 </x-email.layout>

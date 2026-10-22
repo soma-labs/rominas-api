@@ -1,3 +1,4 @@
+
 @php
     /** @var string $name */
     /** @var string $url */
@@ -5,36 +6,35 @@
 
 <x-email.layout
     lang="en"
-    title="Complete the nominations and nominate colleagues in the ROMIAS Academy"
+    title="Complete your nominations in the ROMIAS Academy"
 >
     <p>Dear {{ $name }},</p>
 
     <p>
-        Thank you for your trust and for being part of The Romanian Music
-        Industry Awards Academy. Your involvement helps strengthen an
-        initiative dedicated to recognizing professionalism, excellence,
-        and outstanding contributions to Romania's music industry.
+        The nomination process for The Romanian Music Industry Awards
+        is still underway, and your participation is essential in
+        recognizing those who contribute to excellence in the
+        Romanian music industry.
     </p>
 
     <p>
-        We invite you to return to the ROMIAS platform to complete your
-        nominations and nominate the colleagues and industry professionals
-        you believe best represent the Romanian music scene. Every vote
-        matters in building a recognition system founded on merit,
-        integrity, and professionalism.
+        We would like to remind you to visit the ROMIAS platform
+        to complete your nominations and nominate the artists,
+        industry professionals, and peers who deserve recognition
+        for their contributions.
     </p>
 
     <x-email.button :href="$url">
-        Login
+        Submit nominations
     </x-email.button>
 
     <p>
-        Thank you for your time and valuable contribution to the ROMIAS initiative!
+        Thank you for your participation. We encourage you to
+        complete your nominations before the nomination period closes.
     </p>
 
     <p>
-        Kind regards,<br>
-        The ROMIAS Team<br>
-        The Romanian Music Industry Awards
+        You are receiving this message because you are a member
+        of The Romanian Music Industry Awards Academy.
     </p>
 </x-email.layout>
