@@ -10,6 +10,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule;
 use Rominas\Academy\Actions\SendAcademyInvitationsAction;
+use Rominas\Academy\Actions\SendSelectedMemberInvitationFollowUpsAction;
 use Rominas\Academy\Actions\SendSelectedMemberInvitationsAction;
 use Rominas\Academy\Member\Actions\CreateMemberAction;
 use Rominas\Academy\Member\Actions\DeleteMemberAction;
@@ -23,6 +24,7 @@ use Rominas\Academy\Member\Model\Member;
 use Rominas\Academy\Member\QueryBuilders\MemberQueryBuilder;
 use Rominas\Academy\Member\Requests\CreateMemberRequest;
 use Rominas\Academy\Member\Requests\ImportMembersRequest;
+use Rominas\Academy\Member\Requests\SendInvitationFollowUpsRequest;
 use Rominas\Academy\Member\Requests\SendMemberInvitationsRequest;
 use Rominas\Academy\Member\Requests\SendNominationFollowUpsRequest;
 use Rominas\Academy\Member\Requests\UpdateMemberRequest;
@@ -203,6 +205,21 @@ class MembersController
     public function sendNominationFollowUps(
         SendNominationFollowUpsRequest $request,
         SendSelectedMemberNominationFollowUpsAction $action
+    ): JsonResponse {
+        $sent = $action->execute(
+            $request->memberIds(),
+            $request->template()
+        );
+
+        return response()->json([
+            'success' => true,
+            'sent' => $sent,
+        ]);
+    }
+
+    public function sendInvitationFollowUps(
+        SendInvitationFollowUpsRequest $request,
+        SendSelectedMemberInvitationFollowUpsAction $action
     ): JsonResponse {
         $sent = $action->execute(
             $request->memberIds(),

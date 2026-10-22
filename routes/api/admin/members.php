@@ -42,6 +42,10 @@ Route::post('/nomination-follow-ups/send', [MembersController::class, 'sendNomin
     ->name('nomination-follow-ups.send')
     ->middleware('can:create,' . Member::class);
 
+Route::post('/invitation-follow-ups/send', [MembersController::class, 'sendInvitationFollowUps'])
+    ->name('invitation-follow-ups.send')
+    ->middleware('can:create,' . Member::class);
+
 Route::get('/{member}', [MembersController::class, 'show'])
     ->name('view')
     ->middleware('can:view,member');

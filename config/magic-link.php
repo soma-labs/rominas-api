@@ -22,6 +22,7 @@ return [
     'ttl_minutes' => [
         'academy-invitation-email' => (int) env('MAGIC_LINK_INVITATION_TTL_MINUTES', 48 * 60),
         'academy-nomination-follow-up-email' => (int) env('MAGIC_LINK_NOMINATION_FOLLOW_UP_TTL_MINUTES', 48 * 60),
+        'academy-invitation-follow-up-email' => (int) env('MAGIC_LINK_INVITATION_FOLLOW_UP_TTL_MINUTES', 48 * 60),
     ],
 
 ];
