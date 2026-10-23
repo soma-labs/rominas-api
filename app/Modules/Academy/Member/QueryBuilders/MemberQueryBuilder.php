@@ -135,7 +135,7 @@ class MemberQueryBuilder extends Builder
 
     public function filterByStartedNominations(
         bool $started,
-        ?Edition $edition
+        ?Edition $edition,
     ): self {
         if ($edition === null) {
             return $this;
@@ -157,7 +157,7 @@ class MemberQueryBuilder extends Builder
 
     public function filterBySubmittedNominations(
         bool $submitted,
-        ?Edition $edition
+        ?Edition $edition,
     ): self {
         if ($edition === null) {
             return $this;
@@ -174,6 +174,11 @@ class MemberQueryBuilder extends Builder
               AND nominations.status = ?
         )
     ", [$edition->id, NominationStatus::Submitted->value]);
+    }
+
+    public function filterByFoundingMember(bool $isFoundingMember): self
+    {
+        return $this->where('is_founding_member', '=', $isFoundingMember);
     }
 
     public function filterBySubmittedMemberProposals(bool $submitted): self

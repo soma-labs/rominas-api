@@ -145,6 +145,7 @@ class MembersController
         $startedNominations = $request->startedNominations();
         $submittedNominations = $request->submittedNominations();
         $submittedMemberProposals = $request->submittedMemberProposals();
+        $foundingMember = $request->foundingMember();
 
         return Member::query()
             ->visibleToUser($user)
@@ -164,6 +165,10 @@ class MembersController
             ->when(
                 $submittedMemberProposals !== null,
                 fn(MemberQueryBuilder $query): MemberQueryBuilder => $query->filterBySubmittedMemberProposals((bool) $submittedMemberProposals),
+            )
+            ->when(
+                $foundingMember !== null,
+                fn(MemberQueryBuilder $query): MemberQueryBuilder => $query->filterByFoundingMember((bool) $foundingMember),
             )
             ->withMemberProgress($edition)
             ->orderBy(

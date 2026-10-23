@@ -26,6 +26,7 @@ class ListMembersRequest extends FormRequest
             'startedNominations' => ['nullable', Rule::in(['yes', 'no'])],
             'submittedNominations' => ['nullable', Rule::in(['yes', 'no'])],
             'submittedMemberProposals' => ['nullable', Rule::in(['yes', 'no'])],
+            'foundingMember' => ['nullable', Rule::in(['yes', 'no'])],
         ];
     }
 
@@ -77,6 +78,15 @@ class ListMembersRequest extends FormRequest
     public function submittedMemberProposals(): ?bool
     {
         return $this->yesOrNo('submittedMemberProposals');
+    }
+
+    /**
+     * Whether to keep the founding members (true) or the others (false); null when the list is not
+     * filtered by it.
+     */
+    public function foundingMember(): ?bool
+    {
+        return $this->yesOrNo('foundingMember');
     }
 
     private function yesOrNo(string $filter): ?bool

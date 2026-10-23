@@ -51,7 +51,10 @@ roster update (`PATCH /api/admin/members/{member}`), which is how a member is su
 | `suspended` | An admin sets it via the roster update | **No** — verify returns 422 |
 
 Admins manage the roster under `/api/admin/members` (the `members` permission, held by `admin`); the list
-shows the newest members first unless `orderBy` / `orderDir` say otherwise.
+shows the newest members first unless `orderBy` / `orderDir` say otherwise. It filters by `search`,
+`status` (one or several) and four yes/no filters: `startedNominations` / `submittedNominations` (in the
+active edition), `submittedMemberProposals` and `foundingMember` (`ListMembersRequest`). The XLSX export
+(`/api/admin/members/export`) takes the same filters.
 A member has three optional contact details — `position`, `company`, `phone`. Only these admin
 endpoints return them (`AdminMemberResource`); the member-facing `/api/academy/me` does not.
 

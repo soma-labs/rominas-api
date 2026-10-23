@@ -141,13 +141,27 @@ it('filters the members by whether they proposed someone', function (string $val
     'not proposed' => ['no', false],
 ]);
 
-it('refuses a progress filter other than yes or no', function (string $filter): void {
+it('filters the members by whether they are founding members', function (string $value, bool $founding): void {
+    actingAsSuperAdmin();
+    $foundingMember = Member::factory()->founding()->create();
+    $other = Member::factory()->create();
+
+    getJson('/api/admin/members?foundingMember=' . $value)
+        ->assertStatus(200)
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $founding ? $foundingMember->id : $other->id);
+})->with([
+    'founding' => ['yes', true],
+    'not founding' => ['no', false],
+]);
+
+it('refuses a yes-or-no list filter with any other value', function (string $filter): void {
     actingAsSuperAdmin();
 
     getJson('/api/admin/members?' . $filter . '=maybe')
         ->assertStatus(422)
         ->assertJsonValidationErrorFor($filter);
-})->with(['startedNominations', 'submittedNominations', 'submittedMemberProposals']);
+})->with(['startedNominations', 'submittedNominations', 'submittedMemberProposals', 'foundingMember']);
 
 it('lets an admin update a member', function (): void {
     actingAsSuperAdmin();
