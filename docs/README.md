@@ -2,8 +2,10 @@
 
 Chapter-based documentation for the `rominas-api` backend. Each chapter is a standalone Markdown
 file in this folder. For a high-level project overview see the [root README](../README.md); for the
-ecosystem architecture decisions, locked choices and open questions see the ecosystem
-[`CLAUDE.md`](../../CLAUDE.md) (one level up, in the `rominas/` parent).
+ecosystem architecture decisions, locked choices and open questions see the
+[ecosystem guide](ecosystem.md). The working rules for this repo (architecture, testing, tooling,
+git workflow) are in [`.ai/guidelines/`](../.ai/guidelines/), merged by Laravel Boost into
+`CLAUDE.md` and `AGENTS.md`.
 
 ## Chapters
 

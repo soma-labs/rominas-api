@@ -1,0 +1,8 @@
+# Rominas — Tooling
+
+- **Tests and anything that needs the database run in Sail.** The host PHP has no MySQL driver and `mysql` is a Compose service name, so: `vendor/bin/sail artisan test --compact --filter=…`, `vendor/bin/sail artisan migrate`, `vendor/bin/sail artisan ide-helper:models --write-mixin --no-interaction` (after model changes; `_ide_helper_models.php` is git-ignored and feeds PHPStan).
+- **Pint and PHPStan run on the host, never through `sail exec`.** Inside the container they write their caches (`build/phpstan/`) as another user, and the next host run, including the pre-commit hook, then fails with "Could not write data to cache file". If it happens, clean up with `docker exec -u root rominas-api-laravel.test-1 sh -c 'find /var/www/html/build/phpstan -mindepth 1 ! -user 1000 -delete'`.
+- Format after editing PHP: `vendor/bin/pint --dirty --format agent`.
+- Static analysis is Larastan level 6 (`phpstan.neon`). While working, analyse only the touched paths: `vendor/bin/phpstan analyse app/Modules/<Module> --no-progress --memory-limit=1G`. A whole-app run starts one worker per CPU core and can exhaust the RAM of a small machine; cap it with a local neon that `includes` `phpstan.neon` and sets `parameters.parallel.maximumNumberOfProcesses: 2`, passed with `-c`.
+- **Pre-commit hook:** `.githooks/pre-commit` runs Pint on the staged PHP files (re-staging its fixes) and Larastan on the app, and refuses the commit if Larastan fails. Enable it once per clone with `git config core.hooksPath .githooks`. Fix the errors it reports, even in files you didn't touch, rather than committing with `--no-verify`.
+- Don't add or remove dependencies, or create new top-level folders, without the maintainer's approval.

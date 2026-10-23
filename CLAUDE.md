@@ -1,4 +1,79 @@
 <laravel-boost-guidelines>
+=== .ai/rominas-architecture rules ===
+
+# Rominas — Architecture & Conventions
+
+What Rominas is, the module map, domain rules and GDPR decisions: `docs/ecosystem.md`. Each built module is documented in `docs/` (start at `docs/README.md`); keep those chapters in sync with every change.
+
+## Modular DDD
+
+- Every bounded context is a self-contained module under `app/Modules/<Module>/` (namespace `Rominas\<Module>\`), holding its own Actions, DataTransferObjects, `Model/`, Controllers, QueryBuilders, Policies, Requests, Resources, Factories and Enums. No global `app/Models`, `app/Http/Requests` and the like.
+- **Actions**: one class, one operation (`CreateMemberAction`). No multi-purpose services.
+- **DTOs** cross every module boundary; never pass raw arrays between layers. A `Factories/…DataFactory` builds a DTO from a Form Request.
+- **QueryBuilders**: each model has its own Eloquent builder (`MemberQueryBuilder`) with named, reusable scopes.
+- **Controllers are thin**: resolve input (Form Request), delegate to an Action, return a Resource.
+- Validate input with **Form Requests**, return **Resource** classes, authorise every action with a **Policy** (no inline `Gate::allows`).
+- Multi-step writes run in `DB::transaction(fn () => …)`.
+- Prefer Laravel's own features (jobs, events, notifications, policies, queues) over custom solutions. Long-running work (e-mails, exports) is queued.
+
+## PHP & Laravel style
+
+- `declare(strict_types=1);` in every PHP file; PSR-12 / PER via Pint.
+- Descriptive, intention-revealing names, even if long.
+- Named arguments when a call takes several parameters; constructor promotion and `readonly` where they fit; enums instead of constant sets.
+- Models: `$fillable` (whitelist), never `$guarded`; cast every boolean, date, enum and JSON column.
+- Eager-load relations to avoid N+1; paginate lists; never return unbounded collections.
+
+## Database & migrations
+
+- Every migration is reversible: `down()` undoes `up()` exactly.
+- Never edit an existing migration; add a new one.
+- Index every foreign key and frequently queried column; `foreignId()->constrained()->cascadeOnDelete()` for foreign keys.
+
+## Project-specific rules
+
+- **User-facing text is translated by the API.** Wrap every message a member, voter or admin can read in `__()`, with the English text as the key, and add the Romanian line to `lang/ro.json` (validation-rule messages: `lang/ro/validation.php`). Frontends display the API's `message` / `errors` as they are. Details: `docs/architecture.md` §7.
+- **Datetimes are UTC.** The API stores and sends UTC; there is no `APP_TIMEZONE`. Each frontend converts for display.
+- **Artisan commands** are named `romias:<name>` and registered in `bootstrap/app.php`.
+- **New settings** go in `.env.example` under the "Rominas" heading at the end, and are read via `config()`, never `env()` in code.
+- **Secrets and tokens:** a magic-link or voting-link token is never logged. A payload factory that takes a token marks it `#[SensitiveParameter]`. Personal data is hashed or pseudonymised wherever plaintext isn't needed (GDPR, see `docs/ecosystem.md` §6).
+- **E-mails:** one factory per e-mail in `app/Modules/Delivery/Factories/` building a `MailPayload`; templates wrap their content in `<x-email.layout>` / `<x-email.button>` (table-based, so classic Outlook renders them).
+- User-visible names say **Romias**; internal names (namespace `Rominas\`, repos, database) keep the old spelling on purpose.
+
+=== .ai/rominas-testing rules ===
+
+# Rominas — Testing
+
+- Read `.claude/skills/testing-best-practices/` (`SKILL.md` and `rules/*.md`) before writing tests. Conventions in the neighbouring test files win over the skill.
+- **Feature tests first.** Prove a change through the HTTP layer with a Pest feature test in `tests/Feature`. Write a unit test only for pure logic worth pinning on its own (like `ScoreCalculatorTest`), and never a unit test and a feature test for the same behaviour.
+- **No tests for database seeders.** Check a seeder with Pint, PHPStan and a manual `db:seed --class=…` run.
+- Assert the status explicitly (`assertStatus(201)`, not `assertOk()`), and cover the unhappy paths: validation errors, 401, 403, 404, 422.
+- Assert the user-facing message text where it is part of the contract, and that a refused request changed nothing.
+- Build data with factories and their named states (`Member::factory()->founding()->create()`); add a state rather than passing raw attributes repeatedly.
+- Freeze or move time with `travelTo()` / `freezeTime()` and assert known literal values; never recompute an expectation with the code under test.
+- Tests never send real e-mail: `Tests\TestCase` points the SMTP mailer at the array transport, and `phpunit.xml` forces `MAIL_DELIVERY_TRANSPORT=smtp` with an empty `BREVO_API_KEY`. Keep it that way.
+- Run the narrowest tests that cover the change while developing, and the full suite (`php artisan test --compact`) before merging `dev` into `main`.
+
+=== .ai/rominas-tooling rules ===
+
+# Rominas — Tooling
+
+- **Tests and anything that needs the database run in Sail.** The host PHP has no MySQL driver and `mysql` is a Compose service name, so: `vendor/bin/sail artisan test --compact --filter=…`, `vendor/bin/sail artisan migrate`, `vendor/bin/sail artisan ide-helper:models --write-mixin --no-interaction` (after model changes; `_ide_helper_models.php` is git-ignored and feeds PHPStan).
+- **Pint and PHPStan run on the host, never through `sail exec`.** Inside the container they write their caches (`build/phpstan/`) as another user, and the next host run, including the pre-commit hook, then fails with "Could not write data to cache file". If it happens, clean up with `docker exec -u root rominas-api-laravel.test-1 sh -c 'find /var/www/html/build/phpstan -mindepth 1 ! -user 1000 -delete'`.
+- Format after editing PHP: `vendor/bin/pint --dirty --format agent`.
+- Static analysis is Larastan level 6 (`phpstan.neon`). While working, analyse only the touched paths: `vendor/bin/phpstan analyse app/Modules/<Module> --no-progress --memory-limit=1G`. A whole-app run starts one worker per CPU core and can exhaust the RAM of a small machine; cap it with a local neon that `includes` `phpstan.neon` and sets `parameters.parallel.maximumNumberOfProcesses: 2`, passed with `-c`.
+- **Pre-commit hook:** `.githooks/pre-commit` runs Pint on the staged PHP files (re-staging its fixes) and Larastan on the app, and refuses the commit if Larastan fails. Enable it once per clone with `git config core.hooksPath .githooks`. Fix the errors it reports, even in files you didn't touch, rather than committing with `--no-verify`.
+- Don't add or remove dependencies, or create new top-level folders, without the maintainer's approval.
+
+=== .ai/rominas-workflow rules ===
+
+# Rominas — Git Workflow
+
+- **Work and commit on `dev`** in `rominas-api`, `rominas-admin`, `rominas-academy` and `rominas-voting`. `main` is the release line; the maintainer merges `dev` into `main` and pushes. (`rominas-deployment` is still worked on `main`.) Check `git branch --show-current` before committing.
+- **Commit messages carry only the substance:** a subject line, then what changed and why. No closing recap ("tests pass", "docs updated") and no trailers or metadata (`Co-Authored-By`, session links).
+- A change that touches several repos (say the API and the academy) is committed in each repo separately, and they are deployed together; say so in the module's `docs/` chapter when the order matters (for example "run `migrate`, deploy the API and the academy together").
+- The frontends are separate Next.js repos next to this one, each with its own `CLAUDE.md` to read before working there. Their checks are `pnpm exec tsc --noEmit` and `pnpm lint`; there is no automated frontend testing, so a UI change comes with a short manual test procedure instead.
+
 === foundation rules ===
 
 # Laravel Boost Guidelines
