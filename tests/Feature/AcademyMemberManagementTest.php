@@ -5,6 +5,10 @@ declare(strict_types=1);
 use Laravel\Sanctum\Sanctum;
 use Rominas\Academy\Member\Enums\MemberStatus;
 use Rominas\Academy\Member\Model\Member;
+use Rominas\Academy\MemberProposal\Model\MemberProposal;
+use Rominas\Academy\Nomination\Model\Nomination;
+use Rominas\Academy\Nomination\Model\NominationRanking;
+use Rominas\Editions\Model\Edition;
 use Rominas\Users\Model\User;
 
 use function Pest\Laravel\deleteJson;
@@ -100,6 +104,50 @@ it('lists the newest members first by default', function (): void {
         ->assertJsonPath('data.0.id', $newer->id)
         ->assertJsonPath('data.1.id', $older->id);
 });
+
+it('filters the members by their nominations in the active edition', function (string $query, string $expected): void {
+    actingAsSuperAdmin();
+    $edition = Edition::factory()->create();
+    $members = [
+        'idle' => Member::factory()->create(),
+        'started' => Member::factory()->create(),
+        'submitted' => Member::factory()->create(),
+    ];
+    NominationRanking::factory()->for(Nomination::factory()->for($members['started'])->for($edition))->create();
+    Nomination::factory()->submitted()->for($members['submitted'])->for($edition)->create();
+
+    getJson('/api/admin/members?' . $query)
+        ->assertStatus(200)
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $members[$expected]->id);
+})->with([
+    'started' => ['startedNominations=yes&submittedNominations=no', 'started'],
+    'submitted' => ['submittedNominations=yes', 'submitted'],
+    'neither' => ['startedNominations=no&submittedNominations=no', 'idle'],
+]);
+
+it('filters the members by whether they proposed someone', function (string $value, bool $proposed): void {
+    actingAsSuperAdmin();
+    $proposer = Member::factory()->create();
+    $other = Member::factory()->create();
+    MemberProposal::factory()->create(['proposed_by_member_id' => $proposer->id]);
+
+    getJson('/api/admin/members?submittedMemberProposals=' . $value)
+        ->assertStatus(200)
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $proposed ? $proposer->id : $other->id);
+})->with([
+    'proposed' => ['yes', true],
+    'not proposed' => ['no', false],
+]);
+
+it('refuses a progress filter other than yes or no', function (string $filter): void {
+    actingAsSuperAdmin();
+
+    getJson('/api/admin/members?' . $filter . '=maybe')
+        ->assertStatus(422)
+        ->assertJsonValidationErrorFor($filter);
+})->with(['startedNominations', 'submittedNominations', 'submittedMemberProposals']);
 
 it('lets an admin update a member', function (): void {
     actingAsSuperAdmin();

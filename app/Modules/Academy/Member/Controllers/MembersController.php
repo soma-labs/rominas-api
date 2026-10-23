@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace Rominas\Academy\Member\Controllers;
 
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Validation\Rule;
 use Rominas\Academy\Actions\SendAcademyInvitationsAction;
 use Rominas\Academy\Actions\SendSelectedMemberInvitationFollowUpsAction;
 use Rominas\Academy\Actions\SendSelectedMemberInvitationsAction;
@@ -18,12 +16,12 @@ use Rominas\Academy\Member\Actions\ExportMembersAction;
 use Rominas\Academy\Member\Actions\ImportMembersAction;
 use Rominas\Academy\Member\Actions\InviteMemberAction;
 use Rominas\Academy\Member\Actions\UpdateMemberAction;
-use Rominas\Academy\Member\Enums\MemberStatus;
 use Rominas\Academy\Member\Factories\MemberDataFactory;
 use Rominas\Academy\Member\Model\Member;
 use Rominas\Academy\Member\QueryBuilders\MemberQueryBuilder;
 use Rominas\Academy\Member\Requests\CreateMemberRequest;
 use Rominas\Academy\Member\Requests\ImportMembersRequest;
+use Rominas\Academy\Member\Requests\ListMembersRequest;
 use Rominas\Academy\Member\Requests\SendInvitationFollowUpsRequest;
 use Rominas\Academy\Member\Requests\SendMemberInvitationsRequest;
 use Rominas\Academy\Member\Requests\SendNominationFollowUpsRequest;
@@ -44,7 +42,7 @@ use function response;
  */
 class MembersController
 {
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(ListMembersRequest $request): AnonymousResourceCollection
     {
         return AdminMemberResource::collection(
             $this->membersQuery($request)->paginate(
@@ -135,61 +133,38 @@ class MembersController
         return InvitationTemplateResource::collection(InvitationTemplates::all());
     }
 
-    private function membersQuery(Request $request): MemberQueryBuilder
+    /**
+     * The roster filtered as the list request asks, with each member's progress in the active edition.
+     */
+    private function membersQuery(ListMembersRequest $request): MemberQueryBuilder
     {
-        $filters = $request->validate([
-            'status' => [
-                'nullable',
-                is_array($request->input('status'))
-                    ? 'array'
-                    : Rule::enum(MemberStatus::class),
-            ],
-            'status.*' => [Rule::enum(MemberStatus::class)],
-            'startedNominations' => ['nullable', Rule::in(['yes', 'no'])],
-            'submittedNominations' => ['nullable', Rule::in(['yes', 'no'])],
-            'submittedMemberProposals' => ['nullable', Rule::in(['yes', 'no'])],
-        ]);
-
         /** @var User $user */
         $user = $request->user();
 
         $edition = Edition::query()->active()->first();
+        $startedNominations = $request->startedNominations();
+        $submittedNominations = $request->submittedNominations();
+        $submittedMemberProposals = $request->submittedMemberProposals();
 
-        $query = Member::query()
+        return Member::query()
             ->visibleToUser($user)
-            ->search($request->query('search'));
-
-        if (! empty($filters['status'])) {
-            $statuses = (array) $filters['status'];
-
-            if (count($statuses) === 1) {
-                $query->filterByStatus(MemberStatus::from($statuses[0]));
-            } else {
-                $query->whereIn('status', $statuses);
-            }
-        }
-
-        if (! empty($filters['startedNominations'])) {
-            $query->filterByStartedNominations(
-                $filters['startedNominations'] === 'yes',
-                $edition,
-            );
-        }
-
-        if (! empty($filters['submittedNominations'])) {
-            $query->filterBySubmittedNominations(
-                $filters['submittedNominations'] === 'yes',
-                $edition,
-            );
-        }
-
-        if (! empty($filters['submittedMemberProposals'])) {
-            $query->filterBySubmittedMemberProposals(
-                $filters['submittedMemberProposals'] === 'yes',
-            );
-        }
-
-        return $query
+            ->search($request->query('search'))
+            ->when(
+                $request->statuses(),
+                fn(MemberQueryBuilder $query, array $statuses): MemberQueryBuilder => $query->filterByStatuses(...$statuses),
+            )
+            ->when(
+                $startedNominations !== null,
+                fn(MemberQueryBuilder $query): MemberQueryBuilder => $query->filterByStartedNominations((bool) $startedNominations, $edition),
+            )
+            ->when(
+                $submittedNominations !== null,
+                fn(MemberQueryBuilder $query): MemberQueryBuilder => $query->filterBySubmittedNominations((bool) $submittedNominations, $edition),
+            )
+            ->when(
+                $submittedMemberProposals !== null,
+                fn(MemberQueryBuilder $query): MemberQueryBuilder => $query->filterBySubmittedMemberProposals((bool) $submittedMemberProposals),
+            )
             ->withMemberProgress($edition)
             ->orderBy(
                 $request->query('orderBy', 'id'),
@@ -198,7 +173,7 @@ class MembersController
     }
 
     public function export(
-        Request $request,
+        ListMembersRequest $request,
         ExportMembersAction $action,
     ): BinaryFileResponse {
         return $action->execute(

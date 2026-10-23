@@ -23,6 +23,9 @@ class ListMembersRequest extends FormRequest
         return [
             'status' => ['sometimes', 'array'],
             'status.*' => [Rule::enum(MemberStatus::class)],
+            'startedNominations' => ['nullable', Rule::in(['yes', 'no'])],
+            'submittedNominations' => ['nullable', Rule::in(['yes', 'no'])],
+            'submittedMemberProposals' => ['nullable', Rule::in(['yes', 'no'])],
         ];
     }
 
@@ -47,5 +50,40 @@ class ListMembersRequest extends FormRequest
         $statuses = $this->validated('status', []);
 
         return array_map(MemberStatus::from(...), $statuses);
+    }
+
+    /**
+     * Whether to keep the members who started (true) or did not start (false) their nominations in the
+     * active edition; null when the list is not filtered by it.
+     */
+    public function startedNominations(): ?bool
+    {
+        return $this->yesOrNo('startedNominations');
+    }
+
+    /**
+     * Whether to keep the members who submitted (true) or did not submit (false) their nominations in
+     * the active edition; null when the list is not filtered by it.
+     */
+    public function submittedNominations(): ?bool
+    {
+        return $this->yesOrNo('submittedNominations');
+    }
+
+    /**
+     * Whether to keep the members who proposed someone (true) or nobody (false); null when the list is
+     * not filtered by it.
+     */
+    public function submittedMemberProposals(): ?bool
+    {
+        return $this->yesOrNo('submittedMemberProposals');
+    }
+
+    private function yesOrNo(string $filter): ?bool
+    {
+        /** @var 'yes'|'no'|null $value */
+        $value = $this->validated($filter);
+
+        return $value === null ? null : $value === 'yes';
     }
 }
