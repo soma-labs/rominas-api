@@ -48,8 +48,8 @@ class MembersController
     {
         return AdminMemberResource::collection(
             $this->membersQuery($request)->paginate(
-                $request->integer('perPage', MemberQueryBuilder::PER_PAGE)
-            )
+                $request->integer('perPage', MemberQueryBuilder::PER_PAGE),
+            ),
         );
     }
 
@@ -66,14 +66,18 @@ class MembersController
     }
 
     /**
-     * Create a member awaiting invitation for each usable row of an uploaded CSV / XLSX list.
+     * Create a member awaiting invitation for each usable row of an uploaded CSV / XLSX list, all of them
+     * founding members or none.
      */
     public function import(ImportMembersRequest $request, ImportMembersAction $action): MemberImportResultResource
     {
         /** @var UploadedFile $file */
         $file = $request->file('file');
 
-        return new MemberImportResultResource($action->execute($file));
+        return new MemberImportResultResource($action->execute(
+            file: $file,
+            isFoundingMember: $request->boolean('is_founding_member'),
+        ));
     }
 
     public function update(Member $member, UpdateMemberRequest $request, UpdateMemberAction $action): AdminMemberResource
@@ -168,20 +172,20 @@ class MembersController
         if (! empty($filters['startedNominations'])) {
             $query->filterByStartedNominations(
                 $filters['startedNominations'] === 'yes',
-                $edition
+                $edition,
             );
         }
 
         if (! empty($filters['submittedNominations'])) {
             $query->filterBySubmittedNominations(
                 $filters['submittedNominations'] === 'yes',
-                $edition
+                $edition,
             );
         }
 
         if (! empty($filters['submittedMemberProposals'])) {
             $query->filterBySubmittedMemberProposals(
-                $filters['submittedMemberProposals'] === 'yes'
+                $filters['submittedMemberProposals'] === 'yes',
             );
         }
 
@@ -189,26 +193,26 @@ class MembersController
             ->withMemberProgress($edition)
             ->orderBy(
                 $request->query('orderBy', 'id'),
-                $request->query('orderDir', 'desc')
+                $request->query('orderDir', 'desc'),
             );
     }
 
     public function export(
         Request $request,
-        ExportMembersAction $action
+        ExportMembersAction $action,
     ): BinaryFileResponse {
         return $action->execute(
-            $this->membersQuery($request)
+            $this->membersQuery($request),
         );
     }
 
     public function sendNominationFollowUps(
         SendNominationFollowUpsRequest $request,
-        SendSelectedMemberNominationFollowUpsAction $action
+        SendSelectedMemberNominationFollowUpsAction $action,
     ): JsonResponse {
         $sent = $action->execute(
             $request->memberIds(),
-            $request->template()
+            $request->template(),
         );
 
         return response()->json([
@@ -219,11 +223,11 @@ class MembersController
 
     public function sendInvitationFollowUps(
         SendInvitationFollowUpsRequest $request,
-        SendSelectedMemberInvitationFollowUpsAction $action
+        SendSelectedMemberInvitationFollowUpsAction $action,
     ): JsonResponse {
         $sent = $action->execute(
             $request->memberIds(),
-            $request->template()
+            $request->template(),
         );
 
         return response()->json([

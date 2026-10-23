@@ -14,6 +14,7 @@
 
     "You have reached the maximum of :max proposals.": "Ai atins numărul maxim de :max propuneri.",
     "This person is already an academy member.": "Această persoană este deja membru al academiei.",
+    "Only founding members can propose new members.": "Doar membrii fondatori pot propune membri noi.",
     "There is already a pending proposal for this person.": "Există deja o propunere în așteptare pentru această persoană.",
     "Only a pending proposal can be withdrawn.": "Doar o propunere în așteptare poate fi retrasă.",
     "Only a pending proposal can be approved.": "Doar o propunere în așteptare poate fi aprobată.",

@@ -34,6 +34,7 @@ class UpdateMemberRequest extends FormRequest
             'position' => 'sometimes|nullable|string|max:255',
             'company' => 'sometimes|nullable|string|max:255',
             'phone' => 'sometimes|nullable|string|max:255',
+            'is_founding_member' => 'sometimes|boolean',
             'status' => ['sometimes', Rule::enum(MemberStatus::class)],
         ];
     }

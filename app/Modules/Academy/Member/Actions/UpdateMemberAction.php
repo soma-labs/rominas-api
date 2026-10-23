@@ -18,6 +18,7 @@ class UpdateMemberAction
             'company' => $data->company,
             'phone' => $data->phone,
             'status' => $data->status,
+            'is_founding_member' => $data->isFoundingMember,
         ]);
 
         return $member;

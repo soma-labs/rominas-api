@@ -1,7 +1,8 @@
 # Academy & nominations
 
 The academy is the expert half of the Rominas vote. Its members are invited by staff, sign in without a
-password, nominate up to five ranked nominees per ranked category, and can propose future members. Once
+password, nominate up to five ranked nominees per ranked category, and, if they are founding members,
+propose future members. Once
 nominations close, admins turn the submitted ballots into a five-nominee **shortlist** per category, which
 is what the public then votes on.
 
@@ -54,8 +55,15 @@ shows the newest members first unless `orderBy` / `orderDir` say otherwise.
 A member has three optional contact details — `position`, `company`, `phone`. Only these admin
 endpoints return them (`AdminMemberResource`); the member-facing `/api/academy/me` does not.
 
+**Founding members.** `is_founding_member` (boolean, default `false`) says whether a member may propose
+others (§5). Admins set it on create / update (`is_founding_member`, optional; left out on update it
+keeps its value) and on import (below); a member created by approving a proposal is never one. Members that
+existed before the column (2026-10-23) start as `false` and are ticked by hand. Both `MemberResource`
+(`/api/academy/me`, so the academy can hide the proposals section) and `AdminMemberResource` return it.
+
 **Import from a list.** `POST /api/admin/members/import` (multipart, field `file`: `.csv` or `.xlsx`, up to
-2 MB) creates one `awaiting_invitation` member per row and sends nothing; invitations stay the manual step
+2 MB; optional `is_founding_member`, `1` / `0`, default `0`, applied to every member it creates) creates
+one `awaiting_invitation` member per row and sends nothing; invitations stay the manual step
 in §3. It was built for the client's confirmation sheet (`NUME SOCIETATE`, `NUME ADMINISTRATOR`,
 `E-MAIL PERSOANA DE CONTACT`, `Status`):
 
@@ -71,7 +79,8 @@ in §3. It was built for the client's confirmation sheet (`NUME SOCIETATE`, `NUM
   file, a missing name or e-mail, an invalid e-mail, a field over 255 characters. Blank rows are ignored.
   The answer is `{ data: { created, skipped: [{ row, email, reason }] } }`, `row` being the
   spreadsheet's row number (header = 1), so the same file can be uploaded again safely.
-- The audit entry stores the file as `"[file]"` plus the `imported` / `skipped` counts.
+- The audit entry stores the file as `"[file]"` plus the `imported` / `skipped` counts and the
+  `is_founding_member` choice.
 
 ## 2. Magic-link sign-in
 
@@ -227,7 +236,9 @@ deadline are ignored.
 
 ## 5. Member proposals
 
-Members can propose future academy members at any time; the pool is not tied to an edition.
+Founding members (§1) can propose future academy members at any time; the pool is not tied to an edition.
+Any other member gets a **403** on `POST /api/academy/proposals` ("Only founding members can propose new
+members.", translated); listing and withdrawing stay open (such a member simply has none).
 
 - **Member side** (`auth:member`, own proposals only): `POST /api/academy/proposals` (`name`, `email`
   required; `position`, `company`, `phone` optional), `GET` to list, and

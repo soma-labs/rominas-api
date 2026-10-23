@@ -15,5 +15,6 @@ class MemberData
         public ?string $company = null,
         public ?string $phone = null,
         public MemberStatus $status = MemberStatus::AwaitingInvitation,
+        public bool $isFoundingMember = false,
     ) {}
 }

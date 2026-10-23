@@ -26,6 +26,7 @@ class MemberFactory extends Factory
             'position' => fake()->optional()->jobTitle(),
             'company' => fake()->optional()->company(),
             'phone' => fake()->optional()->phoneNumber(),
+            'is_founding_member' => false,
             'status' => MemberStatus::Active,
             'email_verified_at' => now(),
             'invited_at' => now(),
@@ -59,6 +60,13 @@ class MemberFactory extends Factory
             'status' => MemberStatus::Active,
             'email_verified_at' => now(),
             'activated_at' => now(),
+        ]);
+    }
+
+    public function founding(): static
+    {
+        return $this->state(fn(array $attributes) => [
+            'is_founding_member' => true,
         ]);
     }
 

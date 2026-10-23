@@ -18,11 +18,12 @@ use Rominas\Academy\MemberProposal\Requests\CreateMemberProposalRequest;
 use Rominas\Academy\MemberProposal\Resources\MemberProposalResource;
 
 use function abort;
+use function abort_unless;
 use function response;
 
 /**
  * Member-facing proposals (guard `member`). Ownership is implicit — a member only ever sees or acts on
- * their own proposals.
+ * their own proposals. Only a founding member may propose.
  */
 class MemberProposalsController
 {
@@ -40,7 +41,11 @@ class MemberProposalsController
 
     public function create(CreateMemberProposalRequest $request, CreateMemberProposalAction $action): JsonResponse
     {
-        $proposal = $action->execute($this->member(), MemberProposalDataFactory::fromCreateRequest($request));
+        $member = $this->member();
+
+        abort_unless($member->is_founding_member, 403, __('Only founding members can propose new members.'));
+
+        $proposal = $action->execute($member, MemberProposalDataFactory::fromCreateRequest($request));
 
         return (new MemberProposalResource($proposal))->response()->setStatusCode(201);
     }

@@ -20,9 +20,23 @@ it('lets an admin create a member awaiting invitation', function (): void {
         'email' => 'ana@example.test',
     ])->assertStatus(201)
         ->assertJsonPath('data.status', 'awaiting_invitation')
-        ->assertJsonPath('data.email', 'ana@example.test');
+        ->assertJsonPath('data.email', 'ana@example.test')
+        ->assertJsonPath('data.is_founding_member', false);
 
     expect(Member::query()->where('email', 'ana@example.test')->exists())->toBeTrue();
+});
+
+it('lets an admin create a founding member', function (): void {
+    actingAsSuperAdmin();
+
+    postJson('/api/admin/members', [
+        'name' => 'Ana Popescu',
+        'email' => 'ana@example.test',
+        'is_founding_member' => true,
+    ])->assertStatus(201)
+        ->assertJsonPath('data.is_founding_member', true);
+
+    expect(Member::query()->where('email', 'ana@example.test')->value('is_founding_member'))->toBeTrue();
 });
 
 it('stores the optional contact details of a new member', function (): void {
@@ -120,6 +134,31 @@ it('lets an admin change and clear a member\'s contact details', function (): vo
     expect($member->position)->toBe('Manager');
     expect($member->company)->toBe('Studio Nord');
     expect($member->phone)->toBeNull();
+});
+
+it('lets an admin change whether a member is a founding member', function (): void {
+    actingAsSuperAdmin();
+    $member = Member::factory()->create();
+
+    patchJson('/api/admin/members/' . $member->id, [
+        'name' => $member->name,
+        'email' => $member->email,
+        'is_founding_member' => true,
+    ])->assertStatus(200)
+        ->assertJsonPath('data.is_founding_member', true);
+
+    expect($member->refresh()->is_founding_member)->toBeTrue();
+});
+
+it('keeps a member a founding member when an update leaves the flag out', function (): void {
+    actingAsSuperAdmin();
+    $member = Member::factory()->founding()->create();
+
+    patchJson('/api/admin/members/' . $member->id, [
+        'name' => 'New Name',
+        'email' => $member->email,
+    ])->assertStatus(200)
+        ->assertJsonPath('data.is_founding_member', true);
 });
 
 it('lets an admin suspend a member via a status update', function (): void {

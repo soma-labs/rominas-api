@@ -37,9 +37,12 @@ function memberImportXlsx(array $rows): UploadedFile
     return new UploadedFile($path, 'members.xlsx', null, null, true);
 }
 
-function importMembers(UploadedFile $file): TestResponse
+/**
+ * @param  array<string, mixed>  $fields
+ */
+function importMembers(UploadedFile $file, array $fields = []): TestResponse
 {
-    return post('/api/admin/members/import', ['file' => $file], ['Accept' => 'application/json']);
+    return post('/api/admin/members/import', ['file' => $file, ...$fields], ['Accept' => 'application/json']);
 }
 
 it('creates a member awaiting invitation for each row of the client\'s spreadsheet', function (): void {
@@ -59,6 +62,26 @@ it('creates a member awaiting invitation for each row of the client\'s spreadshe
         ->and($radu->status)->toBe(MemberStatus::AwaitingInvitation);
 
     expect(Member::query()->where('email', 'stefania@example.test')->value('name'))->toBe('Ștefania Ana-Maria Pop');
+});
+
+it('imports founding members when the admin asks for it', function (): void {
+    actingAsSuperAdmin();
+
+    importMembers(memberImportCsv("Nume,E-mail\nRadu Baron,radu@example.test\n"), ['is_founding_member' => '1'])
+        ->assertStatus(200)
+        ->assertJsonPath('data.created', 1);
+
+    expect(Member::query()->where('email', 'radu@example.test')->value('is_founding_member'))->toBeTrue();
+});
+
+it('imports members who are not founding members by default', function (): void {
+    actingAsSuperAdmin();
+
+    importMembers(memberImportCsv("Nume,E-mail\nRadu Baron,radu@example.test\n"))
+        ->assertStatus(200)
+        ->assertJsonPath('data.created', 1);
+
+    expect(Member::query()->where('email', 'radu@example.test')->value('is_founding_member'))->toBeFalse();
 });
 
 it('reads a CSV separated by commas or by semicolons', function (string $contents): void {

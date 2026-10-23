@@ -155,7 +155,8 @@ it('returns the authenticated member from /me', function (): void {
     getJson('/api/academy/me')
         ->assertStatus(200)
         ->assertJsonPath('data.id', $member->id)
-        ->assertJsonPath('data.email', $member->email);
+        ->assertJsonPath('data.email', $member->email)
+        ->assertJsonPath('data.is_founding_member', false);
 });
 
 it('keeps the contact details out of /me', function (): void {

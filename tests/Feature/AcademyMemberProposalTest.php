@@ -17,7 +17,7 @@ use function Pest\Laravel\postJson;
 
 function actAsMember(): Member
 {
-    $member = Member::factory()->active()->create();
+    $member = Member::factory()->active()->founding()->create();
     Sanctum::actingAs($member, ['member'], 'member');
 
     return $member;
@@ -40,6 +40,17 @@ it('lets a member propose a future member with contact details', function (): vo
         ->assertJsonPath('data.phone', '+40 720 000 000');
 
     expect(MemberProposal::query()->where('email', 'ioana@example.test')->exists())->toBeTrue();
+});
+
+it('forbids a member who is not a founding member from proposing', function (): void {
+    $member = Member::factory()->active()->create();
+    Sanctum::actingAs($member, ['member'], 'member');
+
+    postJson('/api/academy/proposals', ['name' => 'Ioana Munteanu', 'email' => 'ioana@example.test'])
+        ->assertStatus(403)
+        ->assertJsonPath('message', 'Only founding members can propose new members.');
+
+    expect(MemberProposal::query()->where('email', 'ioana@example.test')->exists())->toBeFalse();
 });
 
 it('enforces the per-member lifetime cap on proposals', function (): void {
@@ -145,6 +156,7 @@ it('creates an invited member and sends the invitation when an admin approves a 
     expect($member->position)->toBe('Producer');
     expect($member->company)->toBe('Studio Nord');
     expect($member->phone)->toBe('+40 720 000 000');
+    expect($member->is_founding_member)->toBeFalse();
 
     $proposal->refresh();
     expect($proposal->status)->toBe(MemberProposalStatus::Approved);

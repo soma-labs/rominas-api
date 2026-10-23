@@ -23,6 +23,7 @@ class MemberDataFactory
             company: $validated['company'] ?? null,
             phone: $validated['phone'] ?? null,
             status: MemberStatus::AwaitingInvitation,
+            isFoundingMember: (bool) ($validated['is_founding_member'] ?? false),
         );
     }
 
@@ -40,6 +41,9 @@ class MemberDataFactory
             status: isset($validated['status'])
                 ? MemberStatus::from($validated['status'])
                 : $member->status,
+            isFoundingMember: array_key_exists('is_founding_member', $validated)
+                ? (bool) $validated['is_founding_member']
+                : $member->is_founding_member,
         );
     }
 }

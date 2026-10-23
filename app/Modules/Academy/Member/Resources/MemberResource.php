@@ -27,6 +27,7 @@ class MemberResource extends JsonResource
             'email' => $member->email,
             'status' => $member->status->value,
             'status_label' => $member->status->label(),
+            'is_founding_member' => $member->is_founding_member,
             'email_verified_at' => $member->email_verified_at,
             'invited_at' => $member->invited_at,
             'activated_at' => $member->activated_at,

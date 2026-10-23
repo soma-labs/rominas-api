@@ -17,7 +17,8 @@ use Rominas\Users\Model\User;
 
 /**
  * Approves a pending proposal: creates a Member from it, records the review and sends the member their
- * invitation at once (the e-mail names the proposer). Rejects a non-pending proposal, or one whose email
+ * invitation at once (the e-mail names the proposer). The new member is not a founding member, so cannot
+ * propose others. Rejects a non-pending proposal, or one whose email
  * has meanwhile become a Member.
  */
 class ApproveMemberProposalAction

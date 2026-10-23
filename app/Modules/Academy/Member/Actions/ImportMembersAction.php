@@ -19,6 +19,7 @@ use Rominas\Academy\Member\Model\Member;
  * Creates one member awaiting invitation per row of an uploaded list. A row that can't be used (already a
  * member, a repeat within the file, a missing name, an invalid e-mail) is skipped and reported, so the
  * same file can be uploaded again safely. Nothing is sent: invitations stay a separate, manual step.
+ * The admin chooses whether the whole upload is made of founding members.
  */
 class ImportMembersAction
 {
@@ -30,7 +31,7 @@ class ImportMembersAction
     /**
      * @throws ValidationException when the file can't be read or lacks a name or e-mail column
      */
-    public function execute(UploadedFile $file): MemberImportResultData
+    public function execute(UploadedFile $file, bool $isFoundingMember = false): MemberImportResultData
     {
         $created = 0;
         $skipped = [];
@@ -64,13 +65,18 @@ class ImportMembersAction
                 position: $row->position,
                 company: $row->company,
                 phone: $row->phone,
+                isFoundingMember: $isFoundingMember,
             ));
 
             $importedEmails[] = $email;
             $created++;
         }
 
-        Context::add('audit', ['imported' => $created, 'skipped' => count($skipped)]);
+        Context::add('audit', [
+            'imported' => $created,
+            'skipped' => count($skipped),
+            'is_founding_member' => $isFoundingMember,
+        ]);
 
         return new MemberImportResultData($created, $skipped);
     }

@@ -21,6 +21,8 @@ use Rominas\Academy\Member\QueryBuilders\MemberQueryBuilder;
  * `member` Sanctum guard (never the admin `web` guard). A member token can never authenticate as an
  * admin `User` and vice-versa (Sanctum scopes the tokenable to the guard's provider model).
  *
+ * Only a founding member (`is_founding_member`) may propose future members.
+ *
  * @mixin IdeHelperMember
  */
 #[Fillable([
@@ -29,6 +31,7 @@ use Rominas\Academy\Member\QueryBuilders\MemberQueryBuilder;
     'position',
     'company',
     'phone',
+    'is_founding_member',
     'status',
     'invited_at',
     'activated_at',
@@ -51,6 +54,7 @@ class Member extends Authenticatable
     {
         return [
             'status' => MemberStatus::class,
+            'is_founding_member' => 'boolean',
             'email_verified_at' => 'datetime',
             'invited_at' => 'datetime',
             'activated_at' => 'datetime',

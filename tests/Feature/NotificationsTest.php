@@ -122,7 +122,7 @@ describe('on demand', function (): void {
         $reviewer = notificationsUserWith('memberProposals');
         $superAdmin = notificationsSuperAdmin();
         $unrelated = notificationsUserWith('categories');
-        $proposer = Member::factory()->active()->create(['name' => 'Radu Ionescu']);
+        $proposer = Member::factory()->active()->founding()->create(['name' => 'Radu Ionescu']);
         Sanctum::actingAs($proposer, ['member'], 'member');
         Notification::fake();
 

@@ -23,6 +23,7 @@ class ImportMembersRequest extends FormRequest
     {
         return [
             'file' => 'required|file|max:2048|extensions:csv,xlsx|mimes:csv,txt,xlsx,zip',
+            'is_founding_member' => 'sometimes|boolean',
         ];
     }
 }
