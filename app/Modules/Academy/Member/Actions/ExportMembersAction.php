@@ -19,7 +19,7 @@ class ExportMembersAction
             throw new \RuntimeException('Cannot create export file.');
         }
 
-        $writer = new Writer;
+        $writer = new Writer();
 
         try {
             $writer->openToFile($path);
@@ -56,9 +56,9 @@ class ExportMembersAction
                     $member->activated_at?->format('Y-m-d H:i:s'),
                     $member->created_at?->format('Y-m-d H:i:s'),
                     $member->updated_at?->format('Y-m-d H:i:s'),
-                    $this->label($member->has_started_nominations),
-                    $this->label($member->has_submitted_nominations),
-                    $this->label($member->has_submitted_member_proposals),
+                    $this->label($member->getAttribute('has_started_nominations')),
+                    $this->label($member->getAttribute('has_submitted_nominations')),
+                    $this->label($member->getAttribute('has_submitted_member_proposals')),
                 ]));
             }
 
@@ -71,10 +71,10 @@ class ExportMembersAction
         return response()
             ->download(
                 $path,
-                'members-'.now()->format('Y-m-d-His').'.xlsx',
+                'members-' . now()->format('Y-m-d-His') . '.xlsx',
                 [
                     'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                ]
+                ],
             )
             ->deleteFileAfterSend(true);
     }

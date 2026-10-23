@@ -17,6 +17,9 @@ class SendInvitationFollowUpsRequest extends FormRequest
         return true;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function rules(): array
     {
         return [
@@ -35,6 +38,9 @@ class SendInvitationFollowUpsRequest extends FormRequest
         ];
     }
 
+    /**
+     * @return list<int>
+     */
     public function memberIds(): array
     {
         return array_map('intval', $this->validated('member_ids'));
@@ -45,6 +51,9 @@ class SendInvitationFollowUpsRequest extends FormRequest
         return $this->validated('template');
     }
 
+    /**
+     * @return list<callable(Validator): void>
+     */
     public function after(): array
     {
         return [
@@ -67,7 +76,7 @@ class SendInvitationFollowUpsRequest extends FormRequest
                     if (! $member || $member->status !== MemberStatus::Invited) {
                         $validator->errors()->add(
                             "member_ids.{$index}",
-                            'The selected member must have invited status.'
+                            'The selected member must have invited status.',
                         );
                     }
                 }

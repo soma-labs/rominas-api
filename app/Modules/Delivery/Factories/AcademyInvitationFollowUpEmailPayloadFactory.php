@@ -51,10 +51,13 @@ class AcademyInvitationFollowUpEmailPayloadFactory extends MailPayloadFactory
         return ['academy-invitation-follow-up'];
     }
 
+    /**
+     * @return array{label: string, subject: string, view: string}
+     */
     private function templateConfig(): array
     {
         return config(
-            'academy-invitation-follow-ups.templates.' . $this->template
+            'academy-invitation-follow-ups.templates.' . $this->template,
         );
     }
 }
