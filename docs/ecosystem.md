@@ -259,6 +259,10 @@ static analysis (**Larastan level 6**), **Pint** and the git workflow are in the
   nights). The admin shows and reads every datetime in a fixed **`Europe/Bucharest`**, whatever the
   device's zone (`rominas-admin/src/lib/datetime.ts`); the academy and voting apps show the
   browser's local time. Known leftover: the API's per-day reports count UTC days.
+  The API also sets its **MySQL session to UTC** (`'timezone' => '+00:00'` in `config/database.php`,
+  2026-11-11): `TIMESTAMP` columns are converted to the session's zone, and a server running in
+  Romanian time (the shared test host) otherwise shifted every date by 2–3 h. A SQL client shows the
+  server's zone: UTC on live, Romanian time on the test host.
 - **Project artisan commands are named `romias:*`** (`romias:detect-fraud`, `romias:daily-statistics`,
   `romias:nomination-reminders`, `romias:test-mail`), registered in the API's `bootstrap/app.php`.
 - **E-mail transport:** `MAIL_DELIVERY_TRANSPORT=smtp|brevo` (default `smtp`) picks the API's SMTP server or
@@ -314,6 +318,10 @@ Only one edition is non-archived/active at a time.
   `deploymentId` (empty `BUILD_ID` = `.next`, as in development). Details: `04-web-server.md` step 7.
   `scripts/deploy-api.sh` first dumps the API database to `/home/rominas/backups/<timestamp>/` on
   Server A and stops if the dump fails; those folders are never pruned (`03-api-server.md` step 7).
+  **Test copies** of the three frontends run on Cloudflare Workers (`*.workers.dev`, behind
+  Cloudflare Access), built from each frontend repo's **`cf-workers-deployment`** branch (never
+  merged back; refreshed by merging `dev` into it), against a test API on a shared host
+  (`romias.somalabs.ro`): `07-cloudflare-workers-setup.md`.
 - **Git workflow (since 2026-10-15):** new work in `rominas-api`, `rominas-admin`, `rominas-academy`
   and `rominas-voting` is developed and committed on the **`dev`** branch. Merging `dev` into `main`
   and pushing are left to the maintainer. `rominas-deployment` stays on `main` for now
