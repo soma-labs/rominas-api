@@ -167,6 +167,30 @@ it('renormalizes to academy alone when a category has no public votes', function
         ->and($nominees[1]->finalScore)->toBe(round(4 / 9, 6));
 });
 
+it('ignores public votes in a category hidden from the public vote', function (): void {
+    $edition = Edition::factory()->status(EditionStatus::VotingClosed)->create([
+        'academy_vote_weight' => 40,
+        'public_vote_weight' => 60,
+    ]);
+    $category = Category::factory()->hiddenFromPublic()->create([
+        'edition_id' => $edition->id,
+        'nominee_type' => NomineeType::Artist,
+    ]);
+    [$a, $b] = Artist::factory()->count(2)->create()->all();
+
+    seedShortlistEntries($edition, $category, [$a->id, $b->id]);
+    seedAcademyRanking($edition, $category, [$a->id, $b->id]);   // academy: A=10 B=8
+    // Cast while the category was still visible; with the public-heavy weighting it would make B win.
+    seedPublicRanking($edition, $category, [$b->id, $a->id]);
+
+    $nominees = app(ComputeEditionScoresAction::class)->execute($edition)->categories[0]->nominees;
+
+    expect($nominees[0]->nomineeId)->toBe($a->id)
+        ->and($nominees[0]->publicPoints)->toBe(0)
+        ->and($nominees[1]->publicPoints)->toBe(0)
+        ->and($nominees[0]->finalScore)->toBe(round(10 / 18, 6));
+});
+
 it('yields an empty result for a category with no shortlist', function (): void {
     [$edition] = scorableEditionAndCategory();
 

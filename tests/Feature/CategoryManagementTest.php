@@ -100,6 +100,66 @@ it('defaults a new category to ranked', function (): void {
         ->assertJsonPath('data.kind', 'ranked');
 });
 
+it('shows a new category in the public vote by default', function (): void {
+    actingAsSuperAdmin();
+    $edition = Edition::factory()->create();
+
+    postJson('/api/admin/categories', [
+        'edition_id' => $edition->id,
+        'name' => 'Best Album',
+        'nominee_type' => NomineeType::Album->value,
+    ])->assertStatus(201)
+        ->assertJsonPath('data.publicly_visible', true);
+});
+
+it('creates a category hidden from the public vote', function (): void {
+    actingAsSuperAdmin();
+    $edition = Edition::factory()->create();
+
+    postJson('/api/admin/categories', [
+        'edition_id' => $edition->id,
+        'name' => 'Best Album',
+        'nominee_type' => NomineeType::Album->value,
+        'publicly_visible' => false,
+    ])->assertStatus(201)
+        ->assertJsonPath('data.publicly_visible', false);
+
+    expect(Category::query()->where('edition_id', $edition->id)->value('publicly_visible'))->toBeFalse();
+});
+
+it('hides a category from the public vote on update and keeps the setting when it is left out', function (): void {
+    actingAsSuperAdmin();
+    $category = Category::factory()->create();
+
+    patchJson("/api/admin/categories/{$category->id}", [
+        'name' => $category->name,
+        'nominee_type' => $category->nominee_type?->value,
+        'publicly_visible' => false,
+    ])->assertStatus(200)
+        ->assertJsonPath('data.publicly_visible', false);
+
+    patchJson("/api/admin/categories/{$category->id}", [
+        'name' => 'Renamed',
+        'nominee_type' => $category->nominee_type?->value,
+    ])->assertStatus(200)
+        ->assertJsonPath('data.publicly_visible', false);
+});
+
+it('rejects a public visibility that is not a boolean', function (): void {
+    actingAsSuperAdmin();
+    $edition = Edition::factory()->create();
+
+    postJson('/api/admin/categories', [
+        'edition_id' => $edition->id,
+        'name' => 'Best Album',
+        'nominee_type' => NomineeType::Album->value,
+        'publicly_visible' => 'sometimes',
+    ])->assertStatus(422)
+        ->assertJsonValidationErrors('publicly_visible');
+
+    expect(Category::query()->where('edition_id', $edition->id)->exists())->toBeFalse();
+});
+
 it('rejects a nominee type on a category that is not ranked', function (): void {
     actingAsSuperAdmin();
     $edition = Edition::factory()->create();

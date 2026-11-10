@@ -24,7 +24,8 @@ use Rominas\Voting\QueryBuilders\BallotQueryBuilder;
  * nominee's academy points are re-tallied from the raw submitted rankings (the source of truth, robust to
  * any manual shortlist adjustment) with the {@see RankPoints} curve, and public points from submitted
  * ballots with the {@see PublicRankPoints} curve, then handed to the configured {@see ScoringAlgorithm}
- * for normalization and ranking.
+ * for normalization and ranking. A category hidden from the public vote (`publicly_visible` off) gets no
+ * public points, so the academy alone decides it.
  *
  * Guard: only once public voting has closed (`voting_closed` onward) — before that the public side is
  * not final. Nothing is persisted; the result is computed on demand.
@@ -93,7 +94,9 @@ class ComputeCategoryScoresAction
         }
 
         $academy = $this->sumAcademyPoints($edition, $category);
-        $public = $this->sumPublicPoints($edition, $category);
+        // A category hidden from the public is decided by the academy alone: ballots cast while it was
+        // still visible are ignored.
+        $public = $category->publicly_visible ? $this->sumPublicPoints($edition, $category) : [];
 
         $tallies = [];
 

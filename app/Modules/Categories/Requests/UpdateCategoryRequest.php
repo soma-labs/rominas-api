@@ -38,6 +38,8 @@ class UpdateCategoryRequest extends FormRequest
             'description' => 'sometimes|nullable|string',
             'placeholder' => 'sometimes|nullable|string|max:255',
             'eligibility_criteria' => 'sometimes|nullable|string|max:20000',
+            // Off = hidden from the public ballot; the category is then decided by the academy alone.
+            'publicly_visible' => 'sometimes|boolean',
         ];
     }
 }

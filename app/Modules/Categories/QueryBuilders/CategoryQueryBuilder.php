@@ -53,6 +53,15 @@ class CategoryQueryBuilder extends Builder
     }
 
     /**
+     * The categories shown on the public voting ballot. A ranked category that is not publicly visible is
+     * decided by the academy alone.
+     */
+    public function publiclyVisible(): self
+    {
+        return $this->where('publicly_visible', '=', true);
+    }
+
+    /**
      * The categories that do not follow the ranked flow: propose-or-vote and appointed.
      */
     public function special(): self

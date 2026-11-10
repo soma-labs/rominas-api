@@ -26,6 +26,7 @@ use Rominas\Editions\Model\Edition;
     'name',
     'slug',
     'kind',
+    'publicly_visible',
     'nominee_type',
     'position',
     'description',
@@ -43,6 +44,7 @@ class Category extends Model
      */
     protected $attributes = [
         'kind' => CategoryKind::Ranked->value,
+        'publicly_visible' => true,
     ];
 
     /**
@@ -52,6 +54,7 @@ class Category extends Model
     {
         return [
             'kind' => CategoryKind::class,
+            'publicly_visible' => 'boolean',
             'nominee_type' => NomineeType::class,
             'position' => 'integer',
         ];

@@ -28,6 +28,7 @@ class CategoryDataFactory
             description: $validated['description'] ?? null,
             placeholder: $validated['placeholder'] ?? null,
             eligibility_criteria: $sanitizer->execute($validated['eligibility_criteria'] ?? null),
+            publicly_visible: (bool) ($validated['publicly_visible'] ?? true),
         );
     }
 
@@ -49,6 +50,7 @@ class CategoryDataFactory
             description: $validated['description'] ?? null,
             placeholder: $validated['placeholder'] ?? null,
             eligibility_criteria: $sanitizer->execute($validated['eligibility_criteria'] ?? null),
+            publicly_visible: (bool) ($validated['publicly_visible'] ?? $category->publicly_visible),
         );
     }
 }

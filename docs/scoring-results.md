@@ -94,6 +94,11 @@ category totals); the float is for display only. Ties go to more academy points,
 then the lower nominee id. If a category got **no public votes**, it falls back to academy-only; if it got
 no academy points, public-only.
 
+A category hidden from the public vote (`publicly_visible = false`) is always scored as if it had no public
+votes: `ComputeCategoryScoresAction` skips its ballots, even those cast before it was hidden. Under the
+`attributed` algorithm every nominee then ties on 0 public points and the academy-first tiebreak keeps the
+shortlist order, so the academy decides there too.
+
 ### Choosing
 
 `attributed` is the client-confirmed formula and the default. Switching algorithms changes live results

@@ -91,6 +91,9 @@ blocks of the Modular DDD layout.
   `ranked` (the normal flow below, the only kind with a nominee type), `propose_or_vote` or `appointed`
   (the two special kinds, see `SpecialAwards`). The ballot, the shortlist, public voting and scoring handle
   ranked categories only.
+  A ranked category can be **hidden from the public vote** (`publicly_visible`, default true, editable any
+  time, 2026-11-10): it is left off the voting ballot and decided by the **academy alone** (public votes
+  cast before it was hidden are ignored by scoring).
   Each category also has an optional `description` (under its title in the academy), `placeholder` (the
   academy's input placeholder) and `eligibility_criteria` (rich text from the admin's Tiptap editor,
   **sanitized to p/h2/h3/lists/links by the API on save**, shown to members in a modal).

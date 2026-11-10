@@ -174,6 +174,7 @@ decided; a ranked category is also **typed**: it declares which catalog entity t
 | `edition_id` | FK → Edition (`cascadeOnDelete`) |
 | `name`, `slug` | unique **per edition** (`(edition_id, name)` / `(edition_id, slug)`); slug auto-generated |
 | `kind` | `CategoryKind` enum, default `ranked` — how the category is decided (below) |
+| `publicly_visible` | bool, default `true` — a ranked category set to `false` is left off the public ballot and decided by the **academy alone** (its public votes, if any were cast before it was hidden, are ignored by scoring). Editable at any time; scope `CategoryQueryBuilder::publiclyVisible()` |
 | `nominee_type` | `NomineeType` enum — the catalog entity type this category competes. **Nullable: only a ranked category has one** |
 | `position` | int — display ordering |
 | `description` | nullable |

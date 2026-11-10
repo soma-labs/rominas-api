@@ -29,12 +29,23 @@ class CategoryFactory extends Factory
             'edition_id' => Edition::factory(),
             'name' => $name,
             'slug' => Str::slug($name),
+            'publicly_visible' => true,
             'nominee_type' => fake()->randomElement(NomineeType::cases()),
             'position' => 0,
             'description' => fake()->optional()->sentence(),
             'placeholder' => fake()->optional()->words(2, true),
             'eligibility_criteria' => fake()->optional()->passthrough('<p>' . fake()->sentence() . '</p>'),
         ];
+    }
+
+    /**
+     * A ranked category left off the public ballot, decided by the academy alone.
+     */
+    public function hiddenFromPublic(): static
+    {
+        return $this->state(fn(): array => [
+            'publicly_visible' => false,
+        ]);
     }
 
     public function proposeOrVote(): static

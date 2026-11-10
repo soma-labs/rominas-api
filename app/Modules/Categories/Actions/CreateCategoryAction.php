@@ -15,6 +15,7 @@ class CreateCategoryAction
             'edition_id' => $data->edition_id,
             'name' => $data->name,
             'kind' => $data->kind,
+            'publicly_visible' => $data->publicly_visible,
             'nominee_type' => $data->nominee_type,
             'position' => $data->position,
             'description' => $data->description,

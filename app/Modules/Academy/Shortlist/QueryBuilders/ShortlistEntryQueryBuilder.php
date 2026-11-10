@@ -7,6 +7,7 @@ namespace Rominas\Academy\Shortlist\QueryBuilders;
 use Illuminate\Database\Eloquent\Builder;
 use Rominas\Academy\Shortlist\Model\ShortlistEntry;
 use Rominas\Categories\Model\Category;
+use Rominas\Categories\QueryBuilders\CategoryQueryBuilder;
 use Rominas\Editions\Model\Edition;
 use Rominas\Users\Model\User;
 
@@ -41,5 +42,13 @@ class ShortlistEntryQueryBuilder extends Builder
     public function forCategory(Category $category): self
     {
         return $this->where('category_id', '=', $category->id);
+    }
+
+    /**
+     * Entries of categories shown on the public voting ballot.
+     */
+    public function inPubliclyVisibleCategories(): self
+    {
+        return $this->whereHas('category', fn(CategoryQueryBuilder $query) => $query->publiclyVisible());
     }
 }

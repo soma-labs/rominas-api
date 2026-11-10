@@ -46,6 +46,7 @@
     "This link is invalid, has expired or has already been used.": "Link invalid, expirat sau deja folosit.",
     "Choose at least one category to vote in.": "Selectează cel puțin o categorie pentru a vota.",
     "Category :id is not part of this edition.": "Categoria :id nu face parte din această ediție.",
+    "The category “:name” is not open to public voting.": "Categoria „:name” nu este deschisă votului public.",
     "The category “:name” has no shortlist.": "Categoria „:name” nu are o listă scurtă de nominalizați.",
     "In the category “:name” you must rank exactly :count shortlisted nominees, in order of preference, each only once.": "La categoria „:name” trebuie să clasezi exact :count nominalizați din lista scurtă, în ordinea preferinței, fiecare o singură dată.",
     "Your vote has been recorded. Thank you!": "Votul tău a fost înregistrat. Îți mulțumim!",

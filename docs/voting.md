@@ -150,7 +150,8 @@ open edition, and accepts it only if it is still **`issued`** and **not expired*
 already used, expired) is **one generic 422** on `token`, so a used link can't be told apart from a wrong
 one.
 
-The response (`BallotResource`) lists every category that has a shortlist, with its nominees in
+The response (`BallotResource`) lists every **publicly visible** category (`categories.publicly_visible`)
+that has a shortlist, with its nominees in
 **alphabetical order by name**. The shortlist position, which is the academy's ranking, is never exposed;
 it stays secret until results.
 
@@ -172,7 +173,8 @@ the shortlist:
 
 - **At least one category.** Categories may be skipped; that is how the frontend's multi-step, skippable
   ballot maps onto a single submit.
-- Each category must belong to the edition and **have a shortlist**.
+- Each category must belong to the edition, be **publicly visible** (otherwise "The category “…” is not open
+  to public voting.") and **have a shortlist**.
 - Each category must rank **exactly three distinct shortlisted nominees**, in order of preference
   (`PublicRankPoints::RANKS`), or all of them if the shortlist holds fewer than three.
 

@@ -18,5 +18,6 @@ class CategoryData
         public ?string $description = null,
         public ?string $placeholder = null,
         public ?string $eligibility_criteria = null,
+        public bool $publicly_visible = true,
     ) {}
 }

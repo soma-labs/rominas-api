@@ -19,10 +19,10 @@ use Rominas\Voting\Support\VoterHasher;
 
 /**
  * Casts a public voter's one-shot ballot. Resolves the link token (must be an unused ballot for the open
- * voting edition), then validates every included category: it must belong to the edition and rank exactly
- * {@see PublicRankPoints::RANKS} (3) distinct nominees drawn from that category's shortlist, in order of
- * preference (PHAZE 4) — or all of them if the shortlist has fewer than 3. At least one category must be
- * voted.
+ * voting edition), then validates every included category: it must belong to the edition, be publicly
+ * visible, and rank exactly {@see PublicRankPoints::RANKS} (3) distinct nominees drawn from that category's
+ * shortlist, in order of preference (PHAZE 4) — or all of them if the shortlist has fewer than 3. At least
+ * one category must be voted.
  *
  * On success the ranks are persisted and the ballot is marked `submitted` (terminal, single-use) with the
  * submitter's hashed IP, all in one transaction. The ballot row is locked and re-checked as `issued` inside
@@ -115,6 +115,12 @@ class SubmitBallotAction
         if ($category === null) {
             throw ValidationException::withMessages([
                 'categories' => __('Category :id is not part of this edition.', ['id' => $vote->categoryId]),
+            ]);
+        }
+
+        if (! $category->publicly_visible) {
+            throw ValidationException::withMessages([
+                'categories' => __('The category “:name” is not open to public voting.', ['name' => $category->name]),
             ]);
         }
 

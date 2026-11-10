@@ -239,6 +239,39 @@ it('rejects a category that is not in the edition', function (): void {
     ])->assertStatus(422)->assertJsonValidationErrorFor('categories');
 });
 
+it('leaves a category hidden from the public off the ballot', function (): void {
+    $edition = openVotingEdition();
+    $artists = Artist::factory()->count(5)->create();
+    $visible = categoryWithShortlist($edition, $artists->pluck('id')->all());
+    $hidden = categoryWithShortlist($edition, $artists->pluck('id')->all());
+    $hidden->update(['publicly_visible' => false]);
+    issuedBallot($edition, 'valid-token');
+
+    getJson('/api/voting/ballot?token=valid-token')
+        ->assertStatus(200)
+        ->assertJsonCount(1, 'data.categories')
+        ->assertJsonPath('data.categories.0.id', $visible->id);
+});
+
+it('rejects a vote in a category hidden from the public', function (): void {
+    $edition = openVotingEdition();
+    $artists = Artist::factory()->count(5)->create();
+    $category = categoryWithShortlist($edition, $artists->pluck('id')->all());
+    $category->update(['publicly_visible' => false]);
+    $ballot = issuedBallot($edition, 'valid-token');
+
+    postJson('/api/voting/ballot', [
+        'token' => 'valid-token',
+        'categories' => [
+            ['category_id' => $category->id, 'nominees' => [$artists[0]->id, $artists[1]->id, $artists[2]->id]],
+        ],
+    ])->assertStatus(422)
+        ->assertJsonPath('errors.categories.0', "The category “{$category->name}” is not open to public voting.");
+
+    expect(BallotRanking::query()->where('ballot_id', $ballot->id)->exists())->toBeFalse()
+        ->and($ballot->refresh()->status)->toBe(BallotStatus::Issued);
+});
+
 it('requires at least one category', function (): void {
     $edition = openVotingEdition();
     issuedBallot($edition, 'valid-token');

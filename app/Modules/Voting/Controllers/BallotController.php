@@ -22,7 +22,8 @@ use function response;
 class BallotController
 {
     /**
-     * Load the ballot a token authorizes: the edition's shortlist to rank, grouped by category.
+     * Load the ballot a token authorizes: the edition's shortlist to rank, grouped by category. Categories
+     * hidden from the public (decided by the academy alone) are left out.
      */
     public function show(Request $request, ResolveBallotByTokenAction $resolve): BallotResource
     {
@@ -30,6 +31,7 @@ class BallotController
 
         $shortlist = ShortlistEntry::query()
             ->forEdition($ballot->edition)
+            ->inPubliclyVisibleCategories()
             ->with(['nominee', 'category'])
             ->orderBy('category_id')
             ->orderBy('position')

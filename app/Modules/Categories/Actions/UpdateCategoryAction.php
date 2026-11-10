@@ -17,6 +17,7 @@ class UpdateCategoryAction
         $category->description = $data->description;
         $category->placeholder = $data->placeholder;
         $category->eligibility_criteria = $data->eligibility_criteria;
+        $category->publicly_visible = $data->publicly_visible;
 
         $category->save();
 
