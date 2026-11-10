@@ -59,6 +59,10 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
+            // The API stores and sends UTC. TIMESTAMP columns are converted to the session's time zone,
+            // so every connection uses UTC whatever the server's own zone is (a shared host may run in
+            // Romanian time). An offset, not 'UTC': named zones need MySQL's time zone tables.
+            'timezone' => '+00:00',
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
@@ -79,6 +83,10 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
+            // The API stores and sends UTC. TIMESTAMP columns are converted to the session's time zone,
+            // so every connection uses UTC whatever the server's own zone is (a shared host may run in
+            // Romanian time). An offset, not 'UTC': named zones need MySQL's time zone tables.
+            'timezone' => '+00:00',
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
