@@ -68,7 +68,8 @@ throws a `ValidationException` (**422**). On success it sets and saves the new s
 > `results_published`. It is never cached, so every change after `voting_closed` shows at once. See the [Scoring](domain-model.md#behavioural-modules-no-persistent-entities)
 > domain note.
 >
-> The **one deliberate exception** to "inputs frozen from `voting_closed`" is **vote cancellation**
+> Two inputs can still change after `voting_closed`. A category can be hidden from the public
+> (`publicly_visible`, which drops its public votes from scoring). And there is **vote cancellation**
 > (`FraudMonitoring`, see [access-control.md](access-control.md#2h-fraud-monitoring-the-fraudmonitoring-module)): a fraud monitor or
 > custodian may cancel fraudulent ballots during the review window, before the `results_published` freeze.
 > Cancelling excludes those ballots from the public tally (`->valid()`) so the live results view

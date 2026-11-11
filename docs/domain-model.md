@@ -853,7 +853,7 @@ table through the `Notifiable` trait on `User` and `Member`. See [notifications.
   `config('scoring.algorithm')`, re-read per resolve):
   - **`attributed`** (default — client PHAZE 3–7): maps each class's ranking to a fixed rank→score ladder
     (academy by shortlist position → 200/150/100/75/50; public by public-points rank → 150/100/75/50/25,
-    academy-first tiebreak) and **adds** the two attributed scores. Highest total wins, ties broken by the
+    academy-first tiebreak; a nominee with no public votes gets 0) and **adds** the two attributed scores. Highest total wins, ties broken by the
     higher academy attributed score. The per-edition weights are baked into the ladders and ignored.
   - **`share`** (`ScoreCalculator`): **normalizes each class to its share** of that class's category total
     (so the two scales — dozens of academy members vs. thousands of voters — become comparable), then

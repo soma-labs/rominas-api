@@ -150,7 +150,9 @@ blocks of the Modular DDD layout.
   mailbox ignores `+tag` and Gmail dots. Detail: `voting.md` §2.
 - **`Scoring`** — ranking→points rules and results weighting (academy 10·8·6·4·2,
   public 10·8·6; default `attributed` algorithm with the 60/40 split baked into its
-  ladders). Shared by `Academy` and `Voting`. Full detail:
+  ladders, and no public score for a nominee without public votes). Points are summed in SQL and the
+  results are computed on every request, **never cached** (2026-11-11), so a change after voting closes
+  shows at once. Shared by `Academy` and `Voting`. Full detail:
   `scoring-results.md`.
 - **`Results`** — final aggregated results. **Custodian-only** view/export
   *before* public publication. Includes the special categories (member vote tallies, or the appointed
