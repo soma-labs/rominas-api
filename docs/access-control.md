@@ -215,7 +215,7 @@ Admin endpoints, under `/api/admin/editions` (Sanctum-guarded):
 - `GET /api/admin/editions/{edition}/invalidations/{invalidationBatch}` (`can:view,invalidationBatch`) —
   a single batch.
 
-Cancelling busts the edition's cached Scoring output, so live results reflect the exclusion immediately;
+Scoring is never cached, so live results reflect the exclusion immediately;
 the `->valid()` filter keeps cancelled ballots out of the public tally.
 
 **Fraud alerts** (the proactive side — a scheduled sweep, `FraudAlert` via `FraudAlertPolicy`, same

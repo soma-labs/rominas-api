@@ -65,15 +65,14 @@ throws a `ValidationException` (**422**). On success it sets and saves the new s
 >
 > Likewise **results scoring** (`Scoring` module) gates on edition state directly: it is computed on
 > demand once the edition reaches `voting_closed` and stays available through `committee_review` and
-> `results_published`. The inputs are frozen from `voting_closed` onward, so the computation is cached
-> per edition + status. See the [Scoring](domain-model.md#behavioural-modules-no-persistent-entities)
+> `results_published`. It is never cached, so every change after `voting_closed` shows at once. See the [Scoring](domain-model.md#behavioural-modules-no-persistent-entities)
 > domain note.
 >
 > The **one deliberate exception** to "inputs frozen from `voting_closed`" is **vote cancellation**
 > (`FraudMonitoring`, see [access-control.md](access-control.md#2h-fraud-monitoring-the-fraudmonitoring-module)): a fraud monitor or
 > custodian may cancel fraudulent ballots during the review window, before the `results_published` freeze.
-> Cancelling excludes those ballots from the public tally (`->valid()`) and busts the edition's cached
-> Scoring output, so the live results view reflects it immediately; the snapshot frozen when results are
+> Cancelling excludes those ballots from the public tally (`->valid()`) so the live results view
+> reflects it immediately; the snapshot frozen when results are
 > published captures the post-cancellation result. Once the edition reaches `results_published` (or
 > `archived`), cancellation is refused with a 422 — it could not change the frozen snapshot, so the
 > published results are final.

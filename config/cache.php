@@ -129,18 +129,11 @@ return [
     | storage. By default, no PHP classes will be unserialized from your
     | cache to prevent gadget chain attacks if your APP_KEY is leaked.
     |
-    | Rominas caches each edition's computed scores (ComputeEditionScoresAction),
-    | so those DTOs and the enums inside them are allowed. A class missing here
-    | comes back as __PHP_Incomplete_Class on a cache hit.
+    | Rominas caches no objects. A class cached later must be listed here, or
+    | it comes back as __PHP_Incomplete_Class on a cache hit.
     |
     */
 
-    'serializable_classes' => [
-        Rominas\Scoring\DataTransferObjects\EditionScore::class,
-        Rominas\Scoring\DataTransferObjects\CategoryScore::class,
-        Rominas\Scoring\DataTransferObjects\NomineeScore::class,
-        Rominas\Scoring\Enums\ScoringAlgorithmType::class,
-        Rominas\Catalog\Enums\NomineeType::class,
-    ],
+    'serializable_classes' => false,
 
 ];

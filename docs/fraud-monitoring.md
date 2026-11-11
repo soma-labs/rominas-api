@@ -67,8 +67,7 @@ Because `fraud_monitor` does not hold `editions`, the admin picks an edition fro
 2. creates one `InvalidationBatch` with the reason and the acting user (`invalidated_by`);
 3. sets `invalidation_batch_id` on each eligible ballot.
 
-It then **clears the edition's cached Scoring results**, so live results reflect the cancellation
-immediately. The response is the batch (201) with its ballot count.
+Scoring is computed on every request, so live results reflect the cancellation immediately. The response is the batch (201) with its ballot count.
 
 Key properties:
 

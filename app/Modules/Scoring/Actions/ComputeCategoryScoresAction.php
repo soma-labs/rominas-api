@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rominas\Scoring\Actions;
 
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Validation\ValidationException;
 use Rominas\Academy\Nomination\Model\NominationRanking;
 use Rominas\Academy\Nomination\QueryBuilders\NominationQueryBuilder;
@@ -18,12 +19,13 @@ use Rominas\Scoring\RankPoints;
 use Rominas\Scoring\Support\ScoringAlgorithm;
 use Rominas\Voting\Model\BallotRanking;
 use Rominas\Voting\QueryBuilders\BallotQueryBuilder;
+use stdClass;
 
 /**
  * Computes one category's final result. The contested nominee set is the category's shortlist; each
  * nominee's academy points are re-tallied from the raw submitted rankings (the source of truth, robust to
  * any manual shortlist adjustment) with the {@see RankPoints} curve, and public points from submitted
- * ballots with the {@see PublicRankPoints} curve, then handed to the configured {@see ScoringAlgorithm}
+ * ballots with the {@see PublicRankPoints} curve (both summed in SQL), then handed to the configured {@see ScoringAlgorithm}
  * for normalization and ranking. A category hidden from the public vote (`publicly_visible` off) gets no
  * public points, so the academy alone decides it.
  *
@@ -123,16 +125,9 @@ class ComputeCategoryScoresAction
         $picks = NominationRanking::query()
             ->whereHas('nomination', fn(NominationQueryBuilder $query) => $query->forEdition($edition)->submitted())
             ->where('category_id', '=', $category->id)
-            ->resolved()
-            ->get(['nominee_type', 'nominee_id', 'rank'])
-            ->map(fn(NominationRanking $ranking): array => [
-                'type' => $ranking->nominee_type,
-                'id' => (int) $ranking->nominee_id,
-                'rank' => $ranking->rank,
-            ])
-            ->all();
+            ->resolved();
 
-        return $this->sumByNominee($picks, RankPoints::forRank(...));
+        return $this->sumPointsByNominee($picks->toBase(), RankPoints::pointsByRank());
     }
 
     /**
@@ -142,32 +137,38 @@ class ComputeCategoryScoresAction
     {
         $picks = BallotRanking::query()
             ->whereHas('ballot', fn(BallotQueryBuilder $query) => $query->forEdition($edition)->submitted()->valid())
-            ->where('category_id', '=', $category->id)
-            ->get(['nominee_type', 'nominee_id', 'rank'])
-            ->map(fn(BallotRanking $ranking): array => [
-                'type' => $ranking->nominee_type,
-                'id' => (int) $ranking->nominee_id,
-                'rank' => $ranking->rank,
-            ])
-            ->all();
+            ->where('category_id', '=', $category->id);
 
-        return $this->sumByNominee($picks, PublicRankPoints::forRank(...));
+        return $this->sumPointsByNominee($picks->toBase(), PublicRankPoints::pointsByRank());
     }
 
     /**
-     * @param  list<array{type: NomineeType, id: int, rank: int}>  $picks
-     * @param  callable(int): int  $curve  maps a rank to its points
-     * @return array<string, int>
+     * Sum the picks' points per nominee in the database, so only one row per nominee comes back however
+     * many ballots there are. The curve becomes a `CASE` on the rank (bound values); a rank outside the
+     * curve counts 0.
+     *
+     * @param  array<int, int>  $pointsByRank  rank → points
+     * @return array<string, int>  keyed by "<nominee_type>:<nominee_id>"
      */
-    private function sumByNominee(array $picks, callable $curve): array
+    private function sumPointsByNominee(QueryBuilder $picks, array $pointsByRank): array
     {
-        $totals = [];
+        $table = (string) $picks->from;
+        $rankColumn = $picks->getGrammar()->wrap("{$table}.rank");
+        $cases = [];
+        $bindings = [];
 
-        foreach ($picks as $pick) {
-            $key = $pick['type']->value . ':' . $pick['id'];
-            $totals[$key] = ($totals[$key] ?? 0) + $curve($pick['rank']);
+        foreach ($pointsByRank as $rank => $points) {
+            $cases[] = 'WHEN ? THEN ?';
+            $bindings[] = $rank;
+            $bindings[] = $points;
         }
 
-        return $totals;
+        return $picks
+            ->select(["{$table}.nominee_type", "{$table}.nominee_id"])
+            ->selectRaw("SUM(CASE {$rankColumn} " . implode(' ', $cases) . ' ELSE 0 END) AS points', $bindings)
+            ->groupBy(["{$table}.nominee_type", "{$table}.nominee_id"])
+            ->get()
+            ->mapWithKeys(fn(stdClass $row): array => [$row->nominee_type . ':' . $row->nominee_id => (int) $row->points])
+            ->all();
     }
 }

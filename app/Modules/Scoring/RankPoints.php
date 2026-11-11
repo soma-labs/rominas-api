@@ -31,4 +31,20 @@ final class RankPoints
 
         return 2 * (self::RANKS + 1 - $rank);
     }
+
+    /**
+     * The whole curve, for summing points in SQL.
+     *
+     * @return array<int, int>  rank → points
+     */
+    public static function pointsByRank(): array
+    {
+        $points = [];
+
+        foreach (range(1, self::RANKS) as $rank) {
+            $points[$rank] = self::forRank($rank);
+        }
+
+        return $points;
+    }
 }

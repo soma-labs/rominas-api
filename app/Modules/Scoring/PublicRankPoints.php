@@ -28,4 +28,14 @@ final class PublicRankPoints
 
         return self::POINTS[$rank];
     }
+
+    /**
+     * The whole curve, for summing points in SQL.
+     *
+     * @return array<int, int>  rank → points
+     */
+    public static function pointsByRank(): array
+    {
+        return self::POINTS;
+    }
 }

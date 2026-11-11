@@ -716,8 +716,7 @@ event.
 `belongsTo` Edition + `invalidatedBy` (User); `hasMany` ballots. `InvalidationBatchQueryBuilder` adds
 `forEdition` + `visibleToUser` / `actionableByUser` (the `fraudMonitoring` permission). Written by
 `InvalidateBallotsAction`, which only affects the edition's **submitted, not-already-invalidated**
-ballots among the requested ids (idempotent), sets each one's `invalidation_batch_id`, and busts the
-edition's cached Scoring output.
+ballots among the requested ids (idempotent), and sets each one's `invalidation_batch_id`.
 
 **FraudAlert** — `app/Modules/FraudMonitoring/Model/FraudAlert.php` — one recorded suspicious cluster.
 
@@ -865,8 +864,8 @@ table through the `Notifiable` trait on `User` and `Member`. See [notifications.
 
   Both are pure and DB-free and return the same `NomineeScore` DTO (whose `academyShare` / `publicShare` /
   `finalScore` fields carry 0..1 shares under `share`, or the discrete attributed scores + total under
-  `attributed`). `ComputeCategoryScoresAction` / `ComputeEditionScoresAction` wire the DB and cache per
-  edition + status (inputs are frozen from `voting_closed` onward). Weights live on the edition; the
+  `attributed`). `ComputeCategoryScoresAction` / `ComputeEditionScoresAction` wire the DB (points summed
+  in SQL, computed on every call, never cached). Weights live on the edition; the
   algorithm choice and ladders live in `config/scoring.php`. Guarded to `voting_closed` / `committee_review`
   / `results_published`. The full flow: [scoring-results.md](scoring-results.md).
 - **`Reporting`** (`app/Modules/Reporting/`) — general management statistics, **kept separate from

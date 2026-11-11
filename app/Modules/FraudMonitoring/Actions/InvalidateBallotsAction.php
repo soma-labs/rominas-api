@@ -4,15 +4,12 @@ declare(strict_types=1);
 
 namespace Rominas\FraudMonitoring\Actions;
 
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Rominas\Editions\Enums\EditionStatus;
 use Rominas\Editions\Model\Edition;
 use Rominas\FraudMonitoring\DataTransferObjects\InvalidateBallotsData;
 use Rominas\FraudMonitoring\Model\InvalidationBatch;
-use Rominas\Scoring\Actions\ComputeEditionScoresAction;
-use Rominas\Scoring\Enums\ScoringAlgorithmType;
 use Rominas\Users\Model\User;
 use Rominas\Voting\Model\Ballot;
 
@@ -29,16 +26,6 @@ use Rominas\Voting\Model\Ballot;
 class InvalidateBallotsAction
 {
     /**
-     * The edition statuses whose Scoring output is cached (see ComputeEditionScoresAction). Cancelling a
-     * ballot changes the public tally, so any cached score for the edition must be busted.
-     */
-    private const array SCORABLE_STATUSES = [
-        EditionStatus::VotingClosed,
-        EditionStatus::CommitteeReview,
-        EditionStatus::ResultsPublished,
-    ];
-
-    /**
      * @throws \Illuminate\Validation\ValidationException
      */
     public function execute(Edition $edition, InvalidateBallotsData $data, User $actor): InvalidationBatch
@@ -49,7 +36,7 @@ class InvalidateBallotsAction
             ]);
         }
 
-        $batch = DB::transaction(function () use ($edition, $data, $actor): InvalidationBatch {
+        return DB::transaction(function () use ($edition, $data, $actor): InvalidationBatch {
             $eligibleIds = Ballot::query()
                 ->forEdition($edition)
                 ->submitted()
@@ -75,19 +62,6 @@ class InvalidateBallotsAction
                 ->update(['invalidation_batch_id' => $batch->id]);
 
             return $batch;
-        });
-
-        $this->forgetScoringCache($edition);
-
-        return $batch->loadCount('ballots');
-    }
-
-    private function forgetScoringCache(Edition $edition): void
-    {
-        foreach (self::SCORABLE_STATUSES as $status) {
-            foreach (ScoringAlgorithmType::cases() as $algorithm) {
-                Cache::forget(ComputeEditionScoresAction::cacheKey($edition, $algorithm, $status));
-            }
-        }
+        })->loadCount('ballots');
     }
 }

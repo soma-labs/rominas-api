@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 use Rominas\Academy\Nomination\Model\Nomination;
 use Rominas\Academy\Nomination\Model\NominationRanking;
@@ -13,8 +12,6 @@ use Rominas\Categories\Model\Category;
 use Rominas\Editions\Enums\EditionStatus;
 use Rominas\Editions\Model\Edition;
 use Rominas\Scoring\Actions\ComputeEditionScoresAction;
-use Rominas\Scoring\DataTransferObjects\EditionScore;
-use Rominas\Scoring\Enums\ScoringAlgorithmType;
 use Rominas\Voting\Model\Ballot;
 use Rominas\Voting\Model\BallotRanking;
 
@@ -234,22 +231,47 @@ it('scores via the client attributed ladders (the default algorithm)', function 
         ->and($nominees[2]->finalScore)->toBe(175.0);
 });
 
-it('reads cached scores back as score objects from a serializing cache store', function (): void {
-    config(['cache.stores.array.serialize' => true]);
-    Cache::forgetDriver('array');
+it('sums every rank of every ballot per nominee', function (): void {
+    [$edition, $category] = scorableEditionAndCategory();
+    [$a, $b, $c, $d, $e] = Artist::factory()->count(5)->create()->all();
 
+    seedShortlistEntries($edition, $category, [$a->id, $b->id, $c->id, $d->id, $e->id]);
+    seedAcademyRanking($edition, $category, [$a->id, $b->id, $c->id, $d->id, $e->id]);   // A=10 B=8 C=6 D=4 E=2
+    seedAcademyRanking($edition, $category, [$e->id, $d->id]);                           // E=10 D=8
+    seedPublicRanking($edition, $category, [$a->id, $b->id, $c->id]);                     // A=10 B=8 C=6
+    seedPublicRanking($edition, $category, [$c->id, $a->id, $b->id]);                     // C=10 A=8 B=6
+    seedPublicRanking($edition, $category, [$d->id, $c->id, $a->id]);                     // D=10 C=8 A=6
+
+    $nominees = collect(app(ComputeEditionScoresAction::class)->execute($edition)->categories[0]->nominees)
+        ->keyBy('nomineeId');
+
+    expect($nominees[$a->id]->academyPoints)->toBe(10)
+        ->and($nominees[$a->id]->publicPoints)->toBe(24)
+        ->and($nominees[$b->id]->academyPoints)->toBe(8)
+        ->and($nominees[$b->id]->publicPoints)->toBe(14)
+        ->and($nominees[$c->id]->academyPoints)->toBe(6)
+        ->and($nominees[$c->id]->publicPoints)->toBe(24)
+        ->and($nominees[$d->id]->academyPoints)->toBe(12)
+        ->and($nominees[$d->id]->publicPoints)->toBe(10)
+        ->and($nominees[$e->id]->academyPoints)->toBe(12)
+        ->and($nominees[$e->id]->publicPoints)->toBe(0);
+});
+
+it('reflects a category hidden from the public after the scores were first computed', function (): void {
     [$edition, $category] = scorableEditionAndCategory();
     [$a, $b] = Artist::factory()->count(2)->create()->all();
+
     seedShortlistEntries($edition, $category, [$a->id, $b->id]);
     seedAcademyRanking($edition, $category, [$a->id, $b->id]);
+    seedPublicRanking($edition, $category, [$b->id, $a->id]);   // B=10 A=8
 
-    app(ComputeEditionScoresAction::class)->execute($edition);
-    $cached = app(ComputeEditionScoresAction::class)->execute($edition);
+    $before = app(ComputeEditionScoresAction::class)->execute($edition)->categories[0]->nominees;
+    $category->update(['publicly_visible' => false]);
+    $after = app(ComputeEditionScoresAction::class)->execute($edition)->categories[0]->nominees;
 
-    expect($cached)->toBeInstanceOf(EditionScore::class)
-        ->and($cached->algorithm)->toBe(ScoringAlgorithmType::Share)
-        ->and($cached->categories[0]->nominees[0]->nomineeId)->toBe($a->id)
-        ->and($cached->categories[0]->nominees[0]->nomineeType)->toBe(NomineeType::Artist);
+    expect($before[0]->publicPoints + $before[1]->publicPoints)->toBe(18)
+        ->and($after[0]->publicPoints)->toBe(0)
+        ->and($after[1]->publicPoints)->toBe(0);
 });
 
 it('scores only the ranked categories', function (): void {

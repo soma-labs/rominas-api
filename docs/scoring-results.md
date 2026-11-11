@@ -18,7 +18,7 @@ flowchart LR
     SL[ShortlistEntry<br/>nominees + position] --> T
     T --> ALG{ScoringAlgorithm}
     ALG --> ES[EditionScore]
-    ES -->|live, cached| CUST[custodian view / CSV]
+    ES -->|live, on demand| CUST[custodian view / CSV]
     ES -->|on results_published| SNAP[(ResultSnapshot)]
     SNAP --> CUST
     SNAP --> PUB[public results API]
@@ -37,12 +37,17 @@ shortlisted nominees can win; academy picks outside the shortlist score nothing.
 
 | Tally field | Source |
 | --- | --- |
-| `academy_points` | Sum of `RankPoints::forRank()` over **submitted** academy ballots' **resolved** picks — rank 1–5 → 10, 8, 6, 4, 2 |
-| `public_points` | Sum of `PublicRankPoints::forRank()` over **submitted, not-cancelled** public ballots — rank 1–3 → 10, 8, 6 |
+| `academy_points` | Sum of `RankPoints` points over **submitted** academy ballots' **resolved** picks — rank 1–5 → 10, 8, 6, 4, 2 |
+| `public_points` | Sum of `PublicRankPoints` points over **submitted, not-cancelled** public ballots — rank 1–3 → 10, 8, 6 |
 | `academy_position` | The nominee's position on the shortlist (1–5) |
 
 Academy points are **re-tallied from the raw rankings** every time, not read from the shortlist's `points`
 column. So the tally is correct even after an admin has reordered the shortlist.
+
+Both sums run **in SQL**: one `GROUP BY nominee_type, nominee_id` query per side per category, with the curve
+turned into a `CASE` on the rank (from `RankPoints::pointsByRank()` / `PublicRankPoints::pointsByRank()`, as
+bound values; a rank outside the curve counts 0). Only one row per nominee comes back, however many ballots
+there are, which is what lets the results be computed on every request (§4).
 
 Both curves live in the `Scoring` root and are the single source of truth: shortlist generation, ballot
 validation and reporting all read them from there.
@@ -102,21 +107,20 @@ shortlist order, so the academy decides there too.
 ### Choosing
 
 `attributed` is the client-confirmed formula and the default. Switching algorithms changes live results
-immediately (after the cache expires, §4), but **never alters an existing snapshot**. Decide before
+immediately, but **never alters an existing snapshot**. Decide before
 publishing.
 
-## 4. Caching
+## 4. No caching
 
-`ComputeEditionScoresAction` computes every category in `position` order into an `EditionScore`, cached for
-6 hours under `scoring:edition:{id}:{status}:{algorithm}`, so switching algorithm never serves a stale tree. The inputs cannot change once voting closes, and a status
-change produces a new key. The exception is **vote cancellation**: `InvalidateBallotsAction` clears the
-edition's keys (every algorithm), so live results reflect a cancellation immediately. Passing `fresh: true` skips the cache.
+`ComputeEditionScoresAction` computes every category in `position` order into an `EditionScore` on **every
+call**; nothing is cached (removed 2026-11-11). The inputs are not frozen once voting closes: a fraud monitor
+can cancel votes, and an admin can hide a category from the public (`publicly_visible`) at any time. Both
+show in the live results at once. Summing in SQL (§2) keeps each computation to a few small queries per
+category, whatever the size of the public vote.
 
-The cached tree is PHP objects, and `config/cache.php` unserializes only the classes listed in
-`serializable_classes`: the three score DTOs and the enums they hold (`ScoringAlgorithmType`, `NomineeType`).
-A class added to the tree must be added there too, or a cache hit returns `__PHP_Incomplete_Class` and the
-results page fails with a 500. The test suite's array store doesn't serialize, so only the
-"serializing cache store" case in `ScoringTest` catches this.
+The cache used to hold the score objects, which needed `config/cache.php`'s `serializable_classes` to list
+them. That setting is back to `false`: a class cached in future must be listed there, or a cache hit returns
+`__PHP_Incomplete_Class`.
 
 ## 5. Custodian review
 
@@ -144,7 +148,7 @@ position, nominee type and name, both raw points, both share/score fields, final
 When the edition transitions to **`results_published`**, the `EditionTransitioned` event fires the
 `FreezeResultsOnResultsPublished` listener, which runs `PublishEditionResultsAction` **synchronously**:
 
-1. recompute fresh (bypassing the cache);
+1. compute the scores;
 2. in one transaction, delete any existing snapshot for the edition (entries cascade) and write a new
    `ResultSnapshot` with the edition's weights, the scoring `algorithm` in force and `published_at`, plus one `ResultEntry` per nominee per
    category.
@@ -190,7 +194,7 @@ and its points columns stay empty. The **public** results (§7) leave the vote c
 | --- | --- |
 | Points curves | `Scoring/RankPoints.php`, `Scoring/PublicRankPoints.php` |
 | Tally + gate | `Scoring/Actions/ComputeCategoryScoresAction.php` |
-| Edition + cache | `Scoring/Actions/ComputeEditionScoresAction.php` |
+| Edition | `Scoring/Actions/ComputeEditionScoresAction.php` |
 | Algorithms | `Scoring/Support/{ScoringAlgorithm,AttributedScoreCalculator,ScoreCalculator}.php`, bound in `AppServiceProvider` |
 | Config | `config/scoring.php` |
 | Read path | `Results/Actions/GetEditionResultsAction.php`, `Results/Support/EditionResultsPresenter.php` |
