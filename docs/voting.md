@@ -177,6 +177,9 @@ the shortlist:
   to public voting.") and **have a shortlist**.
 - Each category must rank **exactly three distinct shortlisted nominees**, in order of preference
   (`PublicRankPoints::RANKS`), or all of them if the shortlist holds fewer than three.
+  The same nominee may be ranked in **several categories** (an artist shortlisted twice). That is why
+  the request has no `distinct` rule on `categories.*.nominees.*`: Laravel would compare the ids across
+  every category. Duplicates within one category are refused here, in the action.
 
 Any violation is a 422 on `categories`, with a message naming the category (translated per
 `Accept-Language`, like every Voting message; see [architecture.md §7](architecture.md#7-localization)). Nothing is written
