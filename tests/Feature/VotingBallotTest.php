@@ -207,6 +207,46 @@ it('rejects picking more than three nominees', function (): void {
     expect(BallotRanking::query()->count())->toBe(0);
 });
 
+it('accepts the same nominee ranked in two categories', function (): void {
+    $edition = openVotingEdition();
+    $artists = Artist::factory()->count(4)->create();
+    $firstCategory = categoryWithShortlist($edition, [$artists[0]->id, $artists[1]->id, $artists[2]->id]);
+    $secondCategory = categoryWithShortlist($edition, [$artists[0]->id, $artists[1]->id, $artists[3]->id]);
+    $ballot = issuedBallot($edition, 'valid-token');
+
+    postJson('/api/voting/ballot', [
+        'token' => 'valid-token',
+        'categories' => [
+            ['category_id' => $firstCategory->id, 'nominees' => [$artists[0]->id, $artists[1]->id, $artists[2]->id]],
+            ['category_id' => $secondCategory->id, 'nominees' => [$artists[0]->id, $artists[3]->id, $artists[1]->id]],
+        ],
+    ])->assertStatus(200)->assertJsonPath('success', true);
+
+    expect(BallotRanking::query()->where('ballot_id', $ballot->id)->count())->toBe(6);
+    expect(BallotRanking::query()->where('ballot_id', $ballot->id)->where('nominee_id', $artists[0]->id)->count())->toBe(2);
+});
+
+it('rejects the same nominee ranked twice in one category', function (): void {
+    $edition = openVotingEdition();
+    $artists = Artist::factory()->count(5)->create();
+    $category = categoryWithShortlist($edition, $artists->pluck('id')->all());
+    issuedBallot($edition, 'valid-token');
+
+    postJson('/api/voting/ballot', [
+        'token' => 'valid-token',
+        'categories' => [
+            ['category_id' => $category->id, 'nominees' => [$artists[0]->id, $artists[1]->id, $artists[0]->id]],
+        ],
+    ])
+        ->assertStatus(422)
+        ->assertJsonPath(
+            'errors.categories.0',
+            "In the category “{$category->name}” you must rank exactly 3 shortlisted nominees, in order of preference, each only once.",
+        );
+
+    expect(BallotRanking::query()->count())->toBe(0);
+});
+
 it('rejects a nominee that is not on the shortlist', function (): void {
     $edition = openVotingEdition();
     $artists = Artist::factory()->count(5)->create();
