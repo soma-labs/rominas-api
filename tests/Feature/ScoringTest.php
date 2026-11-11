@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 use Rominas\Academy\Nomination\Model\Nomination;
 use Rominas\Academy\Nomination\Model\NominationRanking;
@@ -12,6 +13,8 @@ use Rominas\Categories\Model\Category;
 use Rominas\Editions\Enums\EditionStatus;
 use Rominas\Editions\Model\Edition;
 use Rominas\Scoring\Actions\ComputeEditionScoresAction;
+use Rominas\Scoring\DataTransferObjects\EditionScore;
+use Rominas\Scoring\Enums\ScoringAlgorithmType;
 use Rominas\Voting\Model\Ballot;
 use Rominas\Voting\Model\BallotRanking;
 
@@ -229,6 +232,24 @@ it('scores via the client attributed ladders (the default algorithm)', function 
         ->and($nominees[1]->finalScore)->toBe(300.0)
         ->and($nominees[2]->nomineeId)->toBe($c->id)
         ->and($nominees[2]->finalScore)->toBe(175.0);
+});
+
+it('reads cached scores back as score objects from a serializing cache store', function (): void {
+    config(['cache.stores.array.serialize' => true]);
+    Cache::forgetDriver('array');
+
+    [$edition, $category] = scorableEditionAndCategory();
+    [$a, $b] = Artist::factory()->count(2)->create()->all();
+    seedShortlistEntries($edition, $category, [$a->id, $b->id]);
+    seedAcademyRanking($edition, $category, [$a->id, $b->id]);
+
+    app(ComputeEditionScoresAction::class)->execute($edition);
+    $cached = app(ComputeEditionScoresAction::class)->execute($edition);
+
+    expect($cached)->toBeInstanceOf(EditionScore::class)
+        ->and($cached->algorithm)->toBe(ScoringAlgorithmType::Share)
+        ->and($cached->categories[0]->nominees[0]->nomineeId)->toBe($a->id)
+        ->and($cached->categories[0]->nominees[0]->nomineeType)->toBe(NomineeType::Artist);
 });
 
 it('scores only the ranked categories', function (): void {

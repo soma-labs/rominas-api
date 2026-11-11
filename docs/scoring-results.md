@@ -112,6 +112,12 @@ publishing.
 change produces a new key. The exception is **vote cancellation**: `InvalidateBallotsAction` clears the
 edition's keys (every algorithm), so live results reflect a cancellation immediately. Passing `fresh: true` skips the cache.
 
+The cached tree is PHP objects, and `config/cache.php` unserializes only the classes listed in
+`serializable_classes`: the three score DTOs and the enums they hold (`ScoringAlgorithmType`, `NomineeType`).
+A class added to the tree must be added there too, or a cache hit returns `__PHP_Incomplete_Class` and the
+results page fails with a 500. The test suite's array store doesn't serialize, so only the
+"serializing cache store" case in `ScoringTest` catches this.
+
 ## 5. Custodian review
 
 `GET /api/admin/results/editions` lists the editions a custodian can open (voting closed onward, or already
