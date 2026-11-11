@@ -17,7 +17,9 @@ use Rominas\Scoring\Enums\ScoringAlgorithmType;
  *   adjustment carries through.
  * - PHAZE 5/6 — the nominees are ranked by their summed public points and get a public attributed score by
  *   that rank: 1 → 150, 2 → 100, 3 → 75, 4 → 50, 5 → 25. Ties on public points break academy-first
- *   (higher academy position wins), then by nominee id; nominees with no public votes are still ranked.
+ *   (higher academy position wins), then by nominee id. A nominee with no public votes gets a public score
+ *   of 0 (since 2026-11-11), so a category with no public votes, or hidden from the public, is decided by
+ *   the academy score alone.
  * - PHAZE 7 — final score = academy attributed + public attributed; highest wins. A tie is broken in favour
  *   of the higher academy attributed score, then by nominee id.
  *
@@ -115,7 +117,10 @@ final class AttributedScoreCalculator implements ScoringAlgorithm
 
         foreach ($tallies as $tally) {
             $academyAttributed = $this->academyLadder[$tally['academy_position'] - 1] ?? 0;
-            $publicAttributed = $this->publicLadder[$publicRankByNominee[$tally['nominee_id']] - 1] ?? 0;
+            // No public votes, no public score: the ladder only rewards nominees the public picked.
+            $publicAttributed = $tally['public_points'] === 0
+                ? 0
+                : ($this->publicLadder[$publicRankByNominee[$tally['nominee_id']] - 1] ?? 0);
 
             $rows[] = [
                 'tally' => $tally,

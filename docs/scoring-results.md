@@ -74,8 +74,8 @@ the algorithm.
 1. **Academy score** — from the nominee's **shortlist position**, so a manual shortlist reorder directly
    changes it.
 2. **Public score** — nominees are ranked by `public_points` (ties: better shortlist position first, then
-   nominee id), and the rank is looked up on the public ladder. A nominee with no public votes is still
-   ranked, and still gets a public score.
+   nominee id), and the rank is looked up on the public ladder. A nominee with **no public votes gets a
+   public score of 0** (since 2026-11-11), so the ladder only rewards nominees the public picked.
 3. **Final** = academy score + public score. The highest total wins. Ties go to the higher academy score,
    then to the lower nominee id.
 
@@ -101,8 +101,8 @@ no academy points, public-only.
 
 A category hidden from the public vote (`publicly_visible = false`) is always scored as if it had no public
 votes: `ComputeCategoryScoresAction` skips its ballots, even those cast before it was hidden. Under the
-`attributed` algorithm every nominee then ties on 0 public points and the academy-first tiebreak keeps the
-shortlist order, so the academy decides there too.
+`attributed` algorithm every nominee then gets a public score of 0, so the academy score alone decides
+there too.
 
 ### Choosing
 
