@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Rominas\Academy\Member\Model\Member;
@@ -25,14 +26,17 @@ use Rominas\Notifications\Notifications\MemberProposalNeedsReview;
 use Rominas\Notifications\Notifications\NewFraudAlerts;
 use Rominas\Notifications\Notifications\NominationDeadlineReminder;
 use Rominas\Notifications\Notifications\NominationsOpened;
+use Rominas\Notifications\Notifications\VotingQueueBacklog;
 use Rominas\Permissions\Model\Permission;
 use Rominas\Roles\Model\Role;
 use Rominas\Users\Model\User;
+use Rominas\Voting\Jobs\SendVotingLinkJob;
 use Rominas\Voting\Model\Ballot;
 
 use function Pest\Laravel\artisan;
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\postJson;
+use function Pest\Laravel\travel;
 use function Pest\Laravel\travelTo;
 
 /**
@@ -346,6 +350,59 @@ describe('nomination deadline reminders', function (): void {
             ->and($sent->payloads[0]->body)->toContain('13.10.2026, 23:59')
             ->and($member->notifications()->count())->toBe(1)
             ->and($member->notifications()->first()->data)->toBe(['edition_id' => $edition->id, 'days_before' => 1]);
+    });
+});
+
+/**
+ * Put waiting jobs on a queue of the database connection, the one the voting workers read.
+ */
+function notificationsQueueWaitingJobs(string $queue, int $count): void
+{
+    for ($i = 0; $i < $count; $i++) {
+        Queue::connection('database')->pushOn($queue, new SendVotingLinkJob("voter{$i}@example.test", 'token'));
+    }
+}
+
+describe('voting queue backlog', function (): void {
+    it('alerts the users who see reports once when a voting queue is over the limit', function (): void {
+        $reporter = notificationsUserWith('reporting');
+        $unrelated = notificationsUserWith('members');
+        notificationsQueueWaitingJobs('voting-mail', 3);
+        Notification::fake();
+
+        artisan('queue:monitor', ['queues' => 'database:voting-mail', '--max' => 2])->assertSuccessful();
+        artisan('queue:monitor', ['queues' => 'database:voting-mail', '--max' => 2])->assertSuccessful();
+
+        Notification::assertSentToTimes($reporter, VotingQueueBacklog::class, 1);
+        Notification::assertSentTo(
+            $reporter,
+            VotingQueueBacklog::class,
+            fn(VotingQueueBacklog $notification): bool => $notification->queueName === 'voting-mail'
+                && $notification->waitingJobs === 3,
+        );
+        Notification::assertNotSentTo($unrelated, VotingQueueBacklog::class);
+    });
+
+    it('alerts again once the cooldown has passed', function (): void {
+        $reporter = notificationsUserWith('reporting');
+        notificationsQueueWaitingJobs('voting-validation', 3);
+        Notification::fake();
+        artisan('queue:monitor', ['queues' => 'database:voting-validation', '--max' => 2])->assertSuccessful();
+        travel(31)->minutes();
+
+        artisan('queue:monitor', ['queues' => 'database:voting-validation', '--max' => 2])->assertSuccessful();
+
+        Notification::assertSentToTimes($reporter, VotingQueueBacklog::class, 2);
+    });
+
+    it('does not alert about a queue that is not a voting queue', function (): void {
+        notificationsUserWith('reporting');
+        notificationsQueueWaitingJobs('default', 3);
+        Notification::fake();
+
+        artisan('queue:monitor', ['queues' => 'database:default', '--max' => 2])->assertSuccessful();
+
+        Notification::assertNothingSent();
     });
 });
 

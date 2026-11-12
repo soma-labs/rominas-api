@@ -16,10 +16,11 @@ carry. It adds no model of its own.
 | `member_joined` | an invited member signs in for the first time (`MemberActivated`) | users with `members` |
 | `new_fraud_alerts` | a `romias:detect-fraud` run records at least one **new** alert (`FraudAlertsDetected`) | users with `fraudMonitoring` |
 | `daily_statistics` | every day at 08:00, while an edition is in progress | users with `reporting` |
+| `voting_queue_backlog` | a voting queue holds more than `voting.queue_alert_threshold` jobs (500), checked every minute (`QueueBusy`); at most once per queue every 30 min | users with `reporting` |
 | `nominations_opened` | an edition moves to `nominations_open` (`EditionTransitioned`) | members `invited` or `active` |
 | `nomination_deadline_reminder` | every day at 10:00, on the reminder days (§4) | members `invited` or `active` who have not submitted |
 
-The first four are **admin notifications**: an e-mail and an item in the user's list in the dashboard,
+The first five are **admin notifications**: an e-mail and an item in the user's list in the dashboard,
 in English like the dashboard. The last two are **member notifications**: an e-mail in Romanian, nothing
 else.
 
@@ -74,6 +75,14 @@ draft still gets the reminder. A member who already has the reminder for that da
 running the command twice sends nothing new, once the queue has processed the first run.
 
 Both commands can be run by hand.
+
+**Voting queue backlog.** `queue:monitor` runs every minute over the two voting queues
+(`config/voting.php` `queues`; see [voting.md §2](voting.md#2-requesting-a-link)) and fires Laravel's
+`QueueBusy` for each one holding at least `queue_alert_threshold` jobs (`VOTING_QUEUE_ALERT_THRESHOLD`,
+500). `NotifyAdminsOfVotingQueueBacklog` ignores other queues and sends at most one alert per queue every
+`queue_alert_cooldown_minutes` (30), so a long backlog doesn't send an e-mail every minute. The alert says
+links are delayed, not lost. It goes out on the default queue, which has its own worker, so a voting
+backlog doesn't hold it up.
 
 **Checking an e-mail by hand.** `romias:test-mail {email} {template}` sends one e-mail template, or
 `all` of them, with sample data to the given address (it asks for whichever is left out). It covers every

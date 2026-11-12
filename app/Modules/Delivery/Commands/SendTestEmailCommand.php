@@ -21,6 +21,7 @@ use Rominas\Notifications\Notifications\MemberProposalNeedsReview;
 use Rominas\Notifications\Notifications\NewFraudAlerts;
 use Rominas\Notifications\Notifications\NominationDeadlineReminder;
 use Rominas\Notifications\Notifications\NominationsOpened;
+use Rominas\Notifications\Notifications\VotingQueueBacklog;
 use InvalidArgumentException;
 
 use function Laravel\Prompts\select;
@@ -131,6 +132,7 @@ class SendTestEmailCommand extends Command implements PromptsForMissingInput
             'admin-member-joined' => 'Admin: member joined',
             'admin-fraud-alerts' => 'Admin: new fraud alerts',
             'admin-daily-statistics' => 'Admin: daily statistics',
+            'admin-voting-queue-backlog' => 'Admin: voting links delayed',
         ];
     }
 
@@ -189,6 +191,7 @@ class SendTestEmailCommand extends Command implements PromptsForMissingInput
             'admin-member-proposal' => new MemberProposalNeedsReview(1, 'Ana Popescu', 'Ion Ionescu'),
             'admin-member-joined' => new MemberJoined(1, 'Ana Popescu'),
             'admin-fraud-alerts' => new NewFraudAlerts(1, self::EDITION_NAME, 3),
+            'admin-voting-queue-backlog' => new VotingQueueBacklog('voting-validation', 1240),
             'admin-daily-statistics' => new DailyStatistics(
                 editionId: 1,
                 editionName: self::EDITION_NAME,

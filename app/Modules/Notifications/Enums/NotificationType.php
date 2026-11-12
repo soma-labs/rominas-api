@@ -16,4 +16,5 @@ enum NotificationType: string
     case DailyStatistics = 'daily_statistics';
     case NominationsOpened = 'nominations_opened';
     case NominationDeadlineReminder = 'nomination_deadline_reminder';
+    case VotingQueueBacklog = 'voting_queue_backlog';
 }

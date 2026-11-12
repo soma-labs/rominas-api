@@ -91,6 +91,7 @@ it('sends the chosen template to the given address from its audience\'s sender n
     ['admin-member-joined', 'Ana Popescu joined the academy', 'Platforma ROMIAS'],
     ['admin-fraud-alerts', '3 new fraud alerts for Romias 2026', 'Platforma ROMIAS'],
     ['admin-daily-statistics', 'Daily statistics for Romias 2026: 13 Oct 2026', 'Platforma ROMIAS'],
+    ['admin-voting-queue-backlog', 'Voting links are delayed: 1,240 jobs waiting', 'Platforma ROMIAS'],
 ]);
 
 it('uses the sender name configured for the audience', function (): void {
@@ -117,7 +118,7 @@ it('sends every template when asked for all of them', function (): void {
 
     artisan('romias:test-mail', ['email' => 'tester@example.test', 'template' => 'all'])->assertSuccessful();
 
-    expect($sent->payloads)->toHaveCount(15);
+    expect($sent->payloads)->toHaveCount(16);
 });
 
 it('refuses an invalid address or an unknown template without sending', function (string $email, string $template): void {
