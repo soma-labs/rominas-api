@@ -33,7 +33,8 @@ return [
     |   accept — the link is sent;
     |   flag   — the link is sent and the ballot is marked for fraud review
     |            ("accepted with a note");
-    |   reject — no link, the voter sees a 422 on `email`.
+    |   reject — no ballot and no link; the voter gets the same generic answer
+    |            as everyone else and is never told why.
     |
     | A sub-status missing here takes its status's '' row; an unknown status
     | is flagged. Source: docs/zero-bounce-scores.csv in the parent folder.
@@ -86,5 +87,44 @@ return [
         'rejection_cache_minutes' => (int) env('VOTING_EMAIL_REJECTION_CACHE_MINUTES', 60),
 
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Voting queues
+    |--------------------------------------------------------------------------
+    |
+    | A link request only queues work; the voting workers (laravel-worker-voting
+    | in docker/supervisor/supervisord.conf) do it:
+    |
+    |   validation — IssueVotingLinkJob: e-mail validation, the ballot, and
+    |                queueing the link e-mail;
+    |   mail       — SendVotingLinkJob: sending the link e-mail.
+    |
+    | The workers take `mail` first, so a voter whose address passed gets the
+    | e-mail before new checks start. Rename a queue only together with the
+    | worker's --queue list.
+    |
+    */
+
+    'queues' => [
+        'validation' => env('VOTING_VALIDATION_QUEUE', 'voting-validation'),
+        'mail' => env('VOTING_MAIL_QUEUE', 'voting-mail'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Queue backlog alert
+    |--------------------------------------------------------------------------
+    |
+    | The scheduler checks both voting queues every minute; when one holds more
+    | jobs than this, admins with the `reporting` permission are notified (at
+    | most once per queue every `queue_alert_cooldown_minutes`). Links in the
+    | queue are delayed, not lost.
+    |
+    */
+
+    'queue_alert_threshold' => (int) env('VOTING_QUEUE_ALERT_THRESHOLD', 500),
+
+    'queue_alert_cooldown_minutes' => (int) env('VOTING_QUEUE_ALERT_COOLDOWN_MINUTES', 30),
 
 ];

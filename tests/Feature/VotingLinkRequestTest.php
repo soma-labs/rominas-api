@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Rominas\Editions\Enums\EditionStatus;
 use Rominas\Editions\Model\Edition;
+use Rominas\Voting\Jobs\IssueVotingLinkJob;
 use Rominas\Voting\Jobs\SendVotingLinkJob;
 use Rominas\Voting\Model\Ballot;
 use Rominas\Voting\Support\VoterHasher;
 
 use function Pest\Laravel\postJson;
+use function Pest\Laravel\travelTo;
 
 /**
  * An edition in `voting_open` whose voting window contains "now", so the resolve gate passes.
@@ -48,7 +51,7 @@ function fakeZeroBounceVerdict(string $status, string $subStatus = ''): void
 }
 
 it('issues a single-use ballot and queues the link email during open voting', function (): void {
-    Bus::fake();
+    Bus::fake([SendVotingLinkJob::class]);
     $edition = votingOpenEdition();
 
     postJson('/api/voting/request', ['email' => 'Voter@Example.Test'])
@@ -63,11 +66,11 @@ it('issues a single-use ballot and queues the link email during open voting', fu
     expect($ballot->ip_hash)->toBeNull();
     expect($ballot->expires_at->equalTo($edition->voting_end_at))->toBeTrue();
 
-    Bus::assertDispatched(SendVotingLinkJob::class);
+    Bus::assertDispatched(SendVotingLinkJob::class, fn(SendVotingLinkJob $job): bool => $job->queue === 'voting-mail');
 });
 
 it('issues no second ballot and leaks nothing on a repeat request', function (): void {
-    Bus::fake();
+    Bus::fake([SendVotingLinkJob::class]);
     $edition = votingOpenEdition();
 
     postJson('/api/voting/request', ['email' => 'voter@example.test'])->assertStatus(200);
@@ -80,7 +83,7 @@ it('issues no second ballot and leaks nothing on a repeat request', function ():
 });
 
 it('normalizes casing/whitespace to one identity', function (): void {
-    Bus::fake();
+    Bus::fake([SendVotingLinkJob::class]);
     $edition = votingOpenEdition();
 
     postJson('/api/voting/request', ['email' => 'voter@example.test'])->assertStatus(200);
@@ -90,7 +93,7 @@ it('normalizes casing/whitespace to one identity', function (): void {
 });
 
 it('refuses to issue a link when voting is not open', function (): void {
-    Bus::fake();
+    Bus::fake([SendVotingLinkJob::class]);
     Edition::factory()->status(EditionStatus::NominationsClosed)->create();
 
     postJson('/api/voting/request', ['email' => 'voter@example.test'])
@@ -110,7 +113,7 @@ it('validates the email', function (): void {
 });
 
 it('throttles repeated link requests', function (): void {
-    Bus::fake();
+    Bus::fake([SendVotingLinkJob::class]);
     votingOpenEdition();
 
     for ($i = 0; $i < 5; $i++) {
@@ -123,7 +126,7 @@ it('throttles repeated link requests', function (): void {
 });
 
 it('answers the generic link message in Romanian when Accept-Language is ro', function (): void {
-    Bus::fake();
+    Bus::fake([SendVotingLinkJob::class]);
     votingOpenEdition();
 
     postJson('/api/voting/request', ['email' => 'voter@example.test'], ['Accept-Language' => 'ro'])
@@ -132,7 +135,7 @@ it('answers the generic link message in Romanian when Accept-Language is ro', fu
 });
 
 it('explains in Romanian that voting is not open when Accept-Language is ro', function (): void {
-    Bus::fake();
+    Bus::fake([SendVotingLinkJob::class]);
     Edition::factory()->status(EditionStatus::NominationsClosed)->create();
 
     postJson('/api/voting/request', ['email' => 'voter@example.test'], ['Accept-Language' => 'ro'])
@@ -168,7 +171,7 @@ it('issues the link and records the verdict for an address ZeroBounce does not r
     'a status the table does not list' => ['brand_new_status', '', null, 'accepted_with_note'],
 ]);
 
-it('returns 422 on email and issues nothing for an address ZeroBounce rules out', function (
+it('answers the generic 200 and issues nothing for an address ZeroBounce rules out', function (
     string $status,
     string $subStatus,
 ): void {
@@ -177,8 +180,9 @@ it('returns 422 on email and issues nothing for an address ZeroBounce rules out'
     fakeZeroBounceVerdict($status, $subStatus);
 
     postJson('/api/voting/request', ['email' => 'voter@example.test'])
-        ->assertStatus(422)
-        ->assertJsonPath('errors.email.0', 'This email address cannot be used to vote. Please use a different address.');
+        ->assertStatus(200)
+        ->assertJsonPath('success', true)
+        ->assertJsonPath('message', 'If the address is valid, you will receive a voting link.');
 
     expect(Ballot::query()->count())->toBe(0);
     Bus::assertNotDispatched(SendVotingLinkJob::class);
@@ -189,32 +193,16 @@ it('returns 422 on email and issues nothing for an address ZeroBounce rules out'
     'an invalid address with an unlisted sub-status' => ['invalid', 'mailbox_not_found'],
 ]);
 
-it('explains the rejected address in Romanian when Accept-Language is ro', function (): void {
+it('does not ask ZeroBounce again about an address it rejected', function (): void {
     Bus::fake([SendVotingLinkJob::class]);
     votingOpenEdition();
     fakeZeroBounceVerdict('do_not_mail', 'disposable');
 
-    postJson('/api/voting/request', ['email' => 'voter@example.test'], ['Accept-Language' => 'ro'])
-        ->assertStatus(422)
-        ->assertJsonPath(
-            'errors.email.0',
-            'Această adresă de e-mail nu poate fi folosită pentru vot. Te rugăm să folosești o altă adresă.',
-        );
-
-    Bus::assertNotDispatched(SendVotingLinkJob::class);
-});
-
-it('refuses a rejected address again without asking ZeroBounce a second time', function (): void {
-    Bus::fake([SendVotingLinkJob::class]);
-    votingOpenEdition();
-    fakeZeroBounceVerdict('do_not_mail', 'disposable');
-
-    postJson('/api/voting/request', ['email' => 'voter@example.test'])->assertStatus(422);
-    postJson('/api/voting/request', ['email' => 'voter@example.test'])
-        ->assertStatus(422)
-        ->assertJsonValidationErrorFor('email');
+    postJson('/api/voting/request', ['email' => 'voter@example.test'])->assertStatus(200);
+    postJson('/api/voting/request', ['email' => 'voter@example.test'])->assertStatus(200);
 
     Http::assertSentCount(1);
+    expect(Ballot::query()->count())->toBe(0);
     Bus::assertNotDispatched(SendVotingLinkJob::class);
 });
 
@@ -306,4 +294,73 @@ it('keeps dotted addresses apart outside Gmail', function (): void {
 
     expect(Ballot::query()->forEdition($edition)->count())->toBe(2);
     Bus::assertDispatchedTimes(SendVotingLinkJob::class, 2);
+});
+
+it('only queues the link work on the validation queue and answers before any validation', function (): void {
+    Queue::fake([IssueVotingLinkJob::class]);
+    votingOpenEdition();
+    fakeZeroBounceVerdict('valid');
+
+    postJson('/api/voting/request', ['email' => 'voter@example.test'])
+        ->assertStatus(200)
+        ->assertJsonPath('success', true);
+
+    Queue::assertPushedOn('voting-validation', IssueVotingLinkJob::class);
+    Http::assertNothingSent();
+    expect(Ballot::query()->count())->toBe(0);
+});
+
+it('queues one job for two quick requests for the same mailbox', function (): void {
+    Queue::fake([IssueVotingLinkJob::class]);
+    votingOpenEdition();
+
+    postJson('/api/voting/request', ['email' => 'voter@example.test'])->assertStatus(200);
+    postJson('/api/voting/request', ['email' => 'VOTER@example.test'])->assertStatus(200);
+
+    Queue::assertPushedTimes(IssueVotingLinkJob::class, 1);
+});
+
+it('queues nothing for an address that already has a ballot', function (): void {
+    Bus::fake([SendVotingLinkJob::class]);
+    votingOpenEdition();
+    postJson('/api/voting/request', ['email' => 'voter@example.test'])->assertStatus(200);
+    Queue::fake([IssueVotingLinkJob::class]);
+
+    postJson('/api/voting/request', ['email' => 'voter@example.test'])->assertStatus(200);
+
+    Queue::assertNotPushed(IssueVotingLinkJob::class);
+});
+
+it('queues nothing for an address rejected a moment ago', function (): void {
+    Bus::fake([SendVotingLinkJob::class]);
+    votingOpenEdition();
+    fakeZeroBounceVerdict('spamtrap');
+    postJson('/api/voting/request', ['email' => 'voter@example.test'])->assertStatus(200);
+    Queue::fake([IssueVotingLinkJob::class]);
+
+    postJson('/api/voting/request', ['email' => 'voter@example.test'])->assertStatus(200);
+
+    Queue::assertNotPushed(IssueVotingLinkJob::class);
+});
+
+it('issues nothing when voting has closed by the time the job runs', function (): void {
+    Bus::fake([SendVotingLinkJob::class]);
+    $edition = votingOpenEdition();
+    travelTo($edition->voting_end_at->copy()->addMinute());
+
+    IssueVotingLinkJob::dispatchSync('voter@example.test');
+
+    expect(Ballot::query()->count())->toBe(0);
+    Bus::assertNotDispatched(SendVotingLinkJob::class);
+});
+
+it('leaves one ballot and one link e-mail when the job runs twice', function (): void {
+    Bus::fake([SendVotingLinkJob::class]);
+    $edition = votingOpenEdition();
+
+    IssueVotingLinkJob::dispatchSync('voter@example.test');
+    IssueVotingLinkJob::dispatchSync('voter@example.test');
+
+    expect(Ballot::query()->forEdition($edition)->count())->toBe(1);
+    Bus::assertDispatchedTimes(SendVotingLinkJob::class, 1);
 });

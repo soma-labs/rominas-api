@@ -51,6 +51,15 @@ final class VoterHasher
         return $local . '@' . $domain;
     }
 
+    /**
+     * The cache key under which a rejected address is remembered: keyed by its hash, so the address
+     * itself never sits in the cache.
+     */
+    public static function rejectionCacheKey(string $emailHash): string
+    {
+        return 'voting:email-rejected:' . $emailHash;
+    }
+
     public static function ipHash(?string $ip): ?string
     {
         if ($ip === null || $ip === '') {

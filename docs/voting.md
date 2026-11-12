@@ -18,13 +18,14 @@ sequenceDiagram
     V->>API: GET /api/voting/status
     API-->>V: state (upcoming / open / closed / none) + window dates
     V->>API: POST /api/voting/request {email}
-    API->>API: open window? email_hash already has a ballot?
-    API->>ZB: validate the address (new addresses only)
-    ZB-->>API: status + sub_status
-    API->>API: rejected? → 422 on email, stop
-    API->>API: create Ballot (issued, token_hash, expires_at, email check)
-    API->>Q: SendVotingLinkJob(email, token)
-    API-->>V: 200 (always the same message)
+    API->>API: open window? ballot or recent rejection for email_hash?
+    API->>Q: IssueVotingLinkJob(email) on voting-validation
+    API-->>V: 200 (always the same message, at once)
+    Q->>ZB: validate the address
+    ZB-->>Q: status + sub_status
+    Q->>Q: rejected? → remember the hash, stop (no ballot, no mail)
+    Q->>Q: create Ballot (issued, token_hash, expires_at, email check)
+    Q->>Q: SendVotingLinkJob(email, token) on voting-mail
     Q-->>V: email with …/vot?token=…
     V->>API: GET /api/voting/ballot?token=…
     API-->>V: shortlist per category, alphabetical
@@ -61,22 +62,44 @@ the edition is `voting_open`.
 ## 2. Requesting a link
 
 `POST /api/voting/request {email}` — public, throttled to 5/min per email + IP and 20/min per IP
-(`voting-request` limiter). `RequestVotingLinkAction`:
+(`voting-request` limiter). The request itself only does the cheap checks and queues the rest, so it
+never waits on ZeroBounce (built 2026-11-12, after a load test showed the in-request check stalled the whole
+API at ~4 requests/s). `RequestVotingLinkAction`:
 
 1. resolves the open edition (a closed window is a visible 422);
 2. computes `email_hash` = HMAC-SHA256 of the **normalized** email (`VoterHasher`, see below);
 3. if a ballot for that `(edition, email_hash)` already exists, **does nothing**. This rule is **one link,
    ever, per email per edition**, backed by a unique index: no second link, not even after voting, and not
    even if the first email was lost;
-4. otherwise **validates the address with ZeroBounce** and stops with a 422 if it is rejected (below);
-5. generates a 48-character random token and creates a `Ballot` with `status = issued`,
+4. if the address was rejected recently (its hash is in the cache), **does nothing**;
+5. otherwise queues **`IssueVotingLinkJob`** on the `voting-validation` queue. The job is unique per
+   `email_hash` for 5 minutes, so two quick requests for one mailbox queue one job.
+
+The response is always the same generic 200, at once. It never reveals whether the address had already
+requested a link, voted, or was rejected.
+
+`IssueVotingLinkJob` runs `IssueVotingLinkAction` on a voting worker:
+
+1. checks again that voting is open and that the address has no ballot (stops quietly otherwise, which also
+   makes a retried or duplicated job harmless);
+2. **validates the address with ZeroBounce** (below); a rejected address gets no ballot and no mail, and
+   its hash is remembered;
+3. generates a 48-character random token and creates a `Ballot` with `status = issued`,
    `token_hash` = SHA-256 of the token, `expires_at` = the edition's `voting_end_at`, and the validation
    verdict (`email_check_*`);
-6. queues `SendVotingLinkJob` **after commit**. The job builds
-   `{services.frontend.voting_url}/vot?token=…` and sends it through the `Delivery` pipeline (`voting-link-email`).
+4. queues `SendVotingLinkJob` **after commit** on the `voting-mail` queue. The job builds
+   `{services.frontend.voting_url}/vot?token=…` and sends it through the `Delivery` pipeline
+   (`voting-link-email`). The mail is its own job, so a failed send is retried without a second
+   ZeroBounce credit.
 
-For an accepted address the response is always the same generic 200. It never reveals whether the address
-had already requested a link or voted.
+**Queues and workers.** Both queues are named in `config/voting.php` (`queues`) and worked by
+`laravel-worker-voting` (8 processes, `docker/supervisor/supervisord.conf`), which takes `voting-mail`
+first: a voter whose address passed gets the e-mail before new checks start. The default queue (magic
+links, admin notifications) has its own worker, so a voting backlog never delays it. Locally, run one
+worker for all three: `sail artisan queue:work --queue=voting-mail,voting-validation,default`.
+When a voting queue holds more than `voting.queue_alert_threshold` jobs (500), admins are notified
+([notifications.md](notifications.md)). `failed_jobs` may now also hold an `IssueVotingLinkJob`: the
+address, no token, deleted by the same pruning rule.
 
 The plaintext token exists only in the queued job and the email; the database holds its hash.
 
@@ -99,7 +122,7 @@ from the table in `config/voting.php` (`email_validation.decisions`):
 | --- | --- |
 | `accept` | the link is sent |
 | `flag` ("accepted with a note") | the link is sent; the ballot is marked so a fraud reviewer can find it ([fraud-monitoring.md](fraud-monitoring.md#2-reviewing-ballots)) |
-| `reject` | no ballot, no email; **422 on `email`** with one generic message that never says why |
+| `reject` | no ballot, no email; the voter already got the same generic 200 as everyone else and is never told |
 
 Every ZeroBounce answer and what is done with it. The config table is the source of truth, so change both
 together; it mirrors the client's decision sheet (`docs/zero-bounce-scores.csv` in the parent folder). A
@@ -140,7 +163,10 @@ list is flagged.
 - **No API key = validation off** (`ZEROBOUNCE_API_KEY`, `config/services.php`). The default endpoint is
   the EU one (`ZEROBOUNCE_BASE_URL`); `ZEROBOUNCE_TIMEOUT` is in seconds.
 - **Credits.** An address that already has a ballot is never sent again. A rejected address is remembered
-  for an hour by its hash (`email_validation.rejection_cache_minutes`), so repeat attempts cost nothing.
+  for an hour by its hash (`email_validation.rejection_cache_minutes`), so repeat attempts queue nothing
+  and cost nothing, and two quick requests for one mailbox share one job.
+- **A rejected voter is not told** (changed 2026-11-12; it used to be a 422 on `email`). The check now runs
+  after the answer, so a mistyped or refused address simply never gets an e-mail.
 - Not built: the typo suggestion (`did_you_mean`) and re-checking `unknown` results later.
 
 ## 3. Loading the ballot

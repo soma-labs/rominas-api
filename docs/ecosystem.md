@@ -143,11 +143,13 @@ blocks of the Modular DDD layout.
   category is optional but **≥1 category required** to submit; per included
   category the voter ranks **exactly 3** shortlisted nominees (1 = favourite);
   **one submission per person**, no re-request afterwards. A new address is checked with
-  **ZeroBounce** before a link is issued (reject → 422; "accepted with a note" → flagged on the ballot
+  **ZeroBounce** before a link is issued, in a queued job after the voter already got the generic answer
+  (reject → no link, never told; "accepted with a note" → flagged on the ballot
   for fraud review; ZeroBounce down → link sent unchecked, and the failure is logged on the API's
   `zerobounce` channel, `storage/logs/zerobounce/zerobounce-<date>.log`). Decision table: `config/voting.php`, from
   the client's `zero-bounce-scores.csv` (kept outside git); ZeroBounce client: the small `EmailValidation` module. One voter per
-  mailbox ignores `+tag` and Gmail dots. Detail: `voting.md` §2.
+  mailbox ignores `+tag` and Gmail dots. Link requests run on two voting queues
+  (`voting-validation`, `voting-mail`) with their own 8 workers (2026-11-12). Detail: `voting.md` §2.
 - **`Scoring`** — ranking→points rules and results weighting (academy 10·8·6·4·2,
   public 10·8·6; default `attributed` algorithm with the 60/40 split baked into its
   ladders, and no public score for a nominee without public votes). Points are summed in SQL and the
@@ -164,7 +166,8 @@ blocks of the Modular DDD layout.
 - **`Audit`** — audit trail for most events/actions across the subprojects.
 - **`Notifications`** — e-mail notifications, on demand and scheduled, on Laravel's own notification
   system. Admins get an e-mail plus an unread item in the admin (proposal needs review, member joined,
-  new fraud alerts, daily statistics), sent to the users whose permission lets them act on it. Members
+  new fraud alerts, daily statistics, voting queue backlog), sent to the users whose permission lets them
+  act on it. Members
   get an e-mail only (nominations opened, nomination deadline reminder). The scheduled ones follow the
   Romanian day. Needs the API's `FRONTEND_ADMIN_URL`. Detail: `notifications.md`.
 - **`Auth`** (formerly named `Identity` in this map) — accounts, roles and policies; magic-link /
