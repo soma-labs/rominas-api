@@ -43,6 +43,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=vendor /usr/bin/composer /usr/bin/composer
 
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/zz-rominas.ini
+COPY docker/php-fpm/zzz-rominas.conf /usr/local/etc/php-fpm.d/zzz-rominas.conf
 
 WORKDIR /var/www/html
 
