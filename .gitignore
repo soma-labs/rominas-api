@@ -29,3 +29,7 @@ Thumbs.db
 /dbhub.toml
 /_ide_helper_models.php
 /.phpstorm.meta.php
+
+# Local leftovers of the load test (the tooling itself lives only on the never-merged `loadtest` branch).
+/loadtest/.env.loadtest
+/loadtest/results/
