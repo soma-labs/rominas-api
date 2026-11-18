@@ -7,6 +7,7 @@ namespace Rominas\Reporting\Factories;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Rominas\Categories\Model\Category;
 use Rominas\Editions\Model\Edition;
 use Rominas\Reporting\DataTransferObjects\ReportParameters;
 use Rominas\Reporting\Requests\RunReportRequest;
@@ -14,7 +15,8 @@ use Rominas\Results\Model\ResultSnapshot;
 
 /**
  * Builds {@see ReportParameters} from a validated {@see RunReportRequest}: resolves the target edition
- * (an explicit `edition_id`, otherwise the single active edition) and the optional date window. Fails
+ * (an explicit `edition_id`, otherwise the single active edition), the optional category (it must belong
+ * to that edition) and the optional date window. Fails
  * validation when no edition is given and none is active, so a report always has a concrete edition.
  */
 class ReportParametersFactory
@@ -33,11 +35,20 @@ class ReportParametersFactory
             ]);
         }
 
+        $category = isset($validated['category_id']) ? Category::query()->findOrFail($validated['category_id']) : null;
+
+        if ($category !== null && (int) $category->edition_id !== $edition->id) {
+            throw ValidationException::withMessages([
+                'category_id' => __('The category does not belong to this edition.'),
+            ]);
+        }
+
         return new ReportParameters(
             edition: $edition,
             from: isset($validated['from']) ? CarbonImmutable::parse($validated['from']) : null,
             to: isset($validated['to']) ? self::parseTo($validated['to']) : null,
             includeResultsData: self::viewerMaySeeResults($request),
+            category: $category,
         );
     }
 

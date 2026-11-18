@@ -270,13 +270,14 @@ Admin endpoints, under `/api/admin/reports` (Sanctum-guarded, all `can:reporting
   or `?format=xlsx`.
 
 Results columns: a report may add columns only for viewers who also pass `ResultPolicy::viewAny` (the
-`results` permission: custodian, super admin), in the catalogue, the view and the export alike. Today
-that is `points` on `nominations-per-entity`. The `special-votes-per-entry` report, by contrast, shows
-special-award vote counts (the special results) to every `reporting` holder, admins included (decided
-2026-11-18). Detail: [reporting.md](reporting.md).
+`results` permission: custodian, super admin), in the catalogue, the view and the export alike. No
+report uses this today: academy `points` on `nominations-per-entity` are shown to every `reporting`
+holder, since admins already see them on the Shortlists screen. The `special-votes-per-entry` report shows
+special-award vote counts (the special results) to every `reporting` holder too, admins included
+(both decided 2026-11-18). Detail: [reporting.md](reporting.md).
 
 Registered report keys: `edition-summary`, `votes-per-category-per-day`, `nominations-per-entity`,
-`public-votes-per-entity`, `cancelled-votes-per-day`. (The final ranking is served separately by the
+`public-votes-per-entity`, `cancelled-votes-per-day`, `special-votes-per-entry`. (The final ranking is served separately by the
 `Results` module, §2g.)
 
 Optional query inputs (shared by view + export): `edition_id` (defaults to the active edition), and a

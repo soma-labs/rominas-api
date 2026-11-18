@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rominas\Reporting\Reports;
 
+use Rominas\Categories\Enums\CategoryKind;
 use Rominas\Reporting\DataTransferObjects\ReportParameters;
 use Rominas\Voting\Enums\BallotStatus;
 use Rominas\Voting\Model\BallotRanking;
@@ -32,6 +33,11 @@ final class VotesPerCategoryPerDayReport implements ReportInterface
         return ['category', 'date', 'votes'];
     }
 
+    public function categoryFilterKinds(): array
+    {
+        return [CategoryKind::Ranked];
+    }
+
     public function rows(ReportParameters $parameters): iterable
     {
         $query = BallotRanking::query()
@@ -40,6 +46,10 @@ final class VotesPerCategoryPerDayReport implements ReportInterface
             ->where('ballots.edition_id', '=', $parameters->edition->id)
             ->where('ballots.status', '=', BallotStatus::Submitted->value)
             ->whereNull('ballots.invalidation_batch_id');
+
+        if ($parameters->category !== null) {
+            $query->where('ballot_rankings.category_id', '=', $parameters->category->id);
+        }
 
         if ($parameters->from !== null) {
             $query->where('ballots.submitted_at', '>=', $parameters->from);

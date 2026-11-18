@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Rominas\Categories\Enums\CategoryKind;
 use Rominas\Reporting\DataTransferObjects\ReportParameters;
 use Rominas\SpecialAwards\Entry\Model\SpecialEntry;
+use Rominas\SpecialAwards\Entry\QueryBuilders\SpecialEntryQueryBuilder;
 
 /**
  * How many member votes each entry of a propose-or-vote special category has, per category, most first.
@@ -34,12 +35,18 @@ final class SpecialVotesPerEntryReport implements ReportInterface
         return ['category', 'entry', 'votes'];
     }
 
+    public function categoryFilterKinds(): array
+    {
+        return [CategoryKind::ProposeOrVote];
+    }
+
     public function rows(ReportParameters $parameters): iterable
     {
         return SpecialEntry::query()
             ->forEdition($parameters->edition)
             ->forCategoryKind(CategoryKind::ProposeOrVote)
             ->approved()
+            ->when($parameters->category !== null, fn(SpecialEntryQueryBuilder $query) => $query->forCategory($parameters->category))
             ->with('category:id,name,position')
             ->withCount(['votes' => function (Builder $query) use ($parameters): void {
                 if ($parameters->from !== null) {

@@ -34,6 +34,11 @@ final class EditionSummaryReport implements ReportInterface
         return ['metric', 'value'];
     }
 
+    public function categoryFilterKinds(): array
+    {
+        return [];
+    }
+
     public function rows(ReportParameters $parameters): iterable
     {
         $edition = $parameters->edition;

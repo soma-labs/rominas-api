@@ -164,8 +164,8 @@ blocks of the Modular DDD layout.
   (graphs/tables), and **vote cancellation that always requires a reason**.
 - **`Reporting`** — general statistics (total votes, per category, cancelled,
   etc.), **kept separate from final results**. Also covers the special awards (`special-votes-per-entry`,
-  open to admins). Columns that reveal results (academy `points` on `nominations-per-entity`) are shown
-  only to `results` holders (2026-11-18). Detail: `reporting.md`.
+  open to admins) and the academy `points` per nominee (in shortlist order), and the reports that have a
+  category can be narrowed to one (`category_id`, export too; 2026-11-18). Detail: `reporting.md`.
 - **`Audit`** — audit trail for most events/actions across the subprojects.
 - **`Notifications`** — e-mail notifications, on demand and scheduled, on Laravel's own notification
   system. Admins get an e-mail plus an unread item in the admin (proposal needs review, member joined,

@@ -29,6 +29,11 @@ final class CancelledVotesPerDayReport implements ReportInterface
         return ['date', 'cancelled'];
     }
 
+    public function categoryFilterKinds(): array
+    {
+        return [];
+    }
+
     public function rows(ReportParameters $parameters): iterable
     {
         $query = Ballot::query()

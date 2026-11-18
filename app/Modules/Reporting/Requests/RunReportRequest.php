@@ -26,6 +26,7 @@ class RunReportRequest extends FormRequest
     {
         return [
             'edition_id' => ['sometimes', 'integer', 'exists:editions,id'],
+            'category_id' => ['sometimes', 'integer', 'exists:categories,id'],
             'format' => ['sometimes', 'string', 'in:' . ReportFormat::Csv->value . ',' . ReportFormat::Xlsx->value],
             'from' => ['sometimes', 'date'],
             'to' => ['sometimes', 'date', 'after_or_equal:from'],

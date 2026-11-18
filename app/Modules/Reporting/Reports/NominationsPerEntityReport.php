@@ -7,6 +7,7 @@ namespace Rominas\Reporting\Reports;
 use Rominas\Academy\Nomination\Enums\NominationStatus;
 use Rominas\Academy\Nomination\Model\NominationRanking;
 use Rominas\Academy\Nomination\QueryBuilders\NominationRankingQueryBuilder;
+use Rominas\Categories\Enums\CategoryKind;
 use Rominas\Reporting\DataTransferObjects\ReportParameters;
 use Rominas\Reporting\Support\EntityLabeler;
 use Rominas\Scoring\RankPoints;
@@ -14,11 +15,12 @@ use Rominas\Scoring\RankPoints;
 /**
  * How many times each entity was nominated by the academy, per category — a count of the ranked picks on
  * submitted academy nominations (the academy's only input; the client's "nominations" and "academy votes"
- * are one metric). Draft nominations are excluded. Optionally narrowed to a `submitted_at` window.
+ * are one metric) — and the academy `points` it earned on the {@see RankPoints} curve (10·8·6·4·2), the
+ * same points the shortlist and Scoring use. Draft nominations are excluded. Optionally narrowed to a
+ * `submitted_at` window and to one category.
  *
- * For a viewer holding the `results` permission it adds `points`: the academy rank points each entity
- * earned on the {@see RankPoints} curve (10·8·6·4·2), the same academy points Scoring uses. Points are a
- * results input, so the column stays custodian-only before publication; admins see the count alone.
+ * Categories follow their `position`; inside a category the entities are in shortlist order: points
+ * desc, then nominee id asc ({@see \Rominas\Academy\Shortlist\Actions\GenerateCategoryShortlistAction}).
  */
 final class NominationsPerEntityReport implements ReportInterface
 {
@@ -36,22 +38,26 @@ final class NominationsPerEntityReport implements ReportInterface
 
     public function columns(bool $includeResultsData = false): array
     {
-        $columns = ['category', 'entity_type', 'entity', 'nominations'];
+        return ['category', 'entity_type', 'entity', 'nominations', 'points'];
+    }
 
-        if ($includeResultsData) {
-            $columns[] = 'points';
-        }
-
-        return $columns;
+    public function categoryFilterKinds(): array
+    {
+        return [CategoryKind::Ranked];
     }
 
     public function rows(ReportParameters $parameters): iterable
     {
         $query = NominationRanking::query()
             ->join('nominations', 'nominations.id', '=', 'nomination_rankings.nomination_id')
+            ->join('categories', 'categories.id', '=', 'nomination_rankings.category_id')
             ->where('nominations.edition_id', '=', $parameters->edition->id)
             ->where('nominations.status', '=', NominationStatus::Submitted->value)
             ->resolved();
+
+        if ($parameters->category !== null) {
+            $query->where('nomination_rankings.category_id', '=', $parameters->category->id);
+        }
 
         if ($parameters->from !== null) {
             $query->where('nominations.submitted_at', '>=', $parameters->from);
@@ -61,20 +67,25 @@ final class NominationsPerEntityReport implements ReportInterface
             $query->where('nominations.submitted_at', '<=', $parameters->to);
         }
 
-        $query
-            ->groupBy('nomination_rankings.category_id', 'nomination_rankings.nominee_type', 'nomination_rankings.nominee_id')
-            ->orderBy('nomination_rankings.category_id')
-            ->orderByRaw('COUNT(*) DESC')
+        $aggregates = $query
+            ->groupBy(
+                'categories.position',
+                'nomination_rankings.category_id',
+                'nomination_rankings.nominee_type',
+                'nomination_rankings.nominee_id',
+            )
             ->selectRaw(
                 'nomination_rankings.category_id as category_id, nomination_rankings.nominee_type as nominee_type, '
                 . 'nomination_rankings.nominee_id as nominee_id, COUNT(*) as nominations',
-            );
-
-        if ($parameters->includeResultsData) {
-            $this->selectAcademyPoints($query);
-        }
-
-        $aggregates = $query->toBase()->get();
+            )
+            ->selectRaw($this->academyPointsSql($query), $this->academyPointsBindings())
+            ->orderBy('categories.position')
+            ->orderBy('nomination_rankings.category_id')
+            ->orderByRaw('points DESC')
+            ->orderBy('nomination_rankings.nominee_id')
+            ->toBase()
+            ->get()
+            ->values();
 
         $rows = $this->labeler->labelEntityRows(
             $aggregates->map(fn(object $row): array => [
@@ -86,11 +97,7 @@ final class NominationsPerEntityReport implements ReportInterface
             'nominations',
         );
 
-        if (! $parameters->includeResultsData) {
-            return $rows;
-        }
-
-        foreach ($aggregates->values() as $index => $aggregate) {
+        foreach ($aggregates as $index => $aggregate) {
             $rows[$index]['points'] = (int) $aggregate->points;
         }
 
@@ -98,23 +105,29 @@ final class NominationsPerEntityReport implements ReportInterface
     }
 
     /**
-     * Sum each entity's academy points in SQL — the {@see RankPoints} curve as a `CASE` on the rank (bound
-     * values) — and break count ties by points.
+     * The {@see RankPoints} curve as a `CASE` on the rank, summed per entity (values bound, see
+     * {@see academyPointsBindings()}).
      */
-    private function selectAcademyPoints(NominationRankingQueryBuilder $query): void
+    private function academyPointsSql(NominationRankingQueryBuilder $query): string
     {
         $rankColumn = $query->getQuery()->getGrammar()->wrap('nomination_rankings.rank');
-        $cases = [];
+        $cases = str_repeat('WHEN ? THEN ? ', RankPoints::RANKS);
+
+        return 'SUM(CASE ' . $rankColumn . ' ' . $cases . 'ELSE 0 END) as points';
+    }
+
+    /**
+     * @return list<int>  rank, points, rank, points, …
+     */
+    private function academyPointsBindings(): array
+    {
         $bindings = [];
 
         foreach (RankPoints::pointsByRank() as $rank => $points) {
-            $cases[] = 'WHEN ? THEN ?';
             $bindings[] = $rank;
             $bindings[] = $points;
         }
 
-        $query
-            ->selectRaw('SUM(CASE ' . $rankColumn . ' ' . implode(' ', $cases) . ' ELSE 0 END) as points', $bindings)
-            ->orderByRaw('points DESC');
+        return $bindings;
     }
 }

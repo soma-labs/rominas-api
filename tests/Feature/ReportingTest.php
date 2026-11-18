@@ -45,26 +45,6 @@ function reportingActingAsAdmin(): User
 }
 
 /**
- * Authenticate as a custodian: `reporting` plus `results`, so the reports add their results columns.
- */
-function reportingActingAsCustodian(): User
-{
-    Role::query()->firstOrCreate(['name' => 'custodian', 'guard_name' => 'web']);
-    Permission::query()->firstOrCreate(['name' => 'reporting', 'guard_name' => 'web']);
-    Permission::query()->firstOrCreate(['name' => 'results', 'guard_name' => 'web']);
-
-    $custodian = Role::query()->where('name', 'custodian')->where('guard_name', 'web')->firstOrFail();
-    $custodian->givePermissionTo('reporting', 'results');
-
-    $user = User::factory()->create();
-    $user->assignRole('custodian');
-
-    Sanctum::actingAs($user);
-
-    return $user;
-}
-
-/**
  * The single active (non-archived) edition the reports run against.
  */
 function reportingActiveEdition(): Edition
@@ -581,52 +561,73 @@ it('counts only the special votes cast inside the requested window', function ()
         ->assertJsonPath('data.rows.0.votes', 1);
 });
 
-// --- Academy points, for results holders only ---------------------------------------------------
+// --- Nominations per entity: points, shortlist order, category filter ------------------------------
 
-it('adds academy rank points to nominations per entity for a viewer with the results permission', function (): void {
-    reportingActingAsCustodian();
+it('orders nominations per entity like the shortlist, with academy points', function (): void {
+    reportingActingAsAdmin();
     $edition = reportingActiveEdition();
-    $category = reportingCategory($edition, 'Best Album');
-    $leader = Artist::factory()->create(['name' => 'Leader']);
-    $runnerUp = Artist::factory()->create(['name' => 'Runner Up']);
+    $second = Category::factory()->create(['edition_id' => $edition->id, 'name' => 'Second', 'position' => 2]);
+    $first = Category::factory()->create(['edition_id' => $edition->id, 'name' => 'First', 'position' => 1]);
+    $broad = Artist::factory()->create(['name' => 'Broad']);
+    $tiedLow = Artist::factory()->create(['name' => 'Tied Low Id']);
+    $tiedHigh = Artist::factory()->create(['name' => 'Tied High Id']);
+    $other = Artist::factory()->create(['name' => 'Other']);
 
-    reportingSubmittedNomination($edition, $category, $leader, rank: 1);
-    reportingSubmittedNomination($edition, $category, $leader, rank: 3);
-    reportingSubmittedNomination($edition, $category, $runnerUp, rank: 2);
-    reportingSubmittedNomination($edition, $category, $runnerUp, rank: 5);
+    // Broad: 3 nominations, 4 + 2 + 2 = 8 points. The tied pair: 1 nomination each, 10 points.
+    reportingSubmittedNomination($edition, $first, $broad, rank: 4);
+    reportingSubmittedNomination($edition, $first, $broad, rank: 5);
+    reportingSubmittedNomination($edition, $first, $broad, rank: 5);
+    reportingSubmittedNomination($edition, $first, $tiedHigh, rank: 1);
+    reportingSubmittedNomination($edition, $first, $tiedLow, rank: 1);
+    reportingSubmittedNomination($edition, $second, $other, rank: 2);
 
     getJson('/api/admin/reports/nominations-per-entity')
         ->assertStatus(200)
         ->assertJsonPath('data.columns', ['category', 'entity_type', 'entity', 'nominations', 'points'])
-        ->assertJsonPath('data.rows.0.entity', 'Leader')
-        ->assertJsonPath('data.rows.0.nominations', 2)
-        ->assertJsonPath('data.rows.0.points', 16)
-        ->assertJsonPath('data.rows.1.entity', 'Runner Up')
-        ->assertJsonPath('data.rows.1.points', 10);
-
-    getJson('/api/admin/reports')
-        ->assertStatus(200)
-        ->assertJsonFragment(['columns' => ['category', 'entity_type', 'entity', 'nominations', 'points']]);
-
-    expect(get('/api/admin/reports/nominations-per-entity/export')->assertStatus(200)->streamedContent())
-        ->toContain('category,entity_type,entity,nominations,points');
+        ->assertJsonPath('data.rows.0.entity', 'Tied Low Id')
+        ->assertJsonPath('data.rows.0.points', 10)
+        ->assertJsonPath('data.rows.1.entity', 'Tied High Id')
+        ->assertJsonPath('data.rows.2.entity', 'Broad')
+        ->assertJsonPath('data.rows.2.nominations', 3)
+        ->assertJsonPath('data.rows.2.points', 8)
+        ->assertJsonPath('data.rows.3.category', 'Second')
+        ->assertJsonPath('data.rows.3.points', 8);
 });
 
-it('leaves academy points out of nominations per entity for a viewer without the results permission', function (): void {
+it('narrows a report to one category, in the view and the export', function (): void {
     reportingActingAsAdmin();
     $edition = reportingActiveEdition();
-    $category = reportingCategory($edition, 'Best Album');
-    reportingSubmittedNomination($edition, $category, Artist::factory()->create(), rank: 1);
+    $kept = reportingCategory($edition, 'Kept');
+    $dropped = reportingCategory($edition, 'Dropped');
+    reportingSubmittedNomination($edition, $kept, Artist::factory()->create(['name' => 'In Kept']));
+    reportingSubmittedNomination($edition, $dropped, Artist::factory()->create(['name' => 'In Dropped']));
 
-    getJson('/api/admin/reports/nominations-per-entity')
+    getJson('/api/admin/reports/nominations-per-entity?category_id=' . $kept->id)
         ->assertStatus(200)
-        ->assertJsonPath('data.columns', ['category', 'entity_type', 'entity', 'nominations'])
-        ->assertJsonMissingPath('data.rows.0.points');
+        ->assertJsonCount(1, 'data.rows')
+        ->assertJsonPath('data.rows.0.entity', 'In Kept');
 
-    getJson('/api/admin/reports')
-        ->assertStatus(200)
-        ->assertJsonFragment(['columns' => ['category', 'entity_type', 'entity', 'nominations']]);
+    expect(get('/api/admin/reports/nominations-per-entity/export?category_id=' . $kept->id)->assertStatus(200)->streamedContent())
+        ->toContain('In Kept')
+        ->not->toContain('In Dropped');
+});
 
-    expect(get('/api/admin/reports/nominations-per-entity/export')->assertStatus(200)->streamedContent())
-        ->not->toContain('points');
+it('refuses a category filter from another edition', function (): void {
+    reportingActingAsAdmin();
+    $edition = reportingActiveEdition();
+    $foreign = reportingCategory(Edition::factory()->create(), 'Foreign');
+
+    getJson('/api/admin/reports/nominations-per-entity?edition_id=' . $edition->id . '&category_id=' . $foreign->id)
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['category_id' => 'The category does not belong to this edition.']);
+});
+
+it('tells the catalogue which category kinds each report can be filtered to', function (): void {
+    reportingActingAsAdmin();
+
+    $kinds = collect(getJson('/api/admin/reports')->assertStatus(200)->json('data'))->pluck('category_kinds', 'key');
+
+    expect($kinds['nominations-per-entity'])->toBe(['ranked'])
+        ->and($kinds['special-votes-per-entry'])->toBe(['propose_or_vote'])
+        ->and($kinds['edition-summary'])->toBe([]);
 });

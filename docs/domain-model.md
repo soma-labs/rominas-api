@@ -877,15 +877,16 @@ table through the `Notifiable` trait on `User` and `Member`. See [notifications.
   reports listed in `config/reporting.php` by key; a `SpreadsheetReportExporter` (`Exporters/`) streams
   any report's `columns()`/`rows()` as CSV **or** Excel via **openspout** (one code path, low memory).
   The same shape backs the tabular JSON (`ReportResource`). Every vote report honours an optional
-  `from`/`to` window (`ReportParameters`); per-entity reports resolve category + entity display names in
+  `from`/`to` window (`ReportParameters`), and the reports with a category take an optional `category_id`
+  (`categoryFilterKinds()`); per-entity reports resolve category + entity display names in
   batched, N+1-free passes via `Support/EntityLabeler` (`NomineeType::modelClass()`). Reports:
   - **`EditionSummaryReport`** (`edition-summary`) — headline `metric | value` totals: voting links issued,
     ballots submitted, valid and cancelled votes, academy nominations submitted and in draft.
   - **`VotesPerCategoryPerDayReport`** (`votes-per-category-per-day`) — distinct submitted, **non-cancelled**
     ballots per category per UTC day (`COUNT(DISTINCT ballot_id)` grouped by category + `DATE(submitted_at)`).
   - **`NominationsPerEntityReport`** (`nominations-per-entity`) — count of submitted academy nomination
-    picks per (category, entity). (The client's "nominations" and "academy votes" are one metric.) Viewers
-    holding `results` also get `points`, the `RankPoints` academy points (`ReportParameters::includeResultsData`).
+    picks per (category, entity). (The client's "nominations" and "academy votes" are one metric.) Also
+    the `RankPoints` academy `points`; entities in shortlist order (points desc, nominee id asc).
   - **`PublicVotesPerEntityReport`** (`public-votes-per-entity`) — **rank-weighted** public points per
     (category, entity) via the `PublicRankPoints` curve (summed in PHP over per-rank counts, single-sourced),
     submitted + `->valid()` only. A plain count is less telling (the public ranks its 3 picks).

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rominas\Reporting\Reports;
 
+use Rominas\Categories\Enums\CategoryKind;
 use Rominas\Reporting\DataTransferObjects\ReportParameters;
 use Rominas\Reporting\Support\EntityLabeler;
 use Rominas\Scoring\PublicRankPoints;
@@ -37,6 +38,11 @@ final class PublicVotesPerEntityReport implements ReportInterface
         return ['category', 'entity_type', 'entity', 'points'];
     }
 
+    public function categoryFilterKinds(): array
+    {
+        return [CategoryKind::Ranked];
+    }
+
     public function rows(ReportParameters $parameters): iterable
     {
         $query = BallotRanking::query()
@@ -44,6 +50,10 @@ final class PublicVotesPerEntityReport implements ReportInterface
             ->where('ballots.edition_id', '=', $parameters->edition->id)
             ->where('ballots.status', '=', BallotStatus::Submitted->value)
             ->whereNull('ballots.invalidation_batch_id');
+
+        if ($parameters->category !== null) {
+            $query->where('ballot_rankings.category_id', '=', $parameters->category->id);
+        }
 
         if ($parameters->from !== null) {
             $query->where('ballots.submitted_at', '>=', $parameters->from);

@@ -20,6 +20,7 @@ Every report implements `Reports/ReportInterface`:
 | `key()` | Stable machine key, used in the URL and the registry (e.g. `votes-per-category-per-day`) |
 | `title()` | Human-readable title |
 | `columns(bool $includeResultsData = false)` | Ordered column keys: the JSON table header and the export's header row. `true` (the viewer holds `results`) may add results columns |
+| `categoryFilterKinds()` | The category kinds the report can be narrowed to with `category_id` (sent to the admin as `category_kinds`, which lists those categories in its Category select); empty = no category filter, `category_id` ignored |
 | `rows(ReportParameters)` | The data: an `iterable` of rows keyed by column |
 
 The metadata methods need no edition, so the catalogue can list reports without running them. `rows()`
@@ -27,11 +28,14 @@ returns an `iterable` so a large report can be streamed straight into an export 
 into memory. **One implementation serves every output format**: the JSON view and both download formats
 all consume the same `columns()` / `rows()`.
 
-`ReportParameters` carries the **edition**, an optional **`from` / `to`** window and **`includeResultsData`**:
+`ReportParameters` carries the **edition**, an optional **`from` / `to`** window, an optional **category**
+and **`includeResultsData`**:
 true when the viewer holds the `results` permission (custodian, or super admin through `Gate::before`),
 checked by `ReportParametersFactory::viewerMaySeeResults()` with the same `ResultPolicy` the Results routes use.
 The catalogue, the JSON view and the export all pass it to `columns()`, so a results column appears in all
-three for those viewers and in none for the others. Today only `nominations-per-entity` has one (`points`).
+three for those viewers and in none for the others. No report uses it today: `points` on
+`nominations-per-entity` started as one, but the user opened it to every `reporting` holder on 2026-11-18,
+since admins already see the same academy points on the Shortlists screen.
 
 ## 2. Registry
 
@@ -47,7 +51,7 @@ All under `/api/admin/reports`, Sanctum-guarded, behind the **`reporting`** perm
 
 | Endpoint | Returns |
 | --- | --- |
-| `GET /api/admin/reports` | The catalogue: each report's `key`, `title`, `columns` (no data) |
+| `GET /api/admin/reports` | The catalogue: each report's `key`, `title`, `columns`, `category_kinds` (no data) |
 | `GET /api/admin/reports/{report}` | The report as tabular JSON: `key`, `title`, `columns`, `rows` |
 | `GET /api/admin/reports/{report}/export?format=csv\|xlsx` | A streamed download named `{key}.{format}`; CSV by default |
 
@@ -58,6 +62,7 @@ An unknown key is a **404**.
 | Param | Meaning |
 | --- | --- |
 | `edition_id` | The edition to report on. Defaults to the **active edition**; a 422 on `edition_id` if none is active and none is given |
+| `category_id` | Optional: narrows a report that has a category filter (`categoryFilterKinds()` not empty) to one category, view and export alike; a 422 on `category_id` if it belongs to another edition. Reports without the filter ignore it |
 | `from`, `to` | Optional inclusive bounds on the relevant `submitted_at`; `to` must be ≥ `from` |
 
 `from` / `to` are compared as timestamps. A bare date includes the whole day: `from=2026-10-05` starts
@@ -80,7 +85,7 @@ ballots and, apart from the cancellation report, excludes **cancelled** ones. Ac
 | --- | --- | --- |
 | `edition-summary` | metric, value | Headline totals: voting links issued, ballots submitted, valid votes, cancelled votes, academy nominations submitted and in draft. The from/to window applies to each metric's own timestamp; the draft count is point-in-time and ignores it |
 | `votes-per-category-per-day` | category, date, votes | **Distinct voters** per category per day: `COUNT(DISTINCT ballot_id)`, so a voter ranking three nominees counts once |
-| `nominations-per-entity` | category, entity_type, entity, nominations (+ points) | How many academy picks each entity received per category, highest first. "Nominations" and "academy votes" are the same metric. For `results` holders only, `points`: the academy rank points on the `RankPoints` curve (10 / 8 / 6 / 4 / 2), the `academy_points` Scoring uses, which also break count ties. Admins don't get the column, since the points are a results input (decided 2026-11-18) |
+| `nominations-per-entity` | category, entity_type, entity, nominations, points | How many academy picks each entity received per category, and its academy `points` on the `RankPoints` curve (10 / 8 / 6 / 4 / 2), the same points the shortlist and Scoring use. "Nominations" and "academy votes" are the same metric. Categories follow their `position`; inside one, entities are in **shortlist order**: points desc, then nominee id asc |
 | `public-votes-per-entity` | category, entity_type, entity, points | **Rank-weighted** public points per entity per category, using the `PublicRankPoints` curve (10 / 8 / 6) |
 | `cancelled-votes-per-day` | date, cancelled | Cancelled ballots per day, bucketed on the day the vote was **cast** (not cancelled), to line up with the votes-per-day report |
 | `special-votes-per-entry` | category, entry, votes | Member votes per **approved** entry of each propose-or-vote category, most first, entries without votes included; counted as in the special results (pending, rejected and merged entries never count; appointed categories have no votes and are left out). The from/to window applies to when each vote was cast |

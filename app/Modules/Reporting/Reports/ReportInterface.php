@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Rominas\Reporting\Reports;
 
+use Rominas\Categories\Enums\CategoryKind;
 use Rominas\Reporting\DataTransferObjects\ReportParameters;
 
 /**
@@ -36,6 +37,14 @@ interface ReportInterface
      * @return list<string>
      */
     public function columns(bool $includeResultsData = false): array;
+
+    /**
+     * The category kinds this report can be narrowed to with `category_id` (the admin lists categories of
+     * these kinds in its Category select). Empty: the report has no category filter and ignores it.
+     *
+     * @return list<CategoryKind>
+     */
+    public function categoryFilterKinds(): array;
 
     /**
      * The report rows, each an ordered associative array keyed by column. Returned as an `iterable`

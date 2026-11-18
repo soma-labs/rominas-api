@@ -8,6 +8,7 @@ use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use JsonSerializable;
+use Rominas\Categories\Enums\CategoryKind;
 use Rominas\Reporting\Reports\ReportInterface;
 
 /**
@@ -61,6 +62,7 @@ class ReportResource extends JsonResource
             'key' => $report->key(),
             'title' => $report->title(),
             'columns' => $report->columns($this->includeResultsData),
+            'category_kinds' => array_map(static fn(CategoryKind $kind): string => $kind->value, $report->categoryFilterKinds()),
             'rows' => $this->when($this->rows !== null, fn(): array => $this->rowsToArray()),
         ];
     }
