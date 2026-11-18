@@ -11,8 +11,9 @@ use JsonSerializable;
 use Rominas\SpecialAwards\Entry\Model\SpecialEntry;
 
 /**
- * A special-category entry as the reviewing admin sees it. Deliberately carries no vote count: how the
- * members voted is part of the results, which stay custodian-only until they are published.
+ * A special-category entry as the reviewing admin sees it. Deliberately carries no vote count: the review
+ * screen is not where results are read. Vote counts per entry are in Results and in the
+ * `special-votes-per-entry` report.
  */
 class SpecialEntryResource extends JsonResource
 {

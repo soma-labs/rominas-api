@@ -6,6 +6,7 @@ use Rominas\Reporting\Reports\CancelledVotesPerDayReport;
 use Rominas\Reporting\Reports\EditionSummaryReport;
 use Rominas\Reporting\Reports\NominationsPerEntityReport;
 use Rominas\Reporting\Reports\PublicVotesPerEntityReport;
+use Rominas\Reporting\Reports\SpecialVotesPerEntryReport;
 use Rominas\Reporting\Reports\VotesPerCategoryPerDayReport;
 
 return [
@@ -27,5 +28,6 @@ return [
         NominationsPerEntityReport::class,
         PublicVotesPerEntityReport::class,
         CancelledVotesPerDayReport::class,
+        SpecialVotesPerEntryReport::class,
     ],
 ];

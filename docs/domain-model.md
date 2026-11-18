@@ -889,6 +889,8 @@ table through the `Notifiable` trait on `User` and `Member`. See [notifications.
     (category, entity) via the `PublicRankPoints` curve (summed in PHP over per-rank counts, single-sourced),
     submitted + `->valid()` only. A plain count is less telling (the public ranks its 3 picks).
   - **`CancelledVotesPerDayReport`** (`cancelled-votes-per-day`) — invalidated ballots per UTC day.
+  - **`SpecialVotesPerEntryReport`** (`special-votes-per-entry`) — member votes per approved entry of each
+    propose-or-vote category, most first (the special result itself, visible to `reporting` holders).
   The **final ranking** ("clasament final") is served by the existing `Results` module, not duplicated
   here. Endpoints in [access-control.md](access-control.md); `reporting` permission (admin). The full
   picture: [reporting.md](reporting.md).

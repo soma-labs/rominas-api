@@ -14,6 +14,8 @@ use Rominas\Editions\Model\Edition;
 use Rominas\FraudMonitoring\Model\InvalidationBatch;
 use Rominas\Permissions\Model\Permission;
 use Rominas\Roles\Model\Role;
+use Rominas\SpecialAwards\Entry\Model\SpecialEntry;
+use Rominas\SpecialAwards\Vote\Model\SpecialVote;
 use Rominas\Users\Model\User;
 use Rominas\Voting\Model\Ballot;
 use Rominas\Voting\Model\BallotRanking;
@@ -274,7 +276,8 @@ it('includes the new reports in the catalogue', function (): void {
         ->assertJsonFragment(['key' => 'edition-summary'])
         ->assertJsonFragment(['key' => 'nominations-per-entity'])
         ->assertJsonFragment(['key' => 'public-votes-per-entity'])
-        ->assertJsonFragment(['key' => 'cancelled-votes-per-day']);
+        ->assertJsonFragment(['key' => 'cancelled-votes-per-day'])
+        ->assertJsonFragment(['key' => 'special-votes-per-entry']);
 });
 
 it('counts academy nominations per entity per category, excluding drafts', function (): void {
@@ -476,4 +479,84 @@ it('narrows the summary to the requested window', function (): void {
 
     expect($values['Ballots submitted'])->toBe(1)
         ->and($values['Valid votes'])->toBe(1);
+});
+
+// --- Special award votes per entry ---------------------------------------------------------------
+
+/**
+ * An approved entry titled `$title` in `$category`, with `$votes` member votes cast at `$castAt`
+ * (defaults to now).
+ */
+function reportingSpecialEntry(Category $category, string $title, int $votes, ?Carbon $castAt = null): SpecialEntry
+{
+    $entry = SpecialEntry::factory()->approved()->create(['category_id' => $category->id, 'title' => $title]);
+
+    SpecialVote::factory()->count($votes)->create([
+        'special_entry_id' => $entry->id,
+        'category_id' => $category->id,
+        'created_at' => $castAt ?? now(),
+    ]);
+
+    return $entry;
+}
+
+it('counts member votes per approved special entry, most first, by category', function (): void {
+    reportingActingAsAdmin();
+    $edition = reportingActiveEdition();
+    $lifetime = Category::factory()->proposeOrVote()->create(['edition_id' => $edition->id, 'name' => 'Lifetime', 'position' => 1]);
+    $wow = Category::factory()->proposeOrVote()->create(['edition_id' => $edition->id, 'name' => 'WOW', 'position' => 2]);
+
+    reportingSpecialEntry($wow, 'Wow One', 1);
+    reportingSpecialEntry($lifetime, 'Second', 1);
+    reportingSpecialEntry($lifetime, 'First', 3);
+    reportingSpecialEntry($lifetime, 'No Votes', 0);
+
+    getJson('/api/admin/reports/special-votes-per-entry')
+        ->assertStatus(200)
+        ->assertJsonPath('data.columns', ['category', 'entry', 'votes'])
+        ->assertJsonPath('data.rows', [
+            ['category' => 'Lifetime', 'entry' => 'First', 'votes' => 3],
+            ['category' => 'Lifetime', 'entry' => 'Second', 'votes' => 1],
+            ['category' => 'Lifetime', 'entry' => 'No Votes', 'votes' => 0],
+            ['category' => 'WOW', 'entry' => 'Wow One', 'votes' => 1],
+        ]);
+});
+
+it('leaves out unapproved entries, appointed categories and other editions from the special votes report', function (): void {
+    reportingActingAsAdmin();
+    $edition = reportingActiveEdition();
+    $category = Category::factory()->proposeOrVote()->create(['edition_id' => $edition->id, 'name' => 'Lifetime']);
+
+    reportingSpecialEntry($category, 'Counted', 2);
+    SpecialEntry::factory()->create(['category_id' => $category->id, 'title' => 'Pending']);
+    SpecialEntry::factory()->rejected()->create(['category_id' => $category->id, 'title' => 'Rejected']);
+
+    $appointed = Category::factory()->appointed()->create(['edition_id' => $edition->id]);
+    SpecialEntry::factory()->approved()->create(['category_id' => $appointed->id, 'proposed_by_member_id' => null]);
+
+    $otherEdition = Edition::factory()->create();
+    reportingSpecialEntry(Category::factory()->proposeOrVote()->create(['edition_id' => $otherEdition->id]), 'Elsewhere', 5);
+
+    getJson('/api/admin/reports/special-votes-per-entry?edition_id=' . $edition->id)
+        ->assertStatus(200)
+        ->assertJsonCount(1, 'data.rows')
+        ->assertJsonPath('data.rows.0.entry', 'Counted')
+        ->assertJsonPath('data.rows.0.votes', 2);
+});
+
+it('counts only the special votes cast inside the requested window', function (): void {
+    reportingActingAsAdmin();
+    $edition = reportingActiveEdition();
+    $category = Category::factory()->proposeOrVote()->create(['edition_id' => $edition->id]);
+
+    $entry = reportingSpecialEntry($category, 'Entry', 2, castAt: Carbon::parse('2026-06-01 12:00:00'));
+    SpecialVote::factory()->create([
+        'special_entry_id' => $entry->id,
+        'category_id' => $category->id,
+        'created_at' => Carbon::parse('2026-06-05 12:00:00'),
+    ]);
+
+    getJson('/api/admin/reports/special-votes-per-entry?from=2026-06-04&to=2026-06-05')
+        ->assertStatus(200)
+        ->assertJsonPath('data.rows.0.votes', 1);
 });

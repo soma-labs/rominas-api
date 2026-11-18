@@ -1,9 +1,11 @@
 # Reporting
 
 General management statistics: how many people voted, per category and per day, how the academy
-nominated, and how many votes were cancelled. Reporting is **kept separate from final results**. It never
-ranks winners (that is [Results](scoring-results.md)), and it holds no custodian-only data, so `admin` can
-use it.
+nominated, how members voted in the special awards, and how many votes were cancelled. Reporting is
+**kept separate from final results**. It never ranks winners or combines the academy and public scores (that
+is [Results](scoring-results.md)), so `admin` can use it. One exception, decided 2026-11-18: in a
+propose-or-vote special category the member vote count *is* the result, so `special-votes-per-entry` shows
+those results to everyone with `reporting`, before publication too.
 
 Everything here lives in `app/Modules/Reporting/`. The module is **read-only** and stores nothing: no
 table, no model. It only aggregates what the other modules have recorded. The endpoint summary is in
@@ -77,11 +79,12 @@ ballots and, apart from the cancellation report, excludes **cancelled** ones. Ac
 | `nominations-per-entity` | category, entity_type, entity, nominations | How many academy picks each entity received per category, highest first. "Nominations" and "academy votes" are the same metric |
 | `public-votes-per-entity` | category, entity_type, entity, points | **Rank-weighted** public points per entity per category, using the `PublicRankPoints` curve (10 / 8 / 6) |
 | `cancelled-votes-per-day` | date, cancelled | Cancelled ballots per day, bucketed on the day the vote was **cast** (not cancelled), to line up with the votes-per-day report |
+| `special-votes-per-entry` | category, entry, votes | Member votes per **approved** entry of each propose-or-vote category, most first, entries without votes included; counted as in the special results (pending, rejected and merged entries never count; appointed categories have no votes and are left out). The from/to window applies to when each vote was cast |
 
 The per-entity reports add category and entity names with `Support/EntityLabeler`, which runs one batched
 query per nominee type (no N+1).
 
-The **final ranking** is deliberately **not** a report here: it is served by
+The **final ranking** of the ranked categories is deliberately **not** a report here: it is served by
 [Results](scoring-results.md#5-custodian-review) under the custodian-only `results` permission.
 
 ## 6. Adding a report

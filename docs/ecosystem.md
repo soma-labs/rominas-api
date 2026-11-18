@@ -158,7 +158,8 @@ blocks of the Modular DDD layout.
   `scoring-results.md`.
 - **`Results`** — final aggregated results. **Custodian-only** view/export
   *before* public publication. Includes the special categories (member vote tallies, or the appointed
-  result); the admin review screens for special awards deliberately show no vote counts.
+  result); the admin review screens for special awards deliberately show no vote counts, but the
+  `special-votes-per-entry` report (`Reporting`, open to admins) does (decided 2026-11-18).
 - **`FraudMonitoring`** — near-real-time vote monitoring, fraud indicators
   (graphs/tables), and **vote cancellation that always requires a reason**.
 - **`Reporting`** — general statistics (total votes, per category, cancelled,
