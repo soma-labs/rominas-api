@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Laravel\Sanctum\Sanctum;
+use OpenSpout\Reader\XLSX\Reader as XlsxReader;
 use Rominas\Academy\Nomination\Model\Nomination;
 use Rominas\Academy\Nomination\Model\NominationRanking;
 use Rominas\Academy\Shortlist\Model\ShortlistEntry;
@@ -14,6 +15,7 @@ use Rominas\Editions\Enums\EditionStatus;
 use Rominas\Editions\Model\Edition;
 use Rominas\Users\Model\User;
 
+use function Pest\Laravel\get;
 use function Pest\Laravel\getJson;
 use function Pest\Laravel\postJson;
 use function Pest\Laravel\putJson;
@@ -367,6 +369,7 @@ it('forbids a user without the shortlists permission', function (): void {
 
     postJson("/api/admin/editions/{$edition->id}/categories/{$category->id}/shortlist")->assertStatus(403);
     getJson("/api/admin/editions/{$edition->id}/shortlist")->assertStatus(403);
+    get("/api/admin/editions/{$edition->id}/shortlist/export")->assertStatus(403);
 });
 
 it('skips the categories that are not ranked when bulk-generating', function (): void {
@@ -445,4 +448,85 @@ it('leaves a category empty, without failing, when no submitted ballot names a n
         ->assertJsonCount(0, 'data');
 
     expect(ShortlistEntry::query()->forEdition($edition)->forCategory($empty)->count())->toBe(0);
+});
+
+/**
+ * Read a downloaded XLSX back as sheet name => rows (each row a list of cell values).
+ *
+ * @return array<string, list<list<mixed>>>
+ */
+function readShortlistWorkbook(string $path): array
+{
+    $reader = new XlsxReader();
+    $reader->open($path);
+    $sheets = [];
+
+    foreach ($reader->getSheetIterator() as $sheet) {
+        $rows = [];
+
+        foreach ($sheet->getRowIterator() as $row) {
+            $rows[] = $row->toArray();
+        }
+
+        $sheets[$sheet->getName()] = $rows;
+    }
+
+    $reader->close();
+
+    return $sheets;
+}
+
+it('exports one sheet per ranked category with its shortlist in order', function (): void {
+    actingAsSuperAdmin();
+    [$edition, $second] = shortlistEditionAndCategory();
+    $second->update(['name' => 'Album of the Year', 'position' => 2]);
+    $first = Category::factory()->create([
+        'edition_id' => $edition->id,
+        'nominee_type' => NomineeType::Artist,
+        'name' => 'Best Artist',
+        'position' => 1,
+    ]);
+    Category::factory()->for($edition)->proposeOrVote()->create(['name' => 'Lifetime Achievement']);
+
+    $top = Artist::factory()->create(['name' => 'Top Artist']);
+    $runnerUp = Artist::factory()->create(['name' => 'Runner Up']);
+    seedShortlistBallot($edition, $first, [$top->id, $runnerUp->id]);
+    postJson("/api/admin/editions/{$edition->id}/categories/{$first->id}/shortlist")->assertStatus(200);
+
+    $response = get("/api/admin/editions/{$edition->id}/shortlist/export");
+
+    $response->assertStatus(200);
+    expect($response->headers->get('Content-Type'))->toContain('spreadsheetml.sheet');
+
+    $sheets = readShortlistWorkbook($response->getFile()->getPathname());
+
+    expect($sheets)->toBe([
+        'Best Artist' => [
+            ['Position', 'Nominee', 'Type', 'Academy points'],
+            [1, 'Top Artist', 'Artist', 10],
+            [2, 'Runner Up', 'Artist', 8],
+        ],
+        'Album of the Year' => [
+            ['Position', 'Nominee', 'Type', 'Academy points'],
+        ],
+    ]);
+});
+
+it('gives every exported sheet a name Excel accepts', function (): void {
+    actingAsSuperAdmin();
+    [$edition, $category] = shortlistEditionAndCategory();
+    $category->update(['name' => 'Song / Single of the Year: [Romanian] Pop Edition', 'position' => 1]);
+    Category::factory()->create([
+        'edition_id' => $edition->id,
+        'nominee_type' => NomineeType::Artist,
+        'name' => 'Song Single of the Year: Romanian Rock Edition',
+        'position' => 2,
+    ]);
+
+    $response = get("/api/admin/editions/{$edition->id}/shortlist/export")->assertStatus(200);
+
+    expect(array_keys(readShortlistWorkbook($response->getFile()->getPathname())))->toBe([
+        'Song Single of the Year Romania',
+        'Song Single of the Year Rom (2)',
+    ]);
 });

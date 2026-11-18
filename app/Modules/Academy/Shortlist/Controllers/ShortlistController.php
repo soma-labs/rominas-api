@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Rominas\Academy\Shortlist\Actions\AdjustCategoryShortlistAction;
 use Rominas\Academy\Shortlist\Actions\CountRejectedPicksAction;
+use Rominas\Academy\Shortlist\Actions\ExportEditionShortlistAction;
 use Rominas\Academy\Shortlist\Actions\GenerateCategoryShortlistAction;
 use Rominas\Academy\Shortlist\Actions\GenerateEditionShortlistsAction;
 use Rominas\Academy\Shortlist\Actions\GetCategoryShortlistCandidatesAction;
@@ -18,6 +19,7 @@ use Rominas\Academy\Shortlist\Resources\ShortlistEntryResource;
 use Rominas\Categories\Model\Category;
 use Rominas\Editions\Model\Edition;
 use Rominas\Users\Model\User;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
  * Admin-facing nominee shortlist: review an edition's shortlist and generate it on demand (per category
@@ -39,6 +41,17 @@ class ShortlistController
                 ->orderBy('position')
                 ->get(),
         )->additional(['meta' => ['rejected_picks' => $rejectedPicks->execute($edition)]]);
+    }
+
+    /**
+     * Download the edition's shortlists as an XLSX workbook, one sheet per ranked category.
+     */
+    public function export(Edition $edition, Request $request, ExportEditionShortlistAction $action): BinaryFileResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        return $action->execute($edition, $user);
     }
 
     public function generateEdition(Edition $edition, GenerateEditionShortlistsAction $action): AnonymousResourceCollection

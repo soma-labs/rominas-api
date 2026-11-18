@@ -305,6 +305,10 @@ fails the status check. `GET /api/admin/editions/{edition}/shortlist` shows the 
 `meta.rejected_picks` — a `category_id => count` map of submitted rankings whose free-text pick was
 rejected during reconciliation (`CountRejectedPicksAction`), so a category short of picks because of a
 rejection stays visible even after generation, not just as a one-time warning in the reconciliation queue.
+`GET /api/admin/editions/{edition}/shortlist/export` downloads the same shortlists as an XLSX workbook
+(`ExportEditionShortlistAction`): one sheet per ranked category in category order (names made valid for
+Excel: no `\ / ? * : [ ]`, at most 31 characters, a ` (2)` suffix on a clash), position · nominee · type ·
+academy points per row; a category not generated yet gets a header-only sheet.
 See [nominee-reconciliation.md §5](nominee-reconciliation.md#5-the-shortlist-interlock).
 
 All shortlist endpoints use the `shortlists` permission (held by `admin`).

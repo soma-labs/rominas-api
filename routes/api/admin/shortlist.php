@@ -12,6 +12,11 @@ Route::get('/{edition}/shortlist', [ShortlistController::class, 'index'])
     ->name('shortlist.index')
     ->middleware('can:viewAny,' . ShortlistEntry::class);
 
+// The edition's shortlists as an XLSX workbook, one sheet per ranked category.
+Route::get('/{edition}/shortlist/export', [ShortlistController::class, 'export'])
+    ->name('shortlist.export')
+    ->middleware('can:viewAny,' . ShortlistEntry::class);
+
 Route::post('/{edition}/shortlist', [ShortlistController::class, 'generateEdition'])
     ->name('shortlist.generate')
     ->middleware('can:create,' . ShortlistEntry::class);
