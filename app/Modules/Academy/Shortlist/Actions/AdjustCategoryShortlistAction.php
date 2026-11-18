@@ -12,7 +12,6 @@ use Rominas\Academy\Shortlist\Support\AcademyPointTally;
 use Rominas\Categories\Model\Category;
 use Rominas\Editions\Enums\EditionStatus;
 use Rominas\Editions\Model\Edition;
-use Rominas\Scoring\RankPoints;
 
 /**
  * Replaces a category's shortlist with an admin-curated final list — the manual review/adjust flow. The
@@ -47,9 +46,9 @@ class AdjustCategoryShortlistAction
 
         $this->generateCategory->assertRanked($category);
 
-        if (count($nomineeIds) > RankPoints::RANKS) {
+        if (count($nomineeIds) > $category->shortlist_length) {
             throw ValidationException::withMessages([
-                'nominees' => __('A shortlist may hold at most :count nominees.', ['count' => RankPoints::RANKS]),
+                'nominees' => __('A shortlist may hold at most :count nominees.', ['count' => $category->shortlist_length]),
             ]);
         }
 

@@ -94,6 +94,9 @@ blocks of the Modular DDD layout.
   A ranked category can be **hidden from the public vote** (`publicly_visible`, default true, editable any
   time, 2026-11-10): it is left off the voting ballot and decided by the **academy alone** (public votes
   cast before it was hidden are ignored by scoring).
+  A ranked category's **shortlist length** (`shortlist_length`, 1–5, default 5, 2026-11-18) sets how many
+  nominees its shortlist holds; editable until voting opens. Scoring and the public ballot need no change
+  (at most 5 fits the scoring ladders; voters rank 3, or all of a shorter shortlist).
   Each category also has an optional `description` (under its title in the academy), `placeholder` (the
   academy's input placeholder) and `eligibility_criteria` (rich text from the admin's Tiptap editor,
   **sanitized to p/h2/h3/lists/links by the API on save**, shown to members in a modal).

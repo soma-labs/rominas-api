@@ -6,6 +6,7 @@ use Laravel\Sanctum\Sanctum;
 use Rominas\Catalog\Enums\NomineeType;
 use Rominas\Categories\Enums\CategoryKind;
 use Rominas\Categories\Model\Category;
+use Rominas\Editions\Enums\EditionStatus;
 use Rominas\Editions\Model\Edition;
 use Rominas\Users\Model\User;
 
@@ -284,4 +285,100 @@ it('rejects a placeholder longer than 255 characters', function (): void {
         'placeholder' => str_repeat('a', 256),
     ])->assertStatus(422)
         ->assertJsonValidationErrors('placeholder');
+});
+
+it('gives a new ranked category a shortlist of 5 by default', function (): void {
+    actingAsSuperAdmin();
+    $edition = Edition::factory()->create();
+
+    postJson('/api/admin/categories', [
+        'edition_id' => $edition->id,
+        'name' => 'Best Album',
+        'nominee_type' => NomineeType::Album->value,
+    ])->assertStatus(201)
+        ->assertJsonPath('data.shortlist_length', 5);
+});
+
+it('creates a ranked category with a shorter shortlist', function (): void {
+    actingAsSuperAdmin();
+    $edition = Edition::factory()->create();
+
+    postJson('/api/admin/categories', [
+        'edition_id' => $edition->id,
+        'name' => 'Best Album',
+        'nominee_type' => NomineeType::Album->value,
+        'shortlist_length' => 3,
+    ])->assertStatus(201)
+        ->assertJsonPath('data.shortlist_length', 3);
+
+    expect(Category::query()->where('edition_id', $edition->id)->value('shortlist_length'))->toBe(3);
+});
+
+it('rejects a shortlist length outside 1 to 5', function (int $length): void {
+    actingAsSuperAdmin();
+    $edition = Edition::factory()->create();
+
+    postJson('/api/admin/categories', [
+        'edition_id' => $edition->id,
+        'name' => 'Best Album',
+        'nominee_type' => NomineeType::Album->value,
+        'shortlist_length' => $length,
+    ])->assertStatus(422)
+        ->assertJsonValidationErrors('shortlist_length');
+
+    expect(Category::query()->where('edition_id', $edition->id)->exists())->toBeFalse();
+})->with([0, 6]);
+
+it('rejects a shortlist length on a category that is not ranked', function (): void {
+    actingAsSuperAdmin();
+    $category = Category::factory()->proposeOrVote()->create();
+
+    patchJson("/api/admin/categories/{$category->id}", [
+        'name' => $category->name,
+        'shortlist_length' => 3,
+    ])->assertStatus(422)
+        ->assertJsonValidationErrors('shortlist_length');
+});
+
+it('changes the shortlist length on update and keeps it when it is left out', function (): void {
+    actingAsSuperAdmin();
+    $edition = Edition::factory()->status(EditionStatus::NominationsClosed)->create();
+    $category = Category::factory()->for($edition)->create();
+
+    patchJson("/api/admin/categories/{$category->id}", [
+        'name' => $category->name,
+        'nominee_type' => $category->nominee_type?->value,
+        'shortlist_length' => 4,
+    ])->assertStatus(200)
+        ->assertJsonPath('data.shortlist_length', 4);
+
+    patchJson("/api/admin/categories/{$category->id}", [
+        'name' => 'Renamed',
+        'nominee_type' => $category->nominee_type?->value,
+    ])->assertStatus(200)
+        ->assertJsonPath('data.shortlist_length', 4);
+});
+
+it('refuses to change the shortlist length once voting has opened, but saves other changes', function (): void {
+    actingAsSuperAdmin();
+    $edition = Edition::factory()->status(EditionStatus::VotingOpen)->create();
+    $category = Category::factory()->for($edition)->create();
+
+    patchJson("/api/admin/categories/{$category->id}", [
+        'name' => $category->name,
+        'nominee_type' => $category->nominee_type?->value,
+        'shortlist_length' => 3,
+    ])->assertStatus(422)
+        ->assertJsonValidationErrors([
+            'shortlist_length' => 'The shortlist length can no longer be changed once voting has opened.',
+        ]);
+
+    expect($category->fresh()->shortlist_length)->toBe(5);
+
+    patchJson("/api/admin/categories/{$category->id}", [
+        'name' => 'Renamed',
+        'nominee_type' => $category->nominee_type?->value,
+        'shortlist_length' => 5,
+    ])->assertStatus(200)
+        ->assertJsonPath('data.name', 'Renamed');
 });

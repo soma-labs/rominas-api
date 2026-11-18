@@ -41,6 +41,10 @@ class CreateCategoryRequest extends FormRequest
             'eligibility_criteria' => 'sometimes|nullable|string|max:20000',
             // Off = hidden from the public ballot; the category is then decided by the academy alone.
             'publicly_visible' => 'sometimes|boolean',
+            // How many nominees the shortlist holds (1–5); only a ranked category has a shortlist.
+            'shortlist_length' => $isRanked
+                ? ['sometimes', 'integer', 'min:1', 'max:' . Category::MAX_SHORTLIST_LENGTH]
+                : ['prohibited'],
         ];
     }
 }

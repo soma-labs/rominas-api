@@ -295,6 +295,48 @@ it('rejects a shortlist larger than the max size', function (): void {
         ->assertJsonValidationErrorFor('nominees');
 });
 
+it('generates only as many nominees as the category\'s shortlist length', function (): void {
+    actingAsSuperAdmin();
+    $edition = Edition::factory()->status(EditionStatus::NominationsClosed)->create();
+    $category = Category::factory()->shortlistLength(3)->create([
+        'edition_id' => $edition->id,
+        'nominee_type' => NomineeType::Artist,
+    ]);
+
+    [$a, $b, $c, $d, $e] = Artist::factory()->count(5)->create()->all();
+    seedShortlistBallot($edition, $category, [$a->id, $b->id, $c->id, $d->id, $e->id]);
+
+    postJson("/api/admin/editions/{$edition->id}/categories/{$category->id}/shortlist")
+        ->assertStatus(200)
+        ->assertJsonCount(3, 'data')
+        ->assertJsonPath('data.0.nominee_id', $a->id)
+        ->assertJsonPath('data.2.nominee_id', $c->id);
+
+    expect(ShortlistEntry::query()->forEdition($edition)->forCategory($category)->count())->toBe(3);
+});
+
+it('rejects an adjusted shortlist longer than the category\'s shortlist length', function (): void {
+    actingAsSuperAdmin();
+    $edition = Edition::factory()->status(EditionStatus::NominationsClosed)->create();
+    $category = Category::factory()->shortlistLength(3)->create([
+        'edition_id' => $edition->id,
+        'nominee_type' => NomineeType::Artist,
+    ]);
+
+    [$a, $b, $c, $d] = Artist::factory()->count(4)->create()->all();
+    seedShortlistBallot($edition, $category, [$a->id, $b->id, $c->id]);
+    postJson("/api/admin/editions/{$edition->id}/categories/{$category->id}/shortlist")->assertStatus(200);
+
+    putJson("/api/admin/editions/{$edition->id}/categories/{$category->id}/shortlist", [
+        'nominees' => [$d->id, $a->id, $b->id, $c->id],
+    ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['nominees' => 'A shortlist may hold at most 3 nominees.']);
+
+    expect(ShortlistEntry::query()->forCategory($category)->orderBy('position')->pluck('nominee_id')->all())
+        ->toBe([$a->id, $b->id, $c->id]);
+});
+
 it('rejects a nominee that does not exist for the category', function (): void {
     actingAsSuperAdmin();
     [$edition, $category] = shortlistEditionAndCategory();

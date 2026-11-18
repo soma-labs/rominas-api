@@ -39,7 +39,7 @@ shortlisted nominees can win; academy picks outside the shortlist score nothing.
 | --- | --- |
 | `academy_points` | Sum of `RankPoints` points over **submitted** academy ballots' **resolved** picks — rank 1–5 → 10, 8, 6, 4, 2 |
 | `public_points` | Sum of `PublicRankPoints` points over **submitted, not-cancelled** public ballots — rank 1–3 → 10, 8, 6 |
-| `academy_position` | The nominee's position on the shortlist (1–5) |
+| `academy_position` | The nominee's position on the shortlist (1–the category's `shortlist_length`, at most 5) |
 
 Academy points are **re-tallied from the raw rankings** every time, not read from the shortlist's `points`
 column. So the tally is correct even after an admin has reordered the shortlist.

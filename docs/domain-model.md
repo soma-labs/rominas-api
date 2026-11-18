@@ -175,6 +175,7 @@ decided; a ranked category is also **typed**: it declares which catalog entity t
 | `name`, `slug` | unique **per edition** (`(edition_id, name)` / `(edition_id, slug)`); slug auto-generated |
 | `kind` | `CategoryKind` enum, default `ranked` — how the category is decided (below) |
 | `publicly_visible` | bool, default `true` — a ranked category set to `false` is left off the public ballot and decided by the **academy alone** (its public votes, if any were cast before it was hidden, are ignored by scoring). Editable at any time; scope `CategoryQueryBuilder::publiclyVisible()` |
+| `shortlist_length` | unsigned tinyint, default `5` — how many nominees a ranked category's shortlist holds (1–`Category::MAX_SHORTLIST_LENGTH` = 5; the attributed scoring ladders have five steps). Prohibited for the special kinds. Used by shortlist generation and the adjust cap; the public ballot and scoring just follow the stored shortlist. Editable until voting opens (changing it later is a 422); a change does not touch an existing shortlist, the admin regenerates or adjusts it |
 | `nominee_type` | `NomineeType` enum — the catalog entity type this category competes. **Nullable: only a ranked category has one** |
 | `position` | int — display ordering |
 | `description` | nullable |
@@ -427,7 +428,7 @@ Behavioural modules note).
 ### Shortlist
 
 The bridge from academy nominations to public voting. Once nominations close, admins **generate** each
-category's shortlist — the top 5 nominees, by summed academy points — which becomes the frozen candidate
+category's shortlist — the top `shortlist_length` nominees (1–5, default 5), by summed academy points — which becomes the frozen candidate
 list the public ballot ranks. Generation is an **explicit, on-demand admin action** (not an automatic
 side effect of the `nominations_closed` transition): per-category or bulk (all categories in the edition).
 It may run — and re-run, replacing prior entries — only while the edition is `nominations_closed`; once

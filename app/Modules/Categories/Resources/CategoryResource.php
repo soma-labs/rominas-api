@@ -29,6 +29,7 @@ class CategoryResource extends JsonResource
             'kind' => $category->kind->value,
             'kind_label' => $category->kind->label(),
             'publicly_visible' => $category->publicly_visible,
+            'shortlist_length' => $category->shortlist_length,
             'nominee_type' => $category->nominee_type?->value,
             'nominee_type_label' => $category->nominee_type?->label(),
             'position' => $category->position,

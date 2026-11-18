@@ -30,6 +30,7 @@ class CategoryFactory extends Factory
             'name' => $name,
             'slug' => Str::slug($name),
             'publicly_visible' => true,
+            'shortlist_length' => Category::MAX_SHORTLIST_LENGTH,
             'nominee_type' => fake()->randomElement(NomineeType::cases()),
             'position' => 0,
             'description' => fake()->optional()->sentence(),
@@ -45,6 +46,16 @@ class CategoryFactory extends Factory
     {
         return $this->state(fn(): array => [
             'publicly_visible' => false,
+        ]);
+    }
+
+    /**
+     * A ranked category whose shortlist holds at most the given number of nominees.
+     */
+    public function shortlistLength(int $length): static
+    {
+        return $this->state(fn(): array => [
+            'shortlist_length' => $length,
         ]);
     }
 

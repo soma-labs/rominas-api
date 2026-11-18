@@ -27,6 +27,7 @@ use Rominas\Editions\Model\Edition;
     'slug',
     'kind',
     'publicly_visible',
+    'shortlist_length',
     'nominee_type',
     'position',
     'description',
@@ -40,11 +41,18 @@ class Category extends Model
     use HasFactory;
 
     /**
+     * The longest shortlist a ranked category may have. The attributed scoring ladders have five steps
+     * (see AttributedScoreCalculator), so a longer shortlist would leave its later positions unscored.
+     */
+    public const int MAX_SHORTLIST_LENGTH = 5;
+
+    /**
      * @var array<string, mixed>
      */
     protected $attributes = [
         'kind' => CategoryKind::Ranked->value,
         'publicly_visible' => true,
+        'shortlist_length' => self::MAX_SHORTLIST_LENGTH,
     ];
 
     /**
@@ -55,6 +63,7 @@ class Category extends Model
         return [
             'kind' => CategoryKind::class,
             'publicly_visible' => 'boolean',
+            'shortlist_length' => 'integer',
             'nominee_type' => NomineeType::class,
             'position' => 'integer',
         ];

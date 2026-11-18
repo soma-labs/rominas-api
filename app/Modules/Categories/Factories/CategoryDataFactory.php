@@ -29,6 +29,7 @@ class CategoryDataFactory
             placeholder: $validated['placeholder'] ?? null,
             eligibility_criteria: $sanitizer->execute($validated['eligibility_criteria'] ?? null),
             publicly_visible: (bool) ($validated['publicly_visible'] ?? true),
+            shortlist_length: (int) ($validated['shortlist_length'] ?? Category::MAX_SHORTLIST_LENGTH),
         );
     }
 
@@ -51,6 +52,7 @@ class CategoryDataFactory
             placeholder: $validated['placeholder'] ?? null,
             eligibility_criteria: $sanitizer->execute($validated['eligibility_criteria'] ?? null),
             publicly_visible: (bool) ($validated['publicly_visible'] ?? $category->publicly_visible),
+            shortlist_length: (int) ($validated['shortlist_length'] ?? $category->shortlist_length),
         );
     }
 }

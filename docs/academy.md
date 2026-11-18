@@ -258,8 +258,10 @@ members.", translated); listing and withdrawing stay open (such a member simply 
 
 ## 6. The shortlist
 
-The shortlist bridges the academy round and public voting: per category, the **top five nominees by summed
-academy points** become the candidates the public ranks.
+The shortlist bridges the academy round and public voting: per category, the **top nominees by summed
+academy points** become the candidates the public ranks. How many is the category's `shortlist_length`
+(1–5, default 5, 2026-11-18; see `domain-model.md`, Category). Going live with it needs `migrate`, and the API and the admin
+deployed together (the admin's adjust modal reads `shortlist_length` from the category).
 
 ### Points
 
@@ -275,8 +277,8 @@ over **submitted** ballots only, and only over **resolved** picks (`NominationRa
 - `POST /api/admin/editions/{edition}/shortlist` — every category, in one transaction
   (`GenerateEditionShortlistsAction`).
 
-Generation orders nominees by points descending, ties broken by nominee id ascending, keeps the top five,
-and **replaces** any existing entries for the category. It is refused (422) unless:
+Generation orders nominees by points descending, ties broken by nominee id ascending, keeps the top
+`shortlist_length`, and **replaces** any existing entries for the category. It is refused (422) unless:
 
 - the edition is **`nominations_closed`** — nominations are frozen and voting has not opened; and
 - **no nominee submission for the edition is still `pending`** — otherwise an unreconciled name would be
@@ -295,7 +297,7 @@ Ties at the cut-off, or any other editorial call, are settled by hand:
 - `GET …/categories/{category}/shortlist/candidates` — the full candidate pool: every nominee with at least
   one academy pick, ranked the same way, with name, slug, points and rank.
 - `PUT …/categories/{category}/shortlist` with `{"nominees": [ids in order]}` — `AdjustCategoryShortlistAction`
-  replaces the shortlist with at most five nominees, in that order. Each id must exist in the category's
+  replaces the shortlist with at most `shortlist_length` nominees, in that order. Each id must exist in the category's
   Catalog type; its `points` are re-derived from the tally (0 for a nominee the academy never picked).
 
 Same `nominations_closed` guard. **Once voting opens the shortlist is frozen**, because every write endpoint

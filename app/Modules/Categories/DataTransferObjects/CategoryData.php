@@ -6,6 +6,7 @@ namespace Rominas\Categories\DataTransferObjects;
 
 use Rominas\Catalog\Enums\NomineeType;
 use Rominas\Categories\Enums\CategoryKind;
+use Rominas\Categories\Model\Category;
 
 class CategoryData
 {
@@ -19,5 +20,6 @@ class CategoryData
         public ?string $placeholder = null,
         public ?string $eligibility_criteria = null,
         public bool $publicly_visible = true,
+        public int $shortlist_length = Category::MAX_SHORTLIST_LENGTH,
     ) {}
 }

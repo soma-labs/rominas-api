@@ -29,6 +29,7 @@
 
     "The category does not belong to this edition.": "Categoria nu aparține acestei ediții.",
     "A shortlist may hold at most :count nominees.": "O listă scurtă poate avea cel mult :count nominalizați.",
+    "The shortlist length can no longer be changed once voting has opened.": "Lungimea listei scurte nu mai poate fi modificată după deschiderea votului.",
     "One or more nominees do not exist for this category.": "Unul sau mai mulți nominalizați nu există pentru această categorie.",
     "The shortlist can only be adjusted while nominations are closed and before voting opens.": "Lista scurtă poate fi ajustată doar cât timp nominalizările sunt închise și înainte de deschiderea votului.",
     "Shortlists can only be generated while nominations are closed and before voting opens.": "Listele scurte pot fi generate doar cât timp nominalizările sunt închise și înainte de deschiderea votului.",

@@ -21,7 +21,7 @@ use Rominas\Scoring\RankPoints;
 /**
  * Generates (or regenerates) one category's public-voting shortlist from the submitted academy ballots.
  * Every submitted ranking for the category is scored with the {@see RankPoints} curve and summed per
- * nominee; the top {@see RankPoints::RANKS} advance (ties broken deterministically by nominee id, then
+ * nominee; the top `shortlist_length` of the category advance (ties broken deterministically by nominee id, then
  * settled manually by admins via the review/adjust flow). Regeneration replaces the category's entries.
  *
  * Guard: only while the edition is `nominations_closed` — nominations are frozen but public voting has
@@ -142,7 +142,7 @@ class GenerateCategoryShortlistAction
 
     /**
      * Sum academy points per nominee across every submitted ballot for the category, ordered points
-     * desc then nominee id asc, capped at the shortlist size.
+     * desc then nominee id asc, capped at the category's shortlist length.
      *
      * @return list<array{nominee_type: NomineeType, nominee_id: int, points: int}>
      */
@@ -181,6 +181,6 @@ class GenerateCategoryShortlistAction
             static fn(array $a, array $b): int => [$b['points'], $a['nominee_id']] <=> [$a['points'], $b['nominee_id']],
         );
 
-        return array_slice($ordered, 0, RankPoints::RANKS);
+        return array_slice($ordered, 0, $category->shortlist_length);
     }
 }

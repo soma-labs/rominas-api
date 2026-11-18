@@ -16,6 +16,7 @@ class CreateCategoryAction
             'name' => $data->name,
             'kind' => $data->kind,
             'publicly_visible' => $data->publicly_visible,
+            'shortlist_length' => $data->shortlist_length,
             'nominee_type' => $data->nominee_type,
             'position' => $data->position,
             'description' => $data->description,
