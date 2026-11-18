@@ -101,6 +101,12 @@ When a voting queue holds more than `voting.queue_alert_threshold` jobs (500), a
 ([notifications.md](notifications.md)). `failed_jobs` may now also hold an `IssueVotingLinkJob`: the
 address, no token, deleted by the same pruning rule.
 
+**Deploying it** (async link requests, 2026-11-12): no migration and no new `.env` setting (the four
+`VOTING_*_QUEUE` / `VOTING_QUEUE_ALERT_*` lines are optional). The rebuilt image brings the voting workers
+and the php-fpm pool (`docker/php-fpm/zzz-rominas.conf`), and the existing cron runs the `queue:monitor`
+check. Pull `rominas-deployment` on Server A first: its `deploy-api.sh` also starts the voting workers if
+they didn't come up. Deploy the admin with it, since it knows the `voting_queue_backlog` notification type.
+
 The plaintext token exists only in the queued job and the email; the database holds its hash.
 
 ### One mailbox, one identity
