@@ -269,6 +269,12 @@ Admin endpoints, under `/api/admin/reports` (Sanctum-guarded, all `can:reporting
 - `GET /api/admin/reports/{report}/export` — stream the report as a download; `?format=csv` (default)
   or `?format=xlsx`.
 
+Results columns: a report may add columns only for viewers who also pass `ResultPolicy::viewAny` (the
+`results` permission: custodian, super admin), in the catalogue, the view and the export alike. Today
+that is `points` on `nominations-per-entity`. The `special-votes-per-entry` report, by contrast, shows
+special-award vote counts (the special results) to every `reporting` holder, admins included (decided
+2026-11-18). Detail: [reporting.md](reporting.md).
+
 Registered report keys: `edition-summary`, `votes-per-category-per-day`, `nominations-per-entity`,
 `public-votes-per-entity`, `cancelled-votes-per-day`. (The final ranking is served separately by the
 `Results` module, §2g.)
