@@ -884,7 +884,8 @@ table through the `Notifiable` trait on `User` and `Member`. See [notifications.
   - **`VotesPerCategoryPerDayReport`** (`votes-per-category-per-day`) — distinct submitted, **non-cancelled**
     ballots per category per UTC day (`COUNT(DISTINCT ballot_id)` grouped by category + `DATE(submitted_at)`).
   - **`NominationsPerEntityReport`** (`nominations-per-entity`) — count of submitted academy nomination
-    picks per (category, entity). (The client's "nominations" and "academy votes" are one metric.)
+    picks per (category, entity). (The client's "nominations" and "academy votes" are one metric.) Viewers
+    holding `results` also get `points`, the `RankPoints` academy points (`ReportParameters::includeResultsData`).
   - **`PublicVotesPerEntityReport`** (`public-votes-per-entity`) — **rank-weighted** public points per
     (category, entity) via the `PublicRankPoints` curve (summed in PHP over per-rank counts, single-sourced),
     submitted + `->valid()` only. A plain count is less telling (the public ranks its 3 picks).

@@ -28,7 +28,7 @@ class SpreadsheetReportExporter
             $writer = $this->writerFor($format);
             $writer->openToFile('php://output');
 
-            $writer->addRow(Row::fromValues($report->columns()));
+            $writer->addRow(Row::fromValues($report->columns($parameters->includeResultsData)));
 
             foreach ($report->rows($parameters) as $row) {
                 $writer->addRow(Row::fromValues(array_values($row)));

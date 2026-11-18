@@ -32,7 +32,7 @@ final class PublicVotesPerEntityReport implements ReportInterface
         return 'Public Votes per Entity';
     }
 
-    public function columns(): array
+    public function columns(bool $includeResultsData = false): array
     {
         return ['category', 'entity_type', 'entity', 'points'];
     }

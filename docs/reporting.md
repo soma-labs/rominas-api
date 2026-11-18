@@ -19,15 +19,19 @@ Every report implements `Reports/ReportInterface`:
 | --- | --- |
 | `key()` | Stable machine key, used in the URL and the registry (e.g. `votes-per-category-per-day`) |
 | `title()` | Human-readable title |
-| `columns()` | Ordered column keys: the JSON table header and the export's header row |
+| `columns(bool $includeResultsData = false)` | Ordered column keys: the JSON table header and the export's header row. `true` (the viewer holds `results`) may add results columns |
 | `rows(ReportParameters)` | The data: an `iterable` of rows keyed by column |
 
-The metadata methods take no parameters, so the catalogue can list reports without running them. `rows()`
+The metadata methods need no edition, so the catalogue can list reports without running them. `rows()`
 returns an `iterable` so a large report can be streamed straight into an export without loading everything
 into memory. **One implementation serves every output format**: the JSON view and both download formats
 all consume the same `columns()` / `rows()`.
 
-`ReportParameters` carries the **edition** and an optional **`from` / `to`** window.
+`ReportParameters` carries the **edition**, an optional **`from` / `to`** window and **`includeResultsData`**:
+true when the viewer holds the `results` permission (custodian, or super admin through `Gate::before`),
+checked by `ReportParametersFactory::viewerMaySeeResults()` with the same `ResultPolicy` the Results routes use.
+The catalogue, the JSON view and the export all pass it to `columns()`, so a results column appears in all
+three for those viewers and in none for the others. Today only `nominations-per-entity` has one (`points`).
 
 ## 2. Registry
 
@@ -76,7 +80,7 @@ ballots and, apart from the cancellation report, excludes **cancelled** ones. Ac
 | --- | --- | --- |
 | `edition-summary` | metric, value | Headline totals: voting links issued, ballots submitted, valid votes, cancelled votes, academy nominations submitted and in draft. The from/to window applies to each metric's own timestamp; the draft count is point-in-time and ignores it |
 | `votes-per-category-per-day` | category, date, votes | **Distinct voters** per category per day: `COUNT(DISTINCT ballot_id)`, so a voter ranking three nominees counts once |
-| `nominations-per-entity` | category, entity_type, entity, nominations | How many academy picks each entity received per category, highest first. "Nominations" and "academy votes" are the same metric |
+| `nominations-per-entity` | category, entity_type, entity, nominations (+ points) | How many academy picks each entity received per category, highest first. "Nominations" and "academy votes" are the same metric. For `results` holders only, `points`: the academy rank points on the `RankPoints` curve (10 / 8 / 6 / 4 / 2), the `academy_points` Scoring uses, which also break count ties. Admins don't get the column, since the points are a results input (decided 2026-11-18) |
 | `public-votes-per-entity` | category, entity_type, entity, points | **Rank-weighted** public points per entity per category, using the `PublicRankPoints` curve (10 / 8 / 6) |
 | `cancelled-votes-per-day` | date, cancelled | Cancelled ballots per day, bucketed on the day the vote was **cast** (not cancelled), to line up with the votes-per-day report |
 | `special-votes-per-entry` | category, entry, votes | Member votes per **approved** entry of each propose-or-vote category, most first, entries without votes included; counted as in the special results (pending, rejected and merged entries never count; appointed categories have no votes and are left out). The from/to window applies to when each vote was cast |

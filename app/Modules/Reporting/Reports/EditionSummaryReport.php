@@ -29,7 +29,7 @@ final class EditionSummaryReport implements ReportInterface
         return 'Edition Summary';
     }
 
-    public function columns(): array
+    public function columns(bool $includeResultsData = false): array
     {
         return ['metric', 'value'];
     }

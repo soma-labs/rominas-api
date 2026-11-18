@@ -29,7 +29,7 @@ final class SpecialVotesPerEntryReport implements ReportInterface
         return 'Special Award Votes per Entry';
     }
 
-    public function columns(): array
+    public function columns(bool $includeResultsData = false): array
     {
         return ['category', 'entry', 'votes'];
     }

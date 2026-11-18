@@ -45,6 +45,26 @@ function reportingActingAsAdmin(): User
 }
 
 /**
+ * Authenticate as a custodian: `reporting` plus `results`, so the reports add their results columns.
+ */
+function reportingActingAsCustodian(): User
+{
+    Role::query()->firstOrCreate(['name' => 'custodian', 'guard_name' => 'web']);
+    Permission::query()->firstOrCreate(['name' => 'reporting', 'guard_name' => 'web']);
+    Permission::query()->firstOrCreate(['name' => 'results', 'guard_name' => 'web']);
+
+    $custodian = Role::query()->where('name', 'custodian')->where('guard_name', 'web')->firstOrFail();
+    $custodian->givePermissionTo('reporting', 'results');
+
+    $user = User::factory()->create();
+    $user->assignRole('custodian');
+
+    Sanctum::actingAs($user);
+
+    return $user;
+}
+
+/**
  * The single active (non-archived) edition the reports run against.
  */
 function reportingActiveEdition(): Edition
@@ -559,4 +579,54 @@ it('counts only the special votes cast inside the requested window', function ()
     getJson('/api/admin/reports/special-votes-per-entry?from=2026-06-04&to=2026-06-05')
         ->assertStatus(200)
         ->assertJsonPath('data.rows.0.votes', 1);
+});
+
+// --- Academy points, for results holders only ---------------------------------------------------
+
+it('adds academy rank points to nominations per entity for a viewer with the results permission', function (): void {
+    reportingActingAsCustodian();
+    $edition = reportingActiveEdition();
+    $category = reportingCategory($edition, 'Best Album');
+    $leader = Artist::factory()->create(['name' => 'Leader']);
+    $runnerUp = Artist::factory()->create(['name' => 'Runner Up']);
+
+    reportingSubmittedNomination($edition, $category, $leader, rank: 1);
+    reportingSubmittedNomination($edition, $category, $leader, rank: 3);
+    reportingSubmittedNomination($edition, $category, $runnerUp, rank: 2);
+    reportingSubmittedNomination($edition, $category, $runnerUp, rank: 5);
+
+    getJson('/api/admin/reports/nominations-per-entity')
+        ->assertStatus(200)
+        ->assertJsonPath('data.columns', ['category', 'entity_type', 'entity', 'nominations', 'points'])
+        ->assertJsonPath('data.rows.0.entity', 'Leader')
+        ->assertJsonPath('data.rows.0.nominations', 2)
+        ->assertJsonPath('data.rows.0.points', 16)
+        ->assertJsonPath('data.rows.1.entity', 'Runner Up')
+        ->assertJsonPath('data.rows.1.points', 10);
+
+    getJson('/api/admin/reports')
+        ->assertStatus(200)
+        ->assertJsonFragment(['columns' => ['category', 'entity_type', 'entity', 'nominations', 'points']]);
+
+    expect(get('/api/admin/reports/nominations-per-entity/export')->assertStatus(200)->streamedContent())
+        ->toContain('category,entity_type,entity,nominations,points');
+});
+
+it('leaves academy points out of nominations per entity for a viewer without the results permission', function (): void {
+    reportingActingAsAdmin();
+    $edition = reportingActiveEdition();
+    $category = reportingCategory($edition, 'Best Album');
+    reportingSubmittedNomination($edition, $category, Artist::factory()->create(), rank: 1);
+
+    getJson('/api/admin/reports/nominations-per-entity')
+        ->assertStatus(200)
+        ->assertJsonPath('data.columns', ['category', 'entity_type', 'entity', 'nominations'])
+        ->assertJsonMissingPath('data.rows.0.points');
+
+    getJson('/api/admin/reports')
+        ->assertStatus(200)
+        ->assertJsonFragment(['columns' => ['category', 'entity_type', 'entity', 'nominations']]);
+
+    expect(get('/api/admin/reports/nominations-per-entity/export')->assertStatus(200)->streamedContent())
+        ->not->toContain('points');
 });

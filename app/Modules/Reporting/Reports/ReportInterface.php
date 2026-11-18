@@ -29,11 +29,13 @@ interface ReportInterface
 
     /**
      * Ordered column headings — used both for the tabular JSON and the export header row. Each key
-     * matches a key in every row returned by {@see rows()}.
+     * matches a key in every row returned by {@see rows()} for the same `$includeResultsData`. A report
+     * may add columns that reveal results (custodian-only before publication) when `$includeResultsData`
+     * is true, which it is only for viewers holding the `results` permission.
      *
      * @return list<string>
      */
-    public function columns(): array;
+    public function columns(bool $includeResultsData = false): array;
 
     /**
      * The report rows, each an ordered associative array keyed by column. Returned as an `iterable`

@@ -27,7 +27,7 @@ final class VotesPerCategoryPerDayReport implements ReportInterface
         return 'Votes per Category per Day';
     }
 
-    public function columns(): array
+    public function columns(bool $includeResultsData = false): array
     {
         return ['category', 'date', 'votes'];
     }

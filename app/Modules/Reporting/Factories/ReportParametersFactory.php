@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Rominas\Reporting\Factories;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Rominas\Editions\Model\Edition;
 use Rominas\Reporting\DataTransferObjects\ReportParameters;
 use Rominas\Reporting\Requests\RunReportRequest;
+use Rominas\Results\Model\ResultSnapshot;
 
 /**
  * Builds {@see ReportParameters} from a validated {@see RunReportRequest}: resolves the target edition
@@ -35,7 +37,17 @@ class ReportParametersFactory
             edition: $edition,
             from: isset($validated['from']) ? CarbonImmutable::parse($validated['from']) : null,
             to: isset($validated['to']) ? self::parseTo($validated['to']) : null,
+            includeResultsData: self::viewerMaySeeResults($request),
         );
+    }
+
+    /**
+     * Whether the viewer may see results data in a report: the same check the Results routes run
+     * ({@see \Rominas\Results\Policies\ResultPolicy}), so the custodian and super admin, not an admin.
+     */
+    public static function viewerMaySeeResults(Request $request): bool
+    {
+        return $request->user()?->can('viewAny', ResultSnapshot::class) ?? false;
     }
 
     private static function parseTo(string $to): CarbonImmutable

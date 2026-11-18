@@ -24,7 +24,7 @@ final class CancelledVotesPerDayReport implements ReportInterface
         return 'Cancelled Votes per Day';
     }
 
-    public function columns(): array
+    public function columns(bool $includeResultsData = false): array
     {
         return ['date', 'cancelled'];
     }

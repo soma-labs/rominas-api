@@ -24,6 +24,18 @@ class ReportResource extends JsonResource
      */
     private ?iterable $rows = null;
 
+    private bool $includeResultsData = false;
+
+    /**
+     * Include the columns that reveal results, for a viewer holding the `results` permission.
+     */
+    public function withResultsData(bool $includeResultsData): static
+    {
+        $this->includeResultsData = $includeResultsData;
+
+        return $this;
+    }
+
     /**
      * Attach the report's data rows (from {@see ReportInterface::rows()}) so they are included in the
      * output. Without this the resource renders metadata only.
@@ -48,7 +60,7 @@ class ReportResource extends JsonResource
         return [
             'key' => $report->key(),
             'title' => $report->title(),
-            'columns' => $report->columns(),
+            'columns' => $report->columns($this->includeResultsData),
             'rows' => $this->when($this->rows !== null, fn(): array => $this->rowsToArray()),
         ];
     }

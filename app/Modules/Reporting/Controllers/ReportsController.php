@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Rominas\Reporting\Controllers;
 
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Rominas\Reporting\Enums\ReportFormat;
 use Rominas\Reporting\Exporters\SpreadsheetReportExporter;
 use Rominas\Reporting\Factories\ReportParametersFactory;
+use Rominas\Reporting\Reports\ReportInterface;
 use Rominas\Reporting\Requests\RunReportRequest;
 use Rominas\Reporting\Resources\ReportResource;
 use Rominas\Reporting\Support\ReportRegistry;
@@ -23,9 +25,14 @@ class ReportsController
     /**
      * The catalogue: every registered report's key, title and columns (no data).
      */
-    public function index(ReportRegistry $registry): AnonymousResourceCollection
+    public function index(Request $request, ReportRegistry $registry): AnonymousResourceCollection
     {
-        return ReportResource::collection(array_values($registry->all()));
+        $includeResultsData = ReportParametersFactory::viewerMaySeeResults($request);
+
+        return ReportResource::collection(array_map(
+            static fn(ReportInterface $report): ReportResource => ReportResource::make($report)->withResultsData($includeResultsData),
+            array_values($registry->all()),
+        ));
     }
 
     /**
@@ -39,7 +46,9 @@ class ReportsController
 
         $parameters = ReportParametersFactory::fromRequest($request);
 
-        return ReportResource::make($resolved)->withRows($resolved->rows($parameters));
+        return ReportResource::make($resolved)
+            ->withResultsData($parameters->includeResultsData)
+            ->withRows($resolved->rows($parameters));
     }
 
     /**
