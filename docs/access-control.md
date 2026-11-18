@@ -304,6 +304,9 @@ Admin endpoints, nested under an edition (Sanctum-guarded):
   mistaken link: reverts a `resolved` submission to `pending` and clears `nominee_id` on its rankings. Only
   while the edition is `nominations_open` / `nominations_closed` (422 otherwise, and for a submission that
   isn't linked); the Catalog entity is kept.
+- `POST /api/admin/editions/{edition}/nominee-submissions/{nomineeSubmission}/reopen` (`can:update`) — undo a
+  mistaken rejection: reverts a `rejected` submission to `pending`. Only while the edition is
+  `nominations_open` / `nominations_closed` (422 otherwise, and for a submission that isn't rejected).
 
 Linking refuses (422) when it would list the same nominee twice on one member's ballot (two typed names that
 turn out to be the same act). **Interlock:** `Shortlist` generation refuses (422) while any submission for the

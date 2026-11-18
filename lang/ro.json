@@ -40,6 +40,8 @@
 
     "Only a linked submission can be unlinked.": "Doar o propunere asociată poate fi disociată.",
     "Submissions can only be unlinked before voting opens.": "Propunerile pot fi disociate doar înainte de deschiderea votului.",
+    "Only a rejected submission can be marked as pending.": "Doar o propunere respinsă poate fi readusă în așteptare.",
+    "Submissions can only be marked as pending before voting opens.": "Propunerile pot fi readuse în așteptare doar înainte de deschiderea votului.",
 
     "Voting is not open.": "Votul nu este deschis.",
     "The voting window is closed.": "Perioada de vot nu este deschisă.",

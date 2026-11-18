@@ -17,12 +17,13 @@ stateDiagram-v2
     pending --> resolved : create a new entity from it
     pending --> rejected : junk / spam
     resolved --> pending : unlink (before voting opens)
+    rejected --> pending : reopen (before voting opens)
     resolved --> [*]
     rejected --> [*]
 ```
 
-Only `pending` submissions can be linked, created from or rejected. `rejected` is final; a `resolved`
-submission can be **unlinked** back to `pending` until voting opens (§3).
+Only `pending` submissions can be linked, created from or rejected. Until voting opens, a `resolved`
+submission can be **unlinked** and a `rejected` one **reopened**, both back to `pending` (§3).
 
 ## 1. Capture and deduplication
 
@@ -104,6 +105,19 @@ The Catalog entity is left in place, even one made by *create*: remove it throug
 mistake. Who unlinked what is kept by the audit trail. A shortlist generated earlier isn't touched, but the
 submission is pending again, so regeneration is blocked (§5) until the name is reconciled.
 
+### Reopen — `POST …/{nomineeSubmission}/reopen`
+
+Undoes a mistaken rejection (the admin's **Mark as pending** button). `ReopenRejectedNomineeSubmissionAction`:
+
+1. refuses (422) unless the submission is `rejected`;
+2. refuses (422) unless the edition is still `nominations_open` or `nominations_closed`, as unlink does;
+3. reverts the submission to `pending`, clearing the reviewer, time and note.
+
+The rankings need no change: rejection left their `nominee_id` null, and a later link or create backfills it.
+The submission no longer holds the earlier rejection; who rejected it, when and why stays in the audit trail
+(the `…nominee-submissions.reject` entry and its `note`), next to the `…reopen` entry. Like unlink, a pending
+submission blocks shortlist regeneration (§5) until it is reconciled again.
+
 ## 4. Match suggestions
 
 `SuggestCatalogMatchesAction` scores every Catalog row of the submission's type against the typed name,
@@ -146,7 +160,7 @@ so that stays visible after generation too, not just as a one-time warning durin
 | Concern | Where |
 | --- | --- |
 | Capture / dedup | `Actions/ResolveOrCreateNomineeSubmissionAction.php`, `Support/NomineeNameNormalizer.php` |
-| Decisions | `Actions/{Link,CreateNomineeFrom,Reject,Unlink}NomineeSubmissionAction.php` |
+| Decisions | `Actions/{Link,CreateNomineeFrom,Reject,Unlink}NomineeSubmissionAction.php`, `Actions/ReopenRejectedNomineeSubmissionAction.php` |
 | Suggestions | `Actions/SuggestCatalogMatchesAction.php` |
 | Admin API | `Controllers/NomineeSubmissionsController.php`, `routes/api/admin/nominee-submissions.php` |
 | Interlock | `Academy/Shortlist/Actions/GenerateCategoryShortlistAction::assertGeneratable()` |

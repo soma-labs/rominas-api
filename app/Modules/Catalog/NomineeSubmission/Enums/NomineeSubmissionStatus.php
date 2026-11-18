@@ -7,7 +7,8 @@ namespace Rominas\Catalog\NomineeSubmission\Enums;
 /**
  * Reconciliation state of a free-text nominee a member typed on the ballot. `pending` awaits an admin's
  * link-or-create decision; `resolved` has been linked to a canonical Catalog entity (`resolved_nominee_id`);
- * `rejected` was discarded (junk/spam) and its rankings stay unresolved.
+ * `rejected` was discarded (junk/spam) and its rankings stay unresolved. Before voting opens, a resolved
+ * submission can be unlinked and a rejected one reopened, both back to `pending`.
  */
 enum NomineeSubmissionStatus: string
 {

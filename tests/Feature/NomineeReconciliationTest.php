@@ -7,6 +7,7 @@ use Rominas\Academy\Member\Model\Member;
 use Rominas\Academy\Nomination\Model\Nomination;
 use Rominas\Academy\Nomination\Model\NominationRanking;
 use Rominas\Academy\Shortlist\Actions\GenerateEditionShortlistsAction;
+use Rominas\Audit\Model\AuditLog;
 use Rominas\Catalog\Artist\Model\Artist;
 use Rominas\Catalog\Enums\NomineeType;
 use Rominas\Catalog\NomineeSubmission\Actions\LinkNomineeSubmissionAction;
@@ -407,4 +408,87 @@ it('guards unlink by edition ownership and the nomineeSubmissions permission', f
         ->assertStatus(404);
 
     expect($submission->fresh()->status)->toBe(NomineeSubmissionStatus::Resolved);
+});
+
+it('reopens a rejected submission back to pending so it can be reconciled again', function (): void {
+    $user = reconcileActingAsAdmin();
+    $edition = reconcileClosedEdition();
+    $category = Category::factory()->for($edition)->create(['nominee_type' => NomineeType::Artist]);
+    $artist = Artist::factory()->create(['name' => 'Real Act']);
+    reconcileBallot($edition, $category, ['Real Act']);
+    reconcileBallot($edition, $category, ['real act']);
+
+    $submission = NomineeSubmission::query()->firstOrFail();
+    $url = "/api/admin/editions/{$edition->id}/nominee-submissions/{$submission->id}";
+
+    postJson("{$url}/reject", ['note' => 'looked like spam'])->assertStatus(200);
+
+    postJson("{$url}/reopen")
+        ->assertStatus(200)
+        ->assertJsonPath('data.status', 'pending');
+
+    $submission->refresh();
+    expect($submission->status)->toBe(NomineeSubmissionStatus::Pending)
+        ->and($submission->reviewed_by_user_id)->toBeNull()
+        ->and($submission->reviewed_at)->toBeNull()
+        ->and($submission->review_note)->toBeNull();
+
+    $entry = AuditLog::query()->where('action', 'api.admin.editions.nominee-submissions.reopen')->sole();
+    expect($entry->causer_id)->toBe($user->id)
+        ->and($entry->subject_type)->toBe('nomineeSubmission')
+        ->and($entry->subject_id)->toBe($submission->id)
+        ->and($entry->status_code)->toBe(200);
+
+    // Pending again, so it blocks shortlist generation until it is reconciled.
+    expect(fn() => app(GenerateEditionShortlistsAction::class)->execute($edition))
+        ->toThrow(Illuminate\Validation\ValidationException::class);
+
+    postJson("{$url}/link", ['nominee_id' => $artist->id])->assertStatus(200);
+
+    expect(NominationRanking::query()->where('nominee_id', $artist->id)->count())->toBe(2);
+});
+
+it('refuses to reopen a submission that is not rejected', function (string $state, NomineeSubmissionStatus $status): void {
+    reconcileActingAsAdmin();
+    $edition = reconcileClosedEdition();
+    $factory = NomineeSubmission::factory();
+    $submission = ($state === 'resolved' ? $factory->resolved() : $factory)->create(['edition_id' => $edition->id]);
+
+    postJson("/api/admin/editions/{$edition->id}/nominee-submissions/{$submission->id}/reopen")
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['status' => 'Only a rejected submission can be marked as pending.']);
+
+    expect($submission->fresh()->status)->toBe($status);
+})->with([
+    'pending' => ['pending', NomineeSubmissionStatus::Pending],
+    'resolved' => ['resolved', NomineeSubmissionStatus::Resolved],
+]);
+
+it('refuses to reopen once voting has opened', function (): void {
+    reconcileActingAsAdmin();
+    $edition = Edition::factory()->status(EditionStatus::VotingOpen)->create();
+    $submission = NomineeSubmission::factory()->rejected()->create(['edition_id' => $edition->id]);
+
+    postJson("/api/admin/editions/{$edition->id}/nominee-submissions/{$submission->id}/reopen")
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['status' => 'Submissions can only be marked as pending before voting opens.']);
+
+    expect($submission->fresh())
+        ->status->toBe(NomineeSubmissionStatus::Rejected)
+        ->review_note->toBe('Not a valid nominee.');
+});
+
+it('guards reopen by edition ownership and the nomineeSubmissions permission', function (): void {
+    $edition = reconcileClosedEdition();
+    $submission = NomineeSubmission::factory()->rejected()->create(['edition_id' => $edition->id]);
+    $url = "/api/admin/editions/{$edition->id}/nominee-submissions/{$submission->id}/reopen";
+
+    Sanctum::actingAs(User::factory()->create());
+    postJson($url)->assertStatus(403);
+
+    reconcileActingAsAdmin();
+    postJson('/api/admin/editions/' . reconcileClosedEdition()->id . "/nominee-submissions/{$submission->id}/reopen")
+        ->assertStatus(404);
+
+    expect($submission->fresh()->status)->toBe(NomineeSubmissionStatus::Rejected);
 });

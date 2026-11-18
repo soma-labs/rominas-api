@@ -14,7 +14,8 @@ use Rominas\Users\Model\User;
  * excluded from every tally that reads `NominationRankingQueryBuilder::resolved()` (shortlist generation,
  * Scoring, Reporting) — and are surfaced instead as `rejected_picks` per category in the shortlist
  * listing ({@see \Rominas\Academy\Shortlist\Actions\CountRejectedPicksAction}), so a rejected pick doesn't
- * just silently vanish from the count. Rejection does not touch the Catalog.
+ * just silently vanish from the count. Rejection does not touch the Catalog, and can be undone before voting
+ * opens ({@see ReopenRejectedNomineeSubmissionAction}).
  */
 class RejectNomineeSubmissionAction
 {

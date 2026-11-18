@@ -261,7 +261,8 @@ also "remembers" a resolution for the rest of the edition (a later ballot typing
 resolved row and gets `nominee_id` immediately). Reconciliation actions: `ResolveOrCreateNomineeSubmission`
 (ballot-side dedup), `SuggestCatalogMatches` (ranked match candidates), `LinkNomineeSubmission` (→ existing
 entity + backfill rankings), `CreateNomineeFromSubmission` (→ new entity), `RejectNomineeSubmission`,
-`UnlinkNomineeSubmission` (resolved → pending, clearing the rankings' `nominee_id`; only before voting opens). Admin
+`UnlinkNomineeSubmission` (resolved → pending, clearing the rankings' `nominee_id`; only before voting opens),
+`ReopenRejectedNomineeSubmission` (rejected → pending; only before voting opens). Admin
 API and the shortlist interlock: [access-control.md §2k](access-control.md#2k-nominee-reconciliation-the-nomineesubmission-module);
 the full flow: [nominee-reconciliation.md](nominee-reconciliation.md).
 
@@ -295,8 +296,9 @@ erDiagram
   - `pending`: the rankings have `nominee_id = null`, and shortlist generation refuses (422).
   - `resolved`: the rankings point at the Catalog row and count toward points. Until voting opens, an unlink
     reverts it to `pending` and clears `nominee_id` again.
-  - `rejected`: `nominee_id` stays null permanently. `NominationRanking::resolved()` skips these rankings
-    in every tally, and the shortlist listing reports them as `rejected_picks`.
+  - `rejected`: `nominee_id` stays null. `NominationRanking::resolved()` skips these rankings in every
+    tally, and the shortlist listing reports them as `rejected_picks`. Until voting opens, a reopen reverts
+    it to `pending` so it can be reconciled again.
 - **Downstream**: [ShortlistEntry](#shortlist), [BallotRanking](#voting) and [ResultEntry](#results) only
   ever hold canonical `(nominee_type, nominee_id)` pairs. None of them references a submission.
 

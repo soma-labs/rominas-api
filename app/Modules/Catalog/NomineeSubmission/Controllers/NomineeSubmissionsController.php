@@ -10,6 +10,7 @@ use Rominas\Catalog\Enums\NomineeType;
 use Rominas\Catalog\NomineeSubmission\Actions\CreateNomineeFromSubmissionAction;
 use Rominas\Catalog\NomineeSubmission\Actions\LinkNomineeSubmissionAction;
 use Rominas\Catalog\NomineeSubmission\Actions\RejectNomineeSubmissionAction;
+use Rominas\Catalog\NomineeSubmission\Actions\ReopenRejectedNomineeSubmissionAction;
 use Rominas\Catalog\NomineeSubmission\Actions\SuggestCatalogMatchesAction;
 use Rominas\Catalog\NomineeSubmission\Actions\UnlinkNomineeSubmissionAction;
 use Rominas\Catalog\NomineeSubmission\Enums\NomineeSubmissionStatus;
@@ -27,7 +28,8 @@ use function abort_unless;
 /**
  * Admin reconciliation of an edition's free-text nominee submissions (guard `sanctum` + the
  * `nomineeSubmissions` permission). Each submission is resolved once: link it to an existing Catalog
- * entity, create a new one from it, or reject it. A mistaken link can be undone (unlink) before voting opens.
+ * entity, create a new one from it, or reject it. Before voting opens, a mistaken link can be undone (unlink)
+ * and a mistaken rejection too (reopen, back to pending).
  */
 class NomineeSubmissionsController
 {
@@ -125,6 +127,16 @@ class NomineeSubmissionsController
         Edition $edition,
         NomineeSubmission $nomineeSubmission,
         UnlinkNomineeSubmissionAction $action,
+    ): NomineeSubmissionResource {
+        $this->assertInEdition($edition, $nomineeSubmission);
+
+        return new NomineeSubmissionResource($action->execute($nomineeSubmission)->loadCount('rankings')->load('categories'));
+    }
+
+    public function reopen(
+        Edition $edition,
+        NomineeSubmission $nomineeSubmission,
+        ReopenRejectedNomineeSubmissionAction $action,
     ): NomineeSubmissionResource {
         $this->assertInEdition($edition, $nomineeSubmission);
 

@@ -104,7 +104,7 @@ blocks of the Modular DDD layout.
   name is **free text**, so `Catalog/NomineeSubmission` stages each typed name and an admin
   **reconciles** it — links to an existing entry or creates a new one — into a canonical Catalog entity
   before shortlists are generated (assisted: dedup + fuzzy match suggestions; gated `nomineeSubmissions` perm).
-  A mistaken link can be **unlinked** back to pending until voting opens.
+  A mistaken link can be **unlinked**, and a mistaken rejection **reopened**, back to pending until voting opens.
 - **`Academy`** — members, invitations, and **ranked nominations**: 5 nominees
   per category, **order determines points** (10·8·6·4·2). Nominations can be
   **saved and resumed** until the nomination deadline. A member need not fill every
