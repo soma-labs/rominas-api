@@ -150,6 +150,10 @@ The invitation is itself a magic link (`academy-invitation-email`), so opening i
 When the member was created by approving a proposal (§5), the e-mail names the member who proposed them
 ("de către …"), found through `member_proposals.member_id`; a member an admin added gets the text without it.
 
+**Calendar update (one-time, 2026-11-23).** `romias:send-calendar-update` prints the recipients per status
+and sends nothing; with `--send` it queues the client's announcement for every member, whatever their
+status. A cache key (`romias:calendar-update-queued`) refuses a second `--send`.
+
 ## 4. Ranked nominations
 
 A member has **one ballot (`Nomination`) per edition**, created on the first save. It holds up to five

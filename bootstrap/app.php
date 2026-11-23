@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Rominas\Academy\Member\Commands\SendCalendarUpdateCommand;
 use Rominas\Delivery\Commands\SendTestEmailCommand;
 use Rominas\FraudMonitoring\Commands\DetectVotingFraudCommand;
 use Rominas\Notifications\Commands\SendDailyStatisticsCommand;
@@ -20,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withCommands([
         // Module commands live under app/Modules and are not auto-discovered — register them here.
         DetectVotingFraudCommand::class,
+        SendCalendarUpdateCommand::class,
         SendDailyStatisticsCommand::class,
         SendNominationDeadlineRemindersCommand::class,
         SendTestEmailCommand::class,

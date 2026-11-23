@@ -124,6 +124,7 @@ class SendTestEmailCommand extends Command implements PromptsForMissingInput
         return [
             ...$invitations,
             'academy-login' => 'Academy login link',
+            'academy-calendar-update' => 'Academy calendar update (one-time announcement)',
             'voting-link' => 'Voting link',
             'nominations-opened' => 'Nominations opened',
             'nomination-reminder-3' => 'Nomination deadline reminder, 3 days before',
@@ -175,6 +176,7 @@ class SendTestEmailCommand extends Command implements PromptsForMissingInput
 
         match ($template) {
             'academy-login' => $delivery->execute('academy-magic-link-email', ['email'], $email, self::TOKEN),
+            'academy-calendar-update' => $delivery->execute('academy-calendar-update-email', ['email'], $email),
             'voting-link' => $delivery->execute('voting-link-email', ['email'], $email, self::TOKEN),
             default => $channel->send(Notification::route('mail', $email), $this->notification($template)),
         };

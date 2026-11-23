@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Rominas\Delivery\Brevo\BrevoMailService;
+use Rominas\Delivery\Factories\AcademyCalendarUpdateEmailPayloadFactory;
 use Rominas\Delivery\Factories\AcademyInvitationEmailPayloadFactory;
 use Rominas\Delivery\Factories\AcademyInvitationFollowUpEmailPayloadFactory;
 use Rominas\Delivery\Factories\AcademyMagicLinkEmailPayloadFactory;
@@ -74,6 +75,7 @@ return [
                 'notification-email' => NotificationEmailPayloadFactory::class,
                 'academy-nomination-follow-up-email' => AcademyNominationFollowUpEmailPayloadFactory::class,
                 'academy-invitation-follow-up-email' => AcademyInvitationFollowUpEmailPayloadFactory::class,
+                'academy-calendar-update-email' => AcademyCalendarUpdateEmailPayloadFactory::class,
             ],
         ],
     ],
